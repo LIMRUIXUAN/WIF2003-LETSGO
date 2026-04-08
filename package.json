@@ -1,0 +1,26 @@
+{
+  "name": "wif2003-ecotravel-planner",
+  "version": "1.0.0",
+  "description": "A full-stack Web Application developed for WIF2003 Web Programming. The Eco-friendly Travel Planner helps users plan sustainable trips by calculating carbon footprints and suggesting green destinations using HTML5, Bootstrap, Node.js, and MongoDB.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner/issues"
+  },
+  "homepage": "https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongoose": "^9.3.3"
+  }
+}
