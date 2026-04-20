@@ -1,0 +1,90 @@
+[
+  {
+    "name": "Bamboo Eco Resort",
+    "location": "Cameron Highlands",
+    "category": "hotel",
+    "ecoScore": 9.4,
+    "price": "RM 280/night",
+    "co2Impact": "↓34 kg CO₂",
+    "icon": "🏕",
+    "rating": 4.9,
+    "description": "Fully solar-powered mountain retreat with organic gardens."
+  },
+  {
+    "name": "Green Roots Cafe",
+    "location": "Kuala Lumpur",
+    "category": "restaurant",
+    "ecoScore": 8.8,
+    "price": "RM 25–60",
+    "co2Impact": "↓8 kg CO₂",
+    "icon": "🍃",
+    "rating": 4.7,
+    "description": "100% plant-based menu with zero-waste packaging."
+  },
+  {
+    "name": "EcoBike Rentals",
+    "location": "Penang",
+    "category": "transport",
+    "ecoScore": 9.9,
+    "price": "RM 15/day",
+    "co2Impact": "Zero Emission",
+    "icon": "🚲",
+    "rating": 4.8,
+    "description": "Electric bikes and traditional cycles for island exploration."
+  },
+  {
+    "name": "Mangrove Kayak Tour",
+    "location": "Langkawi",
+    "category": "activity",
+    "ecoScore": 9.2,
+    "price": "RM 120/pax",
+    "co2Impact": "↓62 kg CO₂",
+    "icon": "🚣",
+    "rating": 4.9,
+    "description": "Guided kayak through pristine mangrove forests."
+  },
+  {
+    "name": "Forest Canopy Lodge",
+    "location": "Taman Negara",
+    "category": "hotel",
+    "ecoScore": 9.7,
+    "price": "RM 450/night",
+    "co2Impact": "↓55 kg CO₂",
+    "icon": "🌲",
+    "rating": 4.9,
+    "description": "Elevated rainforest lodge using 100% renewable energy."
+  },
+  {
+    "name": "Vegan Street Bites",
+    "location": "Penang",
+    "category": "restaurant",
+    "ecoScore": 8.5,
+    "price": "RM 8–20",
+    "co2Impact": "↓5 kg CO₂",
+    "icon": "🥗",
+    "rating": 4.6,
+    "description": "Award-winning vegan hawker stalls using local ingredients."
+  },
+  {
+    "name": "Solar Ferry KL–Putrajaya",
+    "location": "Kuala Lumpur",
+    "category": "transport",
+    "ecoScore": 9.1,
+    "price": "RM 8/trip",
+    "co2Impact": "↓22 kg CO₂",
+    "icon": "⛵",
+    "rating": 4.5,
+    "description": "Solar-powered river ferry connecting city to Putrajaya."
+  },
+  {
+    "name": "Coral Reef Snorkeling",
+    "location": "Tioman Island",
+    "category": "activity",
+    "ecoScore": 8.9,
+    "price": "RM 85/pax",
+    "co2Impact": "Minimal",
+    "icon": "🐠",
+    "rating": 4.8,
+    "description": "Marine biologist-guided snorkeling with reef conservation pledge."
+  }
+]

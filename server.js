@@ -1,12 +1,25 @@
 const express = require('express');
-const dotenv = require('dotenv');
-dotenv.config();
+const mongoose = require('mongoose');
+const tripRoutes = require('./routes/trips');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  serverSelectionTimeoutMS: 5000 // stop trying after 5s
+})
+.then(() => console.log("MongoDB connected"))
+.catch(err => {
+  console.log("MongoDB failed try to resolve connection:");
+  console.log(err.message);
+});
+
+// API Routes
+app.use('/api', tripRoutes);
+
+// Serve all static files from public/
 app.use(express.static('public'));
 
-app.listen(PORT, () => {
-    console.log(`Eco-Travel Server running on http://localhost:${PORT}`);
-});
+app.listen(3000, () => console.log('Server running on http://localhost:3000'));

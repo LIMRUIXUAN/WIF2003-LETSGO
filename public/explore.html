@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoPlanner – Explore</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/explore.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     EXPLORE PAGE  —  Owner: Tan Jin Xiang
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- Top Navigation Bar -->
+<nav class="eco-nav d-flex align-items-center justify-content-between">
+  <a href="index.html" class="brand"><span class="leaf">🌿</span> EcoPlanner</a>
+  <div class="nav-links d-none d-md-flex">
+    <a class="nav-link"        href="index.html"><i class="bi bi-house"></i>Home</a>
+    <a class="nav-link active" href="explore.html"><i class="bi bi-compass"></i>Explore</a>
+    <a class="nav-link"        href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
+    <a class="nav-link"        href="carbon-weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
+    <a class="nav-link"        href="carbon-weather.html"><i class="bi bi-bar-chart"></i>Carbon</a>
+    <a class="nav-link"        href="favorites.html"><i class="bi bi-heart"></i>Favorites</a>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="user-badge" onclick="window.location.href='profile.html'" id="navInitial">?</div>
+  </div>
+</nav>
+
+<div class="dash-layout">
+
+  <!-- Sidebar -->
+  <div class="dash-sidebar d-none d-lg-block">
+    <div class="section-label">Main</div>
+    <a class="sidebar-link"        href="index.html"><i class="bi bi-house-fill"></i>Dashboard</a>
+    <a class="sidebar-link active" href="explore.html"><i class="bi bi-compass-fill"></i>Explore</a>
+    <a class="sidebar-link"        href="planner.html"><i class="bi bi-map-fill"></i>My Itinerary</a>
+    <div class="section-label">Tools</div>
+    <a class="sidebar-link" href="carbon-weather.html"><i class="bi bi-cloud-sun-fill"></i>Weather</a>
+    <a class="sidebar-link" href="carbon-weather.html"><i class="bi bi-bar-chart-fill"></i>Carbon Calc</a>
+    <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
+    <div class="section-label">Account</div>
+    <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
+    <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="dash-main">
+    <div class="toast-wrap" id="toastWrap"></div>
+
+    <div class="mb-4">
+      <h4 class="section-title mb-0">Explore Eco Destinations</h4>
+      <p class="section-sub">Find sustainable hotels, restaurants, transport &amp; activities</p>
+
+      <!-- Search bar with autocomplete -->
+      <div class="position-relative mb-3">
+        <div class="search-bar-wrap">
+          <i class="bi bi-search" style="color:#9ab3a0;"></i>
+          <input type="text" placeholder="Search city, eco hotel, activity..."
+                 id="exploreSearch" oninput="onSearchInput(this)">
+          <button class="btn-eco" style="padding:8px 18px; font-size:.85rem;">
+            <i class="bi bi-sliders"></i> Filter
+          </button>
+        </div>
+        <!-- Autocomplete dropdown -->
+        <div class="suggestion-dropdown" id="searchSuggest" style="display:none;">
+          <div class="suggestion-item" onclick="selectCity('Langkawi')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Langkawi, Kedah</div>
+          <div class="suggestion-item" onclick="selectCity('Cameron Highlands')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Cameron Highlands, Pahang</div>
+          <div class="suggestion-item" onclick="selectCity('Penang')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Penang Island, Penang</div>
+          <div class="suggestion-item" onclick="selectCity('Sabah')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Kota Kinabalu, Sabah</div>
+          <div class="suggestion-item" onclick="selectCity('Taman Negara')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Taman Negara, Pahang</div>
+        </div>
+      </div>
+
+      <!-- Category filter chips -->
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="filter-chip active" onclick="filterCat(this,'all')">All</button>
+        <button class="filter-chip"        onclick="filterCat(this,'hotel')">🏨 Hotels</button>
+        <button class="filter-chip"        onclick="filterCat(this,'restaurant')">🍃 Restaurants</button>
+        <button class="filter-chip"        onclick="filterCat(this,'transport')">🚲 Transport</button>
+        <button class="filter-chip"        onclick="filterCat(this,'activity')">🌊 Activities</button>
+        <button class="filter-chip"        onclick="filterCat(this,'high')">⭐ Eco 9+</button>
+      </div>
+    </div>
+
+    <!-- Listings grid (populated by explore.js) -->
+    <div class="row g-3" id="listingsGrid">
+
+      <!-- Example flip card -->
+      <div class="col-sm-6 col-lg-4">
+        <div class="flip-card" onclick="this.classList.toggle('is-flipped')">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <div class="listing-card" style="height:100%;">
+                <div class="card-img"><span style="font-size:3.5rem;">🏕</span></div>
+                <div class="card-body">
+                  <div class="card-title">Bamboo Eco Resort</div>
+                  <div class="card-location"><i class="bi bi-geo-alt"></i> Cameron Highlands</div>
+                  <div class="eco-score mt-2"><i class="bi bi-leaf"></i> 9.4/10</div>
+                  <p class="mt-3 text-muted" style="font-size:0.8rem;">Click to see sustainability details!</p>
+                </div>
+              </div>
+            </div>
+            <div class="flip-card-back">
+              <i class="bi bi-info-circle-fill mb-3" style="font-size:2rem; color:var(--eco-leaf);"></i>
+              <h5>Sustainability Details</h5>
+              <ul class="text-start" style="font-size:0.85rem; list-style:none; padding:0;">
+                <li class="mb-2">✅ 100% Solar Powered</li>
+                <li class="mb-2">✅ Rainwater Harvesting</li>
+                <li class="mb-2">✅ Zero Plastic Policy</li>
+                <li class="mb-2">✅ Organic On-site Garden</li>
+              </ul>
+              <button class="btn-eco mt-3" onclick="event.stopPropagation();">Book Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /listingsGrid -->
+  </div><!-- /dash-main -->
+</div><!-- /dash-layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/explore.js"></script>
+</body>
+</html>

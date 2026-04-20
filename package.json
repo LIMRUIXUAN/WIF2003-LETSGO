@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner#readme",
   "dependencies": {
+    "bootstrap": "^5.3.8",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mongoose": "^9.3.3"
