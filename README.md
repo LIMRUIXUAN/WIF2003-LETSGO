@@ -82,7 +82,8 @@ WIF2003-ECOTRAVEL-PLANNER/
 │   ├── profile.js           # Lim Rui Xuan (Profile edit logic, mock soft delete)
 │   ├── explore.js           # Tan Jin Xiang (Search, filter logic, flip card logic)
 │   ├── planner.js           # Julius Lim Jun Herng (Drag/drop logic, CRUD mock)
-│   ├── carbon_weather.js    # Chin Kin Hiung (Weather API fetch, CO2 math)
+│   ├── carbon.js            # Chin Kin Hiung (CO2 math)
+|   ├── weather.js           # Chin Kin Hiung (Weather API fetch)
 │   └── favorites.js         # Ye Qinglan (Rendering saved items)
 │
 ├── 📂 img/                  # All logos, icons, and placeholder images
@@ -93,7 +94,8 @@ WIF2003-ECOTRAVEL-PLANNER/
 ├── profile.html             # Lim Rui Xuan
 ├── explore.html             # Tan Jin Xiang
 ├── planner.html             # Julius Lim Jun Herng
-├── carbon-weather.html      # Chin Kin Hiung
+├── carbonr.html             # Chin Kin Hiung
+├── weather.html             # Chin Kin Hiung
 └── favorites.html           # Ye Qinglan
 ```
 
