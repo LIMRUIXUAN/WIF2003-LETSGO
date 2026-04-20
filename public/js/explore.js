@@ -110,15 +110,25 @@ function selectCity(city) {
   // TODO: filter listings by city
 }
 
-/* Load destinations from API, fall back to local LISTINGS */
-async function loadDestinations() {
-  try {
-    const res          = await fetch('/api/destinations');
-    const destinations = await res.json();
-    renderListings(destinations);
-  } catch {
-    renderListings('all');
-  }
-}
+/* Immediately load all listings when the page opens */
+document.addEventListener('DOMContentLoaded', () => {
+  renderListings('all');
+});
 
-document.addEventListener('DOMContentLoaded', loadDestinations);
+function toggleFav(e, id) {
+  e.stopPropagation();
+  
+  if (favorites.has(id)) {
+    favorites.delete(id);
+    showToast('Removed from favorites', 'info');
+  } else {
+    favorites.add(id);
+    showToast('Saved to favorites 💚');
+  }
+
+  // ── THE FIX: Save the updated list to localStorage ──
+  localStorage.setItem('ecoFavorites', JSON.stringify(Array.from(favorites)));
+
+  const activeCat = document.querySelector('.filter-chip.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'all';
+  renderListings(activeCat);
+}

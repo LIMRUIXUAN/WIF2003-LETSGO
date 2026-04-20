@@ -98,7 +98,6 @@ WIF2003-ECOTRAVEL-PLANNER/
 
 
 ---
-
 📂 Phase 2: Full-Stack Structure (The "Upgrade")
 When Phase 2 begins, you don't throw away Phase 1. You simply drag all the files from the Phase 1 folder into a new public/ folder, and build your Node.js/MongoDB backend around it.
 ```

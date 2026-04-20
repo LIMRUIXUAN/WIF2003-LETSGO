@@ -7,8 +7,8 @@ const app = express();
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 5000 // stop trying after 5s
+mongoose.connect(process.env.MONGO_URL, {
+  serverSelectionTimeoutMS: 3000 // stop trying after 3s
 })
 .then(() => console.log("MongoDB connected"))
 .catch(err => {

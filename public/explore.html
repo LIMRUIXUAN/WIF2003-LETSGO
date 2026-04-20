@@ -23,8 +23,8 @@
     <a class="nav-link"        href="index.html"><i class="bi bi-house"></i>Home</a>
     <a class="nav-link active" href="explore.html"><i class="bi bi-compass"></i>Explore</a>
     <a class="nav-link"        href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
-    <a class="nav-link"        href="carbon-weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
-    <a class="nav-link"        href="carbon-weather.html"><i class="bi bi-bar-chart"></i>Carbon</a>
+    <a class="nav-link"        href="weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
+    <a class="nav-link"        href="carbon.html"><i class="bi bi-bar-chart"></i>Carbon</a>
     <a class="nav-link"        href="favorites.html"><i class="bi bi-heart"></i>Favorites</a>
   </div>
   <div class="d-flex align-items-center gap-3">
@@ -41,8 +41,8 @@
     <a class="sidebar-link active" href="explore.html"><i class="bi bi-compass-fill"></i>Explore</a>
     <a class="sidebar-link"        href="planner.html"><i class="bi bi-map-fill"></i>My Itinerary</a>
     <div class="section-label">Tools</div>
-    <a class="sidebar-link" href="carbon-weather.html"><i class="bi bi-cloud-sun-fill"></i>Weather</a>
-    <a class="sidebar-link" href="carbon-weather.html"><i class="bi bi-bar-chart-fill"></i>Carbon Calc</a>
+    <a class="sidebar-link" href="weather.html"><i class="bi bi-cloud-sun-fill"></i>Weather</a>
+    <a class="sidebar-link" href="carbon.html"><i class="bi bi-bar-chart-fill"></i>Carbon Calc</a>
     <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
     <div class="section-label">Account</div>
     <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
@@ -90,37 +90,6 @@
 
     <!-- Listings grid (populated by explore.js) -->
     <div class="row g-3" id="listingsGrid">
-
-      <!-- Example flip card -->
-      <div class="col-sm-6 col-lg-4">
-        <div class="flip-card" onclick="this.classList.toggle('is-flipped')">
-          <div class="flip-card-inner">
-            <div class="flip-card-front">
-              <div class="listing-card" style="height:100%;">
-                <div class="card-img"><span style="font-size:3.5rem;">🏕</span></div>
-                <div class="card-body">
-                  <div class="card-title">Bamboo Eco Resort</div>
-                  <div class="card-location"><i class="bi bi-geo-alt"></i> Cameron Highlands</div>
-                  <div class="eco-score mt-2"><i class="bi bi-leaf"></i> 9.4/10</div>
-                  <p class="mt-3 text-muted" style="font-size:0.8rem;">Click to see sustainability details!</p>
-                </div>
-              </div>
-            </div>
-            <div class="flip-card-back">
-              <i class="bi bi-info-circle-fill mb-3" style="font-size:2rem; color:var(--eco-leaf);"></i>
-              <h5>Sustainability Details</h5>
-              <ul class="text-start" style="font-size:0.85rem; list-style:none; padding:0;">
-                <li class="mb-2">✅ 100% Solar Powered</li>
-                <li class="mb-2">✅ Rainwater Harvesting</li>
-                <li class="mb-2">✅ Zero Plastic Policy</li>
-                <li class="mb-2">✅ Organic On-site Garden</li>
-              </ul>
-              <button class="btn-eco mt-3" onclick="event.stopPropagation();">Book Now</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div><!-- /listingsGrid -->
   </div><!-- /dash-main -->
 </div><!-- /dash-layout -->
