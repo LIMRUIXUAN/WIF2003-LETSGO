@@ -76,7 +76,8 @@ function renderItineraries() {
       `).join('')}
 
       <div class="d-flex gap-2 mt-2">
-        <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;">
+        <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
+                onclick="switchView('board', ${itin.id})">
           <i class="bi bi-pencil"></i> Edit
         </button>
         <button class="btn-eco" style="font-size:.82rem; padding:7px 16px; justify-content:center;"
@@ -120,3 +121,66 @@ document.addEventListener('DOMContentLoaded', () => {
   itineraries = [...ITINERARY_SAMPLE];
   renderItineraries();
 });
+
+/*
+ * Switches between the kanban-view and trip-view
+ */
+function switchView(view, tripId = null) {
+    const listView = document.getElementById('listView');
+    const boardView = document.getElementById('boardView');
+
+    if (view === 'list') {
+        listView.style.display = 'block';
+        boardView.style.display = 'none';
+        renderItineraries();
+    } else {
+        listView.style.display = 'none';
+        boardView.style.display = 'block';
+        
+        // Find the trip data
+        const trip = itineraries.find(t => t.id == tripId);
+        if (trip) {
+            document.getElementById('activeTripTitle').innerText = trip.name;
+            generateTimelineColumns(trip.start, trip.end);
+        }
+    }
+}
+
+let currentTripId = null;
+/**
+ * Calculates the days between two dates and generates the columns
+ */
+function generateTimelineColumns(startStr, endStr) {
+    const container = document.getElementById('timelineContainer');
+    container.innerHTML = ''; // Clear existing days
+
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    
+    //if end is before start, just show 1 day just to be safe lah
+    let tempDate = new Date(start);
+    
+    while (tempDate <= end) {
+        const dateLabel = tempDate.toLocaleDateString('en-MY', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short' 
+        });
+
+        const dayId = tempDate.toISOString().split('T')[0]; // YYYY-MM-DD for ID
+
+        container.innerHTML += `
+            <div class="kanban-column" 
+                 ondragover="allowDrop(event)" 
+                 ondrop="handleDrop(event, '${dayId}')">
+                <div class="column-header">
+                    <i class="bi bi-calendar-event"></i> ${dateLabel}
+                </div>
+                <div class="column-body" id="col-${dayId}">
+                    </div>
+            </div>
+        `;
+
+        tempDate.setDate(tempDate.getDate() + 1); // Move to next day
+    }
+}

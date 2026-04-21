@@ -101,18 +101,61 @@
   <div class="dash-main">
     <div class="toast-wrap" id="toastWrap"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-      <div>
-        <h4 class="section-title mb-0">My Green Itineraries</h4>
-        <p class="section-sub">Plan, edit and manage your eco travel plans</p>
+    <div id="listView">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+          <h4 class="section-title mb-0">My Green Itineraries</h4>
+          <p class="section-sub">Plan, edit and manage your eco travel plans</p>
+        </div>
+        <button class="btn-eco" onclick="openModal('createItinModal')">
+          <i class="bi bi-plus-circle"></i> New Itinerary
+        </button>
       </div>
-      <button class="btn-eco" onclick="openModal('createItinModal')">
-        <i class="bi bi-plus-circle"></i> New Itinerary
-      </button>
+      <!-- Itinerary list (populated by planner.js) -->
+      <div id="itineraryList"></div>
     </div>
-    <!-- Itinerary list (populated by planner.js) -->
-    <div id="itineraryList"></div>
+    
+    <div id="boardView" style="display: none;">
 
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-outline-secondary btn-sm" onclick="switchView('list')">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+
+          <h4 id="activeTripTitle" class="mb-0 fw-bold">Trip Name</h4>
+        </div>
+        <button class="btn-eco btn-sm" onclick="openModal('addActivityModal')">
+          <i class="bi bi-plus"></i> Add Activity
+        </button>
+      </div>
+
+      <div class="kanban-arena d-flex gap-4 overflow-x-auto pb-4 mt-4" style="min-height: 65vh; align-items: flex-start">
+        <div class="kanban-column bg-light rounded-3 p-3" style="min-width: 320px;" 
+           ondragover="allowDrop(event)" 
+           ondrop="handleDrop(event, 'ideaBank')">
+        
+          <h6 class="text-muted mb-3"><i class="bi bi-lightbulb"></i> Idea Bank</h6>
+          
+          <div id="ideaBankContainer" class="d-flex flex-column gap-2 min-vh-25">
+            
+            <div class="card border-0 shadow-sm p-2 cursor-grab" 
+                draggable="true" 
+                ondragstart="handleDragStart(event, 'act_1', 'ideaBank')" 
+                id="card_act_1">
+              <div class="d-flex justify-content-between">
+                <strong style="font-size: 0.9rem;">Mangrove Kayaking</strong>
+                <span class="badge bg-success" title="Low Carbon"><i class="bi bi-leaf"></i></span>
+              </div>
+              <small class="text-muted mt-1">2 Hours • Nature</small>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="timelineContainer" class="d-flex gap-4 h-100">
+          </div>
+    </div>
   </div><!-- /dash-main -->
 </div><!-- /dash-layout -->
 
