@@ -10,17 +10,17 @@ const ITINERARY_SAMPLE = [
   {
     id: 1, name: 'Langkawi Green Escape', city: 'Langkawi', style: 'Mid-range',
     start: '2025-07-15', end: '2025-07-20',
+    ideaBank: [
+      { time: 'Flexible', icon: '🛶', name: 'Mangrove Kayaking', sub: 'Nature' },
+      { time: 'Flexible', icon: '🥗', name: 'Vegan Cafe', sub: 'Food' }
+    ],
     days: [
-      { date: 'Jul 15', stops: [
-        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort',  sub: 'Sustainable beachfront hotel' },
-        { time: '14:00', icon: '🚲', name: 'Mangrove Cycling Tour',        sub: '3-hour eco cycling route' },
-        { time: '19:00', icon: '🍃', name: 'Dinner at Green Palm Cafe',    sub: 'Farm-to-table cuisine' },
+      { date: '2025-07-15', stops: [
+        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort', sub: 'Sustainable beachfront hotel' }
       ]},
-      { date: 'Jul 16', stops: [
-        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour',          sub: 'Morning paddle through wetlands' },
-        { time: '13:00', icon: '🌿', name: 'Langkawi Geopark Visit',       sub: 'UNESCO heritage site' },
-        { time: '18:00', icon: '🌅', name: 'Sunset Watch at Tanjung Rhu',  sub: 'Low-impact eco trail' },
-      ]},
+      { date: '2025-07-16', stops: [
+        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour', sub: 'Morning paddle through wetlands' }
+      ]}
     ]
   }
 ];
@@ -137,11 +137,15 @@ function switchView(view, tripId = null) {
         listView.style.display = 'none';
         boardView.style.display = 'block';
         
+        // Sync current trip ID to board view
+        currentTripId = tripId;
+
         // Find the trip data
         const trip = itineraries.find(t => t.id == tripId);
         if (trip) {
             document.getElementById('activeTripTitle').innerText = trip.name;
             generateTimelineColumns(trip.start, trip.end);
+            renderBoardItems(trip); // Put real data in column based on current trip
         }
     }
 }
@@ -182,5 +186,92 @@ function generateTimelineColumns(startStr, endStr) {
         `;
 
         tempDate.setDate(tempDate.getDate() + 1); // Move to next day
+    }
+}
+
+function renderBoardItems(trip) {
+    // clear all columns
+    document.querySelectorAll('.column-body').forEach(col => col.innerHTML = '');
+    
+    // Clear the Idea Bank column
+    const ideaBankContainer = document.getElementById('ideaBankContainer');
+    if (ideaBankContainer) ideaBankContainer.innerHTML = '';
+
+    // Render items inside the timeline days columns
+    trip.days.forEach(day => {
+        const col = document.getElementById(`col-${day.date}`);
+        if (col) {
+            col.innerHTML = day.stops.map((stop, idx) => createCardHTML(stop, idx, day.date)).join('');
+        }
+    });
+
+    // render items inside the Idea Bank
+    if (trip.ideaBank && ideaBankContainer) {
+        ideaBankContainer.innerHTML = trip.ideaBank.map((stop, idx) => createCardHTML(stop, idx, 'ideaBank')).join('');
+    }
+}
+
+function createCardHTML(stop, idx, sourceLocation) {
+    return `
+        <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm"
+             draggable="true" style="cursor: grab;"
+             ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')">
+            <div class="d-flex gap-2">
+                <span>${stop.icon}</span>
+                <div>
+                    <div class="fw-bold" style="font-size:0.85rem;">${stop.name}</div>
+                    <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+let draggedItemIndex = null;
+let sourceDayDate = null;
+
+function handleDragStart(event, index, date) {
+  draggedItemIndex = index;
+  sourceDayDate = date;
+  event.dataTransfer.setData('text/plain', index);
+}
+
+function allowDrop(event) {
+  event.preventDefault();
+}
+
+function handleDrop(event, targetLocation) {
+    event.preventDefault();
+
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // Gets the correct array whether we drop in the Idea Bank or a Timeline Day
+    function getTargetArray(locationId) {
+        if (locationId === 'ideaBank') {
+            if (!trip.ideaBank) trip.ideaBank = []; // Safety check
+            return trip.ideaBank;
+        } else {
+            let day = trip.days.find(d => d.date === locationId);
+            if (!day) {
+                day = { date: locationId, stops: [] };
+                trip.days.push(day);
+            }
+            return day.stops;
+        }
+    }
+
+    //identify two arrays we are moving to and fro
+    const sourceArray = getTargetArray(sourceDayDate);
+    const targetArray = getTargetArray(targetLocation);
+
+    //removes item from old array, push to new array
+    if (sourceArray && sourceArray[draggedItemIndex]) {
+        const [movedItem] = sourceArray.splice(draggedItemIndex, 1);
+        targetArray.push(movedItem);
+        
+        //Redraw the board to reflect the new data structure
+        renderBoardItems(trip);
+        showToast("Activity moved!");
     }
 }
