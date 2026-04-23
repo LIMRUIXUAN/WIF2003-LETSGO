@@ -62,17 +62,27 @@
           <!-- Input panel -->
           <div class="col-lg-7">
             <div class="calc-wrap">
-              <div class="mb-3">
+              <div class="mb-3 position-relative">
                 <label class="form-label">From (Origin)</label>
-                <input class="form-control-eco" placeholder="e.g. Kuala Lumpur" id="carbonFrom" value="Kuala Lumpur">
+                <input class="form-control-eco" placeholder="e.g. Kuala Lumpur" id="carbonFrom" autocomplete="off">
+                <div class="suggestion-dropdown" id="suggestFrom" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100; background:#fff; border:1px solid #e8f0eb; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.12); overflow:hidden;"></div>
               </div>
-              <div class="mb-3">
+              
+              <div class="mb-3 position-relative">
                 <label class="form-label">To (Destination)</label>
-                <input class="form-control-eco" placeholder="e.g. Langkawi" id="carbonTo" value="Langkawi">
+                <input class="form-control-eco" placeholder="e.g. Langkawi" id="carbonTo" autocomplete="off">
+                <div class="suggestion-dropdown" id="suggestTo" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100; background:#fff; border:1px solid #e8f0eb; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.12); overflow:hidden;"></div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Distance (km)</label>
-                <input type="number" class="form-control-eco" id="carbonDist" value="480" oninput="calcCarbon()">
+
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Distance (km)</label>
+                  <input type="number" class="form-control-eco" id="carbonDist" value="0" readonly style="background:#f0f7f4;">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Travelers 👥</label>
+                  <input type="number" class="form-control-eco" id="carbonPax" value="1" min="1" max="10" oninput="calcCarbon()">
+                </div>
               </div>
 
               <label class="form-label">Select Transport Mode</label>
@@ -95,14 +105,46 @@
 
           <!-- Results panel -->
           <div class="col-lg-5">
-            <div class="emission-result mb-3">
-              <div style="font-size:.85rem; opacity:.8; margin-bottom:.5rem;">Your estimated emissions</div>
-              <div class="emission-num" id="carbonTotal">122</div>
+
+            <style>
+              .info-tooltip { position: relative; display: inline-block; cursor: help; }
+              .info-tooltip .tooltip-text {
+                visibility: hidden; width: 280px; background-color: #1a2e1e; color: #fff; text-align: left;
+                border-radius: 12px; padding: 14px; position: absolute; z-index: 100;
+                bottom: 150%; left: 50%; transform: translateX(-50%); font-size: 0.8rem; line-height: 1.5;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+                font-weight: 400; font-family: var(--font-body); pointer-events: none;
+              }
+              .info-tooltip:hover .tooltip-text { visibility: visible; opacity: 1; bottom: 130%; }
+              .info-tooltip .tooltip-text::after {
+                content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px;
+                border-width: 6px; border-style: solid; border-color: #1a2e1e transparent transparent transparent;
+              }
+            </style>
+
+            <<div class="emission-result mb-3">
+              <div style="font-size:.85rem; opacity:.8; margin-bottom:.5rem; display:flex; justify-content:center; align-items:center; gap:8px;">
+                Your estimated emissions
+                
+                <div class="info-tooltip">
+                  <i class="bi bi-question-circle" style="opacity: 0.9;"></i>
+                  <div class="tooltip-text">
+                    <strong style="color:var(--eco-leaf); font-size: 0.85rem;">Calculation Methodology</strong><br>
+                    <div style="margin-top:6px; margin-bottom:8px;">
+                      <em>Formula:</em> Activity Data (Distance/Nights) × Emission Factor
+                    </div>
+                    <em>Standards:</em> Calculations align with official global methodologies provided by <strong>UK DEFRA</strong>, <strong>US EPA</strong>, and <strong>ICAO</strong>.
+                  </div>
+                </div>
+                
+              </div>
+              <div class="emission-num" id="carbonTotal">0</div>
               <div class="emission-unit">kg CO₂ equivalent</div>
               <div style="margin-top:1rem; font-size:.82rem; opacity:.75;">
-                ≈ <span id="treesCount">6</span> trees to offset for 1 year
+                ≈ <span id="treesCount">0</span> trees to offset for 1 year
               </div>
             </div>
+
             <div style="background:#fff; border-radius:16px; padding:1.2rem; border:1px solid #e8f0eb; margin-bottom:1rem;">
               <div style="font-weight:600; margin-bottom:1rem; font-size:.9rem;">Transport Comparison</div>
               <div id="comparisonBars"></div>
