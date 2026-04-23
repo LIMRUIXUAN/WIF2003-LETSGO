@@ -57,12 +57,17 @@
       <div id="tab-weather">
         <h4 class="section-title mb-0">Weather Forecast</h4>
         <p class="section-sub">Real-time conditions for your destination</p>
-        <div class="d-flex gap-3 mb-4 flex-wrap">
-          <div class="search-bar-wrap" style="max-width:380px;">
-            <i class="bi bi-geo-alt" style="color:#9ab3a0;"></i>
-            <input type="text" placeholder="Search city..." id="weatherCity" value="Kuala Lumpur">
-            <button class="btn-eco" style="padding:8px 16px; font-size:.85rem;" onclick="loadWeather()">Search</button>
+        <div class="mb-4">
+          <div class="d-flex gap-3 flex-wrap mb-2">
+            <div class="search-bar-wrap position-relative" style="max-width:380px; flex: 1;">
+              <i class="bi bi-geo-alt" style="color:#9ab3a0;"></i>
+              <input type="text" placeholder="Search city..." id="weatherCity" value="Kuala Lumpur" autocomplete="off">
+              <button class="btn-eco" style="padding:8px 16px; font-size:.85rem;" onclick="loadWeather()">Search</button>
+          
+              <div class="suggestion-dropdown" id="citySuggestions" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100; background:#fff; border:1px solid #e8f0eb; border-radius:14px; margin-top:4px; box-shadow:0 8px 30px rgba(0,0,0,0.12); overflow:hidden;"></div>
+            </div>
           </div>
+          <div id="recentSearches" class="d-flex flex-wrap gap-2 align-items-center"></div>
         </div>
         <div class="row g-3" id="weatherDisplay"></div>
       </div>
