@@ -6,64 +6,107 @@
 
 'use strict';
 
-function ecoColor(score) {
-  if (score >= 9) return '';
-  if (score >= 8) return 'medium';
-  return 'low';
-}
-
-function renderListings(catOrList) {
-  const grid = document.getElementById('listingsGrid');
-  if (!grid) return;
-
-  let list;
-  if (Array.isArray(catOrList)) {
-    list = catOrList;
-  } else {
-    const cat = catOrList;
-    list = cat === 'all'  ? LISTINGS :
-           cat === 'high' ? LISTINGS.filter(l => l.eco >= 9) :
-                            LISTINGS.filter(l => l.cat === cat);
-  }
-
-  if (!list.length) {
-    grid.innerHTML = '<div class="col-12 text-center py-5" style="color:#9ab3a0;">No results found.</div>';
+// ── TYPE-AHEAD SEARCH ──
+function handleSearchInput(el) {
+  const query = el.value.toLowerCase();
+  const dropdown = document.getElementById('searchSuggest');
+  
+  if (!query) {
+    dropdown.style.display = 'none';
     return;
   }
+  
+  // Get matching cities and keywords
+  const options = new Set();
+  LISTINGS.forEach(item => {
+    if (item.location.toLowerCase().includes(query)) options.add(item.location);
+    if (item.name.toLowerCase().includes(query)) options.add(item.name);
+    if (item.cat.toLowerCase().includes(query)) options.add(item.cat);
+  });
+  
+  const html = Array.from(options).slice(0, 5).map(opt => 
+    `<div class="suggestion-item" onclick="selectSuggestion('${opt}')">${opt}</div>`
+  ).join('');
+  
+  document.getElementById('searchSuggest').innerHTML = html;
+  dropdown.style.display = html ? 'block' : 'none';
+}
 
-  grid.innerHTML = list.map(l => `
+function selectSuggestion(value) {
+  document.getElementById('exploreSearch').value = value;
+  document.getElementById('searchSuggest').style.display = 'none';
+  filterListings();
+}
+
+// ── FILTER & SEARCH ──
+function filterListings() {
+  const search = document.getElementById('exploreSearch').value.toLowerCase();
+  const budget = document.querySelector('[data-budget]')?.getAttribute('data-budget') || '';
+  const category = document.querySelector('.filter-chip.active')?.getAttribute('data-cat') || 'all';
+  
+  let results = LISTINGS.filter(item => {
+    // Search filter
+    if (search && !item.name.toLowerCase().includes(search) && 
+        !item.location.toLowerCase().includes(search)) return false;
+    
+    // Category filter
+    if (category !== 'all') {
+      if (category === 'high' && item.eco < 9) return false;
+      if (category !== 'high' && item.cat !== category) return false;
+    }
+    
+    return true;
+  });
+  
+  renderListings(results);
+}
+
+// ── RENDER FLIP CARDS ──
+function renderListings(list = LISTINGS) {
+  const grid = document.getElementById('listingsGrid');
+  
+  if (!list.length) {
+    grid.innerHTML = '<div class="col-12 text-center py-5" style="color:#9ab3a0;">No results found</div>';
+    return;
+  }
+  
+  grid.innerHTML = list.map(item => `
     <div class="col-sm-6 col-lg-4">
-      <div class="flip-card" onclick="this.classList.toggle('is-flipped')">
+      <div class="flip-card" onclick="toggleFlip(this)">
         <div class="flip-card-inner">
+          <!-- FRONT -->
           <div class="flip-card-front">
-            <div class="listing-card" style="height:100%;">
+            <div class="listing-card">
               <div class="card-img">
-                <span style="font-size:3.5rem;">${l.icon}</span>
-                <button class="fav-btn ${favorites.has(l.id) ? 'saved' : ''}"
-                        onclick="toggleFav(event, ${l.id})">
-                  <i class="bi bi-heart${favorites.has(l.id) ? '-fill' : ''}"></i>
+                <span style="font-size:3.5rem;">${item.icon}</span>
+                <button class="fav-btn ${favorites.has(item.id) ? 'saved' : ''}" 
+                        onclick="toggleFav(event, ${item.id}, '${item.name}')">
+                  <i class="bi bi-heart${favorites.has(item.id) ? '-fill' : ''}"></i>
                 </button>
               </div>
               <div class="card-body">
-                <div class="card-title">${l.name}</div>
-                <div class="card-location"><i class="bi bi-geo-alt"></i> ${l.location}</div>
-                <div class="d-flex gap-2 mt-2">
-                  <span class="eco-score ${ecoColor(l.eco)}"><i class="bi bi-leaf"></i> ${l.eco}/10</span>
-                  <span class="price-tag">${l.price}</span>
+                <h6 class="card-title">${item.name}</h6>
+                <p class="card-location"><i class="bi bi-geo-alt"></i> ${item.location}</p>
+                <div class="d-flex gap-2">
+                  <span class="eco-badge" style="background:${item.eco >= 9 ? '#27ae60' : item.eco >= 8 ? '#f39c12' : '#e74c3c'};">
+                    🌿 ${item.eco}/10
+                  </span>
+                  <span class="price-badge">${item.price}</span>
                 </div>
-                <div class="co2-badge mt-2">${l.co2}</div>
+                <div style="margin-top:0.5rem; font-size:0.8rem; color:#666;">
+                  ${item.co2}
+                </div>
               </div>
             </div>
           </div>
+          
+          <!-- BACK -->
           <div class="flip-card-back">
-            <i class="bi bi-info-circle-fill mb-3" style="font-size:2rem; color:var(--eco-leaf);"></i>
-            <h5>${l.name}</h5>
-            <p style="font-size:.85rem;">${l.desc}</p>
-            <div style="font-size:.82rem; margin-bottom:1rem;">
-              ⭐ ${l.rating} · ${l.co2}
-            </div>
-            <button class="btn-eco" onclick="event.stopPropagation(); addToItin(${l.id})">
-              <i class="bi bi-plus"></i> Add to Itinerary
+            <h5>${item.name}</h5>
+            <p style="font-size:0.85rem; color:#555;">${item.desc}</p>
+            <p style="font-size:0.8rem; margin:0.5rem 0;">⭐ ${item.rating}/5 · ${item.co2}</p>
+            <button class="btn-eco" onclick="event.stopPropagation(); addToTrip(${item.id})">
+              <i class="bi bi-plus"></i> Add to Trip
             </button>
           </div>
         </div>
@@ -72,63 +115,70 @@ function renderListings(catOrList) {
   `).join('');
 }
 
-function filterCat(btn, cat) {
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
-  renderListings(cat);
+// ── FLIP CARD TOGGLE ──
+function toggleFlip(card) {
+  card.classList.toggle('is-flipped');
 }
 
-function toggleFav(e, id) {
+// ── FAVORITES ──
+function toggleFav(e, id, name) {
   e.stopPropagation();
-  if (favorites.has(id)) {
-    favorites.delete(id);
-    showToast('Removed from favorites', 'info');
-  } else {
-    favorites.add(id);
-    showToast('Saved to favorites 💚');
-  }
-  // TODO: POST /api/favorites { destinationId: id }
-  const activeCat = document.querySelector('.filter-chip.active')
-                             ?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'all';
-  renderListings(activeCat);
-}
-
-function addToItin(id) {
-  const l = LISTINGS.find(x => x.id === id);
-  showToast(`Added "${l.name}" to your itinerary 📍`);
-  // TODO: POST /api/trips/items { destinationId: id }
-}
-
-function onSearchInput(inp) {
-  document.getElementById('searchSuggest').style.display = inp.value.length > 0 ? 'block' : 'none';
-}
-
-function selectCity(city) {
-  document.getElementById('exploreSearch').value         = city;
-  document.getElementById('searchSuggest').style.display = 'none';
-  showToast(`Showing eco spots in ${city} 🗺`);
-  // TODO: filter listings by city
-}
-
-/* Immediately load all listings when the page opens */
-document.addEventListener('DOMContentLoaded', () => {
-  renderListings('all');
-});
-
-function toggleFav(e, id) {
-  e.stopPropagation();
+  const btn = e.currentTarget;
   
   if (favorites.has(id)) {
     favorites.delete(id);
+    btn.classList.remove('saved');
+    btn.innerHTML = '<i class="bi bi-heart"></i>';
     showToast('Removed from favorites', 'info');
   } else {
     favorites.add(id);
-    showToast('Saved to favorites 💚');
+    btn.classList.add('saved');
+    btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+    showToast(`${name} bookmarked! 💚`);
+    
+    // Save to backend/localStorage
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    if (user.id) {
+      fetch(`/api/favorites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, destinationId: id })
+      }).catch(err => console.log('Offline: saved locally'));
+    }
   }
-
-  // ── THE FIX: Save the updated list to localStorage ──
-  localStorage.setItem('ecoFavorites', JSON.stringify(Array.from(favorites)));
-
-  const activeCat = document.querySelector('.filter-chip.active')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'all';
-  renderListings(activeCat);
 }
+
+// ── CATEGORY FILTER ──
+function filterCat(btn, cat) {
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.setAttribute('data-cat', cat);
+  filterListings();
+}
+
+// ── ADD TO TRIP ──
+function addToTrip(id) {
+  const item = LISTINGS.find(l => l.id === id);
+  itineraries.push(item);
+  showToast(`Added to your trip! 📍`);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  renderListings();
+  
+  // Load favorites from API
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  if (user.id) {
+    fetch(`/api/favorites?userId=${user.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.favoriteIds) {
+          data.favoriteIds.forEach(id => favorites.add(id));
+          renderListings();
+        }
+      })
+      .catch(() => console.log('Using local favorites'));
+  }
+});
+

@@ -1,6 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const tripRoutes = require('./routes/trips');
+const destinationRoutes = require('./routes/destinations');
+const favoritesRoutes = require('./routes/favorites');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +20,8 @@ mongoose.connect(process.env.MONGO_URL, {
 
 // API Routes
 app.use('/api', tripRoutes);
+app.use('/api/destinations', destinationRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // Serve all static files from public/
 app.use(express.static('public'));
