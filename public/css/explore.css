@@ -173,8 +173,7 @@
 }
 
 .fav-btn.saved {
-  background: #e74c3c;
-  color: white;
+  /* Keep background white and heart red - visual cue is the filled heart icon */
 }
 
 .card-body {
