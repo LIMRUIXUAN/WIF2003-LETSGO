@@ -163,9 +163,101 @@ function addToTrip(id) {
   showToast(`Added to your trip! 📍`);
 }
 
+// ── FILTER MODAL ──
+function openFilterModal() {
+  const modal = document.getElementById('filterModal');
+  if (modal) {
+    modal.style.display = 'block';
+  }
+}
+
+function closeFilterModal() {
+  const modal = document.getElementById('filterModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function updateAdvancedFilters() {
+  // Update eco slider value display
+  const slider = document.getElementById('ecoSlider');
+  const valueDisplay = document.getElementById('ecoSliderValue');
+  if (slider && valueDisplay) {
+    valueDisplay.textContent = slider.value;
+  }
+}
+
+function applyFilters() {
+  const budgetMin = parseInt(document.getElementById('budgetMin')?.value) || 0;
+  const budgetMax = parseInt(document.getElementById('budgetMax')?.value) || Infinity;
+  const ecoMin = parseInt(document.getElementById('ecoSlider')?.value) || 0;
+  
+  const selectedCategories = Array.from(
+    document.querySelectorAll('.filter-checkboxes input[type="checkbox"]:checked')
+  ).map(cb => cb.value).filter(v => ['hotel', 'restaurant', 'transport', 'activity'].includes(v));
+  
+  const selectedCerts = Array.from(
+    document.querySelectorAll('.filter-checkboxes input[type="checkbox"]:checked')
+  ).map(cb => cb.value).filter(v => ['solar', 'organic', 'zerowaste', 'electric'].includes(v));
+  
+  const selectedCO2 = Array.from(
+    document.querySelectorAll('.filter-checkboxes input[type="checkbox"]:checked')
+  ).map(cb => cb.value).filter(v => ['highreduction', 'mediumreduction', 'zeroimpact'].includes(v));
+  
+  // Filter listings
+  let filtered = LISTINGS.filter(item => {
+    // Budget filter
+    const price = parseInt(item.price) || 0;
+    if (price < budgetMin || price > budgetMax) return false;
+    
+    // Eco rating filter
+    if (item.eco < ecoMin) return false;
+    
+    // Category filter
+    if (selectedCategories.length > 0 && !selectedCategories.includes(item.cat)) return false;
+    
+    return true;
+  });
+  
+  renderListings(filtered);
+  closeFilterModal();
+  showToast('Filters applied!');
+}
+
+function clearAdvancedFilters() {
+  document.getElementById('budgetMin').value = '';
+  document.getElementById('budgetMax').value = '';
+  document.getElementById('ecoSlider').value = '0';
+  document.getElementById('ecoSliderValue').textContent = '0';
+  
+  // Uncheck all checkboxes
+  document.querySelectorAll('.filter-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+  
+  renderListings();
+  closeFilterModal();
+  showToast('Filters cleared');
+}
+
+function handleSearchKeydown(event) {
+  if (event.key === 'Enter') {
+    filterListings();
+    document.getElementById('searchSuggest').style.display = 'none';
+  }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   renderListings();
+  
+  // Close modal when clicking outside
+  const modal = document.getElementById('filterModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeFilterModal();
+      }
+    });
+  }
   
   // Load favorites from API
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
