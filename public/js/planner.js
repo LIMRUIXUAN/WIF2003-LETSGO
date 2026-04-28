@@ -11,15 +11,15 @@ const ITINERARY_SAMPLE = [
     id: 1, name: 'Langkawi Green Escape', city: 'Langkawi', style: 'Mid-range',
     start: '2025-07-15', end: '2025-07-20',
     ideaBank: [
-      { time: 'Flexible', icon: '🛶', name: 'Mangrove Kayaking', sub: 'Nature' },
-      { time: 'Flexible', icon: '🥗', name: 'Vegan Cafe', sub: 'Food' }
+      { time: 'Flexible', icon: '🛶', name: 'Mangrove Kayaking', sub: 'Nature', carbon: 2}, //carbon is integer value in kg
+      { time: 'Flexible', icon: '🥗', name: 'Vegan Cafe', sub: 'Food', carbon: 1 }
     ],
     days: [
       { date: '2025-07-15', stops: [
-        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort', sub: 'Sustainable beachfront hotel' }
+        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort', sub: 'Sustainable beachfront hotel', carbon: 5 }
       ]},
       { date: '2025-07-16', stops: [
-        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour', sub: 'Morning paddle through wetlands' }
+        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour', sub: 'Morning paddle through wetlands', carbon: 3 }
       ]}
     ]
   }
@@ -114,8 +114,8 @@ function createItinerary() {
   itineraries.unshift({
     id: Date.now(), name, city, start, end,
     days: [{ date: start, stops: [
-      { time: '09:00', icon: '✈️', name: 'Arrival & Check-in',  sub: 'Eco-certified accommodation' },
-      { time: '14:00', icon: '🌿', name: 'Local Nature Walk',    sub: 'Low-impact guided tour' },
+      { time: '09:00', icon: '✈️', name: 'Arrival & Check-in',  sub: 'Eco-certified accommodation', carbon: 5 },
+      { time: '14:00', icon: '🌿', name: 'Local Nature Walk',    sub: 'Low-impact guided tour', carbon: 2 },
     ]}]
   });
 
@@ -197,9 +197,13 @@ function generateTimelineColumns(startStr, endStr) {
                 <div class="column-header">
                     <i class="bi bi-calendar-event"></i> ${dateLabel}
                 </div>
-                <div class="column-body" id="col-${dayId}">
-                    </div>
-            </div>
+                <div class="column-body" id="col-${dayId}"></div>
+                
+                <div class="p-3 border-top mt-auto d-flex justify-content-between align-items-center bg-white rounded-bottom">
+                    <small class="text-muted fw-bold">Daily Footprint:</small>
+                    <span class="badge bg-success" id="total-carbon-${dayId}" style="font-size:0.85rem;">0kg CO₂</span>
+                </div>
+              </div>
         `;
 
         tempDate.setDate(tempDate.getDate() + 1); // Move to next day
@@ -217,8 +221,17 @@ function renderBoardItems(trip) {
     // Render items inside the timeline days columns
     trip.days.forEach(day => {
         const col = document.getElementById(`col-${day.date}`);
+        const totalDisplay = document.getElementById(`total-carbon-${day.date}`);
         if (col) {
             col.innerHTML = day.stops.map((stop, idx) => createCardHTML(stop, idx, day.date)).join('');
+        
+            //CALCULATION for carbon
+              const dailyTotal = day.stops.reduce((sum, stop) => sum + (stop.carbon || 0), 0);
+              if (totalDisplay) {
+                  totalDisplay.innerText = `${dailyTotal}kg CO₂`;
+                  // Change color of total if it gets too high
+                  totalDisplay.className = dailyTotal > 50 ? 'fw-bold text-danger' : 'fw-bold text-success';
+              }
         }
     });
 
@@ -229,6 +242,12 @@ function renderBoardItems(trip) {
 }
 
 function createCardHTML(stop, idx, sourceLocation) {
+    // Determine color based on carbon weight
+    const carbon = stop.carbon || 0;
+    let badgeClass = 'bg-success'; // Low
+    if (carbon > 10) badgeClass = 'bg-warning text-dark'; // Medium
+    if (carbon > 20) badgeClass = 'bg-danger'; // High
+
     return `
         <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm position-relative"
              draggable="true" style="cursor: grab;"
@@ -238,12 +257,15 @@ function createCardHTML(stop, idx, sourceLocation) {
                     class="btn-close position-absolute top-0 end-0 m-1" 
                     style="font-size: 0.5rem;"></button>
 
-            <div class="d-flex gap-2">
-                <span>${stop.icon}</span>
-                <div>
-                    <div class="fw-bold" style="font-size:0.85rem;">${stop.name}</div>
-                    <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex gap-2">
+                    <span>${stop.icon}</span>
+                    <div>
+                        <div class="fw-bold" style="font-size:0.85rem;">${stop.name}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+                    </div>
                 </div>
+                <span class="badge ${badgeClass}" style="font-size: 0.6rem;">${carbon}kg</span>
             </div>
         </div>
     `;
@@ -331,9 +353,10 @@ function saveNewActivity() {
     const icon = document.getElementById('actIcon').value || '📍';
     const sub = document.getElementById('actSub').value || 'Custom';
     const targetId = document.getElementById('actTargetDay').value;
+    const carbon = parseInt(document.getElementById('actCarbon').value) || 0;
 
     // Create the new Stop Object
-    const newStop = { time, icon, name, sub };
+    const newStop = { time, icon, name, sub, carbon };
 
     // Push it to the correct Array
     if (targetId === 'ideaBank') {
