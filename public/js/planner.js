@@ -213,9 +213,14 @@ function renderBoardItems(trip) {
 
 function createCardHTML(stop, idx, sourceLocation) {
     return `
-        <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm"
+        <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm position-relative"
              draggable="true" style="cursor: grab;"
              ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')">
+
+            <button onclick="deleteActivity(${idx}, '${sourceLocation}')" 
+                    class="btn-close position-absolute top-0 end-0 m-1" 
+                    style="font-size: 0.5rem;"></button>
+
             <div class="d-flex gap-2">
                 <span>${stop.icon}</span>
                 <div>
@@ -330,4 +335,20 @@ function saveNewActivity() {
     closeModal('addActivityModal');
     renderBoardItems(trip);
     showToast("Activity added! ✨");
+}
+
+function deleteActivity(index, sourceLocation) {
+  const trip = itineraries.find(t => t.id == currentTripId);
+  if (!trip) return;
+
+  if (sourceLocation === 'ideaBank') {
+    trip.ideaBank.splice(index, 1);
+  } else {
+    const day = trip.days.find(d => d.date === sourceLocation);
+    if (day) {
+      day.stops.splice(index, 1);
+    }
+  }
+  renderBoardItems(trip);
+  showToast("Activity deleted!");
 }
