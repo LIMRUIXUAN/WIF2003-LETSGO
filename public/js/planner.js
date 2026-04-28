@@ -25,6 +25,21 @@ const ITINERARY_SAMPLE = [
   }
 ];
 
+// utilize local storage
+function saveState() {
+  localStorage.setItem('ecoPlannerData', JSON.stringify(itineraries));
+}
+
+function loadState() {
+  const savedData = localStorage.getItem('ecoPlannerData');
+  if (savedData) {
+    itineraries = JSON.parse(savedData);
+  }
+  else {
+    itineraries = JSON.parse(JSON.stringify(ITINERARY_SAMPLE)); // Deep copy of sample data
+  }
+}
+
 function renderItineraries() {
   const list = document.getElementById('itineraryList');
   if (!list) return;
@@ -106,19 +121,21 @@ function createItinerary() {
 
   closeModal('createItinModal');
   showToast(`Itinerary "${name}" created! 🗺`);
+  saveState();
   renderItineraries();
 }
 
 function removeItin(idx) {
   // TODO: replace with real API call — DELETE /api/trips/:id
   itineraries.splice(idx, 1);
+  saveState();
   renderItineraries();
   showToast('Itinerary removed');
 }
 
 /* Load sample data and render on page load */
 document.addEventListener('DOMContentLoaded', () => {
-  itineraries = [...ITINERARY_SAMPLE];
+  loadState(); //load from disk first, if exist. Otherwise load sample data
   renderItineraries();
 });
 
@@ -275,6 +292,7 @@ function handleDrop(event, targetLocation) {
         const [movedItem] = sourceArray.splice(draggedItemIndex, 1);
         targetArray.push(movedItem);
         
+        saveState();
         //Redraw the board to reflect the new data structure
         renderBoardItems(trip);
         showToast("Activity moved!");
@@ -334,6 +352,7 @@ function saveNewActivity() {
     // refresh UI
     closeModal('addActivityModal');
     renderBoardItems(trip);
+    saveState();
     showToast("Activity added! ✨");
 }
 
@@ -350,5 +369,6 @@ function deleteActivity(index, sourceLocation) {
     }
   }
   renderBoardItems(trip);
+  saveState();
   showToast("Activity deleted!");
 }
