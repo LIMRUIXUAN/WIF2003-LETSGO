@@ -2,3 +2,39 @@
    planner.css  —  Owner: Julius Lim Jun Herng
    Calendar drag-and-drop & itinerary timeline
    ═══════════════════════════════════════════════════════════ */
+
+   .kanban-arena {
+  display: flex;
+  flex-wrap: nowrap; /* prevents wrapping */
+  overflow-x: auto;  /*Enables horizontal scrolling */
+  gap: 1.5rem;
+  padding: 10px 5px;
+  /* Custom scrollbar for extra sexiness :) */
+  scrollbar-width: thin;
+  scrollbar-color: #9ab3a0 #f0f0f0;
+}
+
+/* Day Columns kanban-styled*/
+.kanban-column {
+  flex: 0 0 320px; /* Does not shrink, stays exactly 320px wide */
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.column-header {
+  padding: 1rem;
+  font-weight: 700;
+  border-bottom: 2px solid #eef2f3;
+  color: #2c3e50;
+}
+
+.column-body {
+  padding: 1rem;
+  flex-grow: 1;
+  overflow-y: auto; /* within the column can scroll vertically */
+  min-height: 150px; /* minimum height in case no activities */
+}
