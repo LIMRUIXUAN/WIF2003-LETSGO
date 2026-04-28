@@ -257,15 +257,22 @@ function createCardHTML(stop, idx, sourceLocation) {
                     class="btn-close position-absolute top-0 end-0 m-1" 
                     style="font-size: 0.5rem;"></button>
 
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="d-flex gap-2">
-                    <span>${stop.icon}</span>
-                    <div>
-                        <div class="fw-bold" style="font-size:0.85rem;">${stop.name}</div>
-                        <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+            <div class="d-flex gap-2 pe-3 w-100"> 
+                
+                <div style="font-size: 1.2rem; min-width: 25px;">${stop.icon}</div>
+                
+                <div class="flex-grow-1" style="min-width: 0;"> 
+                    
+                    <div class="fw-bold text-wrap text-break mb-1" style="font-size:0.85rem; line-height: 1.2;">
+                        ${stop.name}
                     </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+                        <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${carbon}kg CO₂</span>
+                    </div>
+
                 </div>
-                <span class="badge ${badgeClass}" style="font-size: 0.6rem;">${carbon}kg</span>
             </div>
         </div>
     `;
