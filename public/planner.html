@@ -64,6 +64,47 @@
   </div>
 </div>
 
+<!-- Add Activity Modal -->
+<div id="addActivityModal" class="eco-modal-backdrop" style="display:none;">
+  <div class="eco-modal">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="section-title mb-0" style="font-size:1.2rem;">New Activity</h5>
+      <button onclick="closeModal('addActivityModal')" class="btn-close"></button>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Activity Name</label>
+      <input type="text" class="form-control-eco" id="actName" placeholder="e.g. Jungle Trekking">
+    </div>
+    
+    <div class="row g-3">
+      <div class="col-6">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-control-eco" id="actTime" value="09:00">
+      </div>
+      <div class="col-6">
+        <label class="form-label">Icon (Emoji)</label>
+        <input type="text" class="form-control-eco" id="actIcon" placeholder="🌳" value="🌳">
+      </div>
+    </div>
+    
+    <div class="form-group mt-3">
+      <label class="form-label">Category / Subtitle</label>
+      <input type="text" class="form-control-eco" id="actSub" placeholder="e.g. Guided Nature Walk">
+    </div>
+    
+    <div class="form-group mt-3">
+      <label class="form-label">Add to Location</label>
+      <select class="form-control-eco" id="actTargetDay">
+        </select>
+    </div>
+    
+    <button class="btn-eco w-100 mt-4" style="justify-content:center;" onclick="saveNewActivity()">
+      <i class="bi bi-plus-circle"></i> Save Activity
+    </button>
+  </div>
+</div>
+
 <!-- Top Navigation Bar -->
 <nav class="eco-nav d-flex align-items-center justify-content-between">
   <a href="index.html" class="brand"><span class="leaf">🌿</span> EcoPlanner</a>
@@ -125,7 +166,7 @@
 
           <h4 id="activeTripTitle" class="mb-0 fw-bold">Trip Name</h4>
         </div>
-        <button class="btn-eco btn-sm" onclick="openModal('addActivityModal')">
+        <button class="btn-eco btn-sm" onclick="openAddActivityModal()">
           <i class="bi bi-plus"></i> Add Activity
         </button>
       </div>

@@ -275,3 +275,59 @@ function handleDrop(event, targetLocation) {
         showToast("Activity moved!");
     }
 }
+
+function openAddActivityModal() {
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // populate location dropdown with timeline days
+    const select = document.getElementById('actTargetDay');
+    
+    // Always offer the Idea Bank as an option default
+    select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
+    
+    //loop through the trip days and add them as options
+    trip.days.forEach(day => {
+        select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
+    });
+
+    // Clear out any old text from the inputs
+    document.getElementById('actName').value = '';
+    document.getElementById('actSub').value = '';
+    
+    openModal('addActivityModal');
+}
+
+function saveNewActivity() {
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // Grab data from form
+    const name = document.getElementById('actName').value || 'New Activity';
+    const time = document.getElementById('actTime').value || 'Flexible';
+    const icon = document.getElementById('actIcon').value || '📍';
+    const sub = document.getElementById('actSub').value || 'Custom';
+    const targetId = document.getElementById('actTargetDay').value;
+
+    // Create the new Stop Object
+    const newStop = { time, icon, name, sub };
+
+    // Push it to the correct Array
+    if (targetId === 'ideaBank') {
+        if (!trip.ideaBank) trip.ideaBank = [];
+        trip.ideaBank.push(newStop);
+    } else {
+        let targetDay = trip.days.find(d => d.date === targetId);
+        // if day don't exist, create it
+        if (!targetDay) {
+            targetDay = { date: targetId, stops: [] };
+            trip.days.push(targetDay);
+        }
+        targetDay.stops.push(newStop);
+    }
+
+    // refresh UI
+    closeModal('addActivityModal');
+    renderBoardItems(trip);
+    showToast("Activity added! ✨");
+}
