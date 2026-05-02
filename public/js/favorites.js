@@ -51,9 +51,9 @@ async function renderFavs() {
                   <div class="card-body">
                     <div class="card-title">${l.name}</div>
                     <div class="card-location"><i class="bi bi-geo-alt"></i> ${l.location}</div>
-                    <a href="planner.html" class="btn-eco w-100 mt-2" style="font-size:.82rem; padding:8px; justify-content:center; text-decoration:none;">
-                      <i class="bi bi-plus"></i> Add to Itinerary
-                    </a>
+                    <button onclick="addToTripFromFav(${l.id})" class="btn-eco w-100 mt-2" style="font-size:.82rem; padding:8px; justify-content:center; border:none;">
+                      <i class="bi bi-plus"></i> Add to Trip
+                    </button>
                   </div>
                 </div>
               </div>
@@ -83,6 +83,31 @@ async function removeFav(e, id) {
     } catch (error) {
         console.error("Failed to remove from database:", error);
     }
+}
+
+// Add to Trip from Favorites
+function addToTripFromFav(id) {
+    // 1. Find the destination in the master list yeah I know this is inefficient but it's just a demo okay
+    const item = LISTINGS.find(l => l.id === id);
+    if (!item) return;
+
+    // 2. Grab our "Shopping Cart" of pending ideas
+    let savedIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
+
+    // 3. Pack the item into the cart
+    savedIdeas.push({
+        time: 'Flexible',
+        icon: item.icon,
+        name: item.name,
+        sub: item.cat,
+        carbon: parseInt(item.co2.replace(/\D/g,'')) || 5 
+    });
+
+    // 4. Save the cart back to the browser's memory
+    localStorage.setItem('ecoPendingIdeas', JSON.stringify(savedIdeas));
+
+    // 5. Instantly redirect to the Planner page so the Bridge can unpack it!
+    window.location.href = 'planner.html';
 }
 
 document.addEventListener('DOMContentLoaded', renderFavs);

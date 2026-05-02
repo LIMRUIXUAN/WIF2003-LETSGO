@@ -8,6 +8,9 @@
 
 let itineraries = [];
 let currentTripId = null;
+let isEditing = false;
+let editItemIndex = null;
+let editItemLocation = null;
 //below hardcoded sample lah, later we will fetch real itineraries from MongoDB based on logged in user
 const ITINERARY_SAMPLE = [
   {
@@ -215,9 +218,10 @@ function switchView(view, tripId = null) {
         // Find the trip data
         const trip = itineraries.find(t => t._id == tripId);
         if (trip) {
-            document.getElementById('activeTripTitle').innerText = trip.name;
-            generateTimelineColumns(trip.start, trip.end);
-            renderBoardItems(trip); // Put real data in column based on current trip
+          processPendingIdeas(trip); // Move any pending ideas into the idea bank before rendering
+          document.getElementById('activeTripTitle').innerText = trip.name;
+          generateTimelineColumns(trip.start, trip.end);
+          renderBoardItems(trip); // Put real data in column based on current trip
         }
     }
 }
@@ -301,11 +305,16 @@ function createCardHTML(stop, idx, sourceLocation) {
              draggable="true" style="cursor: grab;"
              ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')">
 
-            <button onclick="deleteActivity(${idx}, '${sourceLocation}')" 
-                    class="btn-close position-absolute top-0 end-0 m-1" 
-                    style="font-size: 0.5rem;"></button>
+            <div class="position-absolute top-0 end-0 m-1 d-flex gap-2">
+                <button onclick="editActivity(${idx}, '${sourceLocation}')" 
+                        class="btn btn-sm text-secondary p-0 border-0" style="font-size: 0.8rem; background: transparent;">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button onclick="deleteActivity(${idx}, '${sourceLocation}')" 
+                        class="btn-close" style="font-size: 0.5rem;"></button>
+            </div>
 
-            <div class="d-flex gap-2 pe-3 w-100"> 
+            <div class="d-flex gap-2 pe-4 w-100"> 
                 
                 <div style="font-size: 1.2rem; min-width: 25px;">${stop.icon}</div>
                 
@@ -388,24 +397,60 @@ function sortStopsByTime(stopsArray) {
 }
 
 function openAddActivityModal() {
+    isEditing = false; // Make sure we aren't editing when adding new!
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
 
     // populate location dropdown with timeline days
     const select = document.getElementById('actTargetDay');
-    
-    // Always offer the Idea Bank as an option default
     select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
-    
-    //loop through the trip days and add them as options
     trip.days.forEach(day => {
         select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
     });
 
-    // Clear out any old text from the inputs
+    // Clear out any old text from the inputs so it's a fresh blank form
     document.getElementById('actName').value = '';
     document.getElementById('actSub').value = '';
+    document.getElementById('actTime').value = '';
+    document.getElementById('actIcon').value = '📍';
+    document.getElementById('actCarbon').value = '0';
     
+    openModal('addActivityModal');
+}
+
+function editActivity(index, sourceLocation) {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!trip) return;
+
+    // 1. Find the specific activity data
+    let stop;
+    if (sourceLocation === 'ideaBank') {
+        stop = trip.ideaBank[index];
+    } else {
+        const day = trip.days.find(d => d.date === sourceLocation);
+        stop = day.stops[index];
+    }
+
+    // 2. Populate the destination dropdown
+    const select = document.getElementById('actTargetDay');
+    select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
+    trip.days.forEach(day => {
+        select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
+    });
+
+    // 3. Fill the form boxes with the old data!
+    document.getElementById('actName').value = stop.name;
+    document.getElementById('actTime').value = stop.time === 'Flexible' ? '' : stop.time; 
+    document.getElementById('actIcon').value = stop.icon;
+    document.getElementById('actSub').value = stop.sub;
+    document.getElementById('actCarbon').value = stop.carbon;
+    document.getElementById('actTargetDay').value = sourceLocation;
+
+    // 4. Turn ON Edit Mode so the Save button knows what to do
+    isEditing = true;
+    editItemIndex = index;
+    editItemLocation = sourceLocation;
+
     openModal('addActivityModal');
 }
 
@@ -423,6 +468,17 @@ function saveNewActivity() {
 
     // Create the new Stop Object
     const newStop = { time, icon, name, sub, carbon };
+
+    if (isEditing) {
+        if (editItemLocation === 'ideaBank') {
+            trip.ideaBank.splice(editItemIndex, 1);
+        } else {
+            const oldDay = trip.days.find(d => d.date === editItemLocation);
+            if (oldDay) oldDay.stops.splice(editItemIndex, 1);
+        }
+        // Turn edit mode off so we can add new activities later
+        isEditing = false; 
+    }
 
     // Push it to the correct Array
     if (targetId === 'ideaBank') {
@@ -460,6 +516,32 @@ function deleteActivity(index, sourceLocation) {
   renderBoardItems(trip);
   saveState();
   showToast("Activity deleted!");
+}
+
+function processPendingIdeas(trip) {
+    // 1. Open the browser's temporary "Shopping Cart"
+    const pendingIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
+
+    if (pendingIdeas.length > 0) {
+        // 2. Ensure the trip has an array ready to hold the ideas
+        if (!trip.ideaBank) trip.ideaBank = [];
+
+        // 3. Move everything from the cart into the trip's Idea Bank
+        pendingIdeas.forEach(idea => {
+            trip.ideaBank.push(idea);
+        });
+
+        // 4. Empty the local cart so we don't import them again later!
+        localStorage.removeItem('ecoPendingIdeas');
+
+        // 5. Fire off a save to MongoDB to make the new additions permanent
+        saveState();
+
+        // 6. Give the user a nice UI alert
+        if (typeof showToast === 'function') {
+            showToast(`Imported ${pendingIdeas.length} saved activities from Explore! 🌟`);
+        }
+    }
 }
 
 /* Load sample data and render on page load */

@@ -51,4 +51,38 @@ router.put('/:email/favorites', async (req, res) =>{
     }
 });
 
+router.put('/:email', async (req, res) => {
+    try {
+        const userEmail = req.params.email;
+
+        // Map the fields allowed to be updated from the frontend
+        const updateData = {
+            name: req.body.name,
+            city: req.body.city,
+            budget: req.body.budget,
+            avatar: req.body.avatar,
+            interests: req.body.interests,
+            notifTrip: req.body.notifTrip,
+            notifEco: req.body.notifEco
+        };
+
+        // Find the user and update, returning the new version
+        const updatedUser = await User.findOneAndUpdate(
+            { email: userEmail },
+            { $set: updateData },
+            { new: true } 
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, message: "User not found in database." });
+        }
+
+        res.json({ success: true, data: updatedUser });
+
+    } catch (error) {
+        console.error("Backend Profile Update Error:", error);
+        res.status(500).json({ success: false, message: "Server error while saving profile." });
+    }
+});
+
 module.exports = router;

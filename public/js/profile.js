@@ -19,23 +19,6 @@ const Store = {
   clear: () => sessionStorage.clear()
 };
  
-// Default demo user seeded if nothing in session
-function seedDemoUser() {
-  if (!Store.get('user')) {
-    Store.set('user', {
-      name:      'Ahmad Razif',
-      email:     'demo@ecoplanner.com',
-      password:  'password123',       // plain-text only for Phase 1 mock
-      budget:    'mid',
-      interests: ['🏞 Nature', '🚲 Cycling', '🍃 Vegan Food'],
-      joinedAt:  'Jan 2025',
-      trips:     0,
-      favorites: 0,
-      days:      0
-    });
-  }
-}
- 
 /* ══════════════════════════════════════════
    AVAILABLE INTERESTS
    ══════════════════════════════════════════ */
@@ -46,49 +29,81 @@ const ALL_INTERESTS = [
 ];
  
 let tempInterests = [];   // used by interest modal
- 
-/* ══════════════════════════════════════════
-   INIT
-   ══════════════════════════════════════════ */
+let currentUserData = {};
+
+async function loadProfile() {
+    // 1. Who is logged in?
+    const userEmail = localStorage.getItem('ecoUserEmail');
+    if (!userEmail) return;
+
+    try {
+        // 2. Ask MongoDB for the real profile
+        const response = await fetch(`/api/users/profile/${userEmail}`);
+        const data = await response.json();
+
+        if (data.success) {
+            currentUserData = data.data; // Save it globally for editing later
+            const allHints = ['hintName', 'hintEmail', 'hintCurrentPw', 'hintNewPw', 'hintConfirmPw'];
+            allHints.forEach(id => clearHint(id));
+            // 3. Draw the screen with the REAL data!
+            renderProfile(currentUserData);
+            renderInterestDisplay(currentUserData);
+        }
+    } catch (error) {
+        console.error("Failed to load profile from database:", error);
+    }
+}
+
+// ── INIT ──
 (function init() {
-  seedDemoUser();
-  renderProfile();
-  renderInterestDisplay();
+  // Fire off the database fetch!
+  loadProfile();
 
   // Make the avatar clickable
-  document.getElementById('profileAvatar').addEventListener('click', function() {
-    document.getElementById('avatarInput').click();
-  });
+  const avatarEl = document.getElementById('profileAvatar');
+  if(avatarEl) {
+      avatarEl.addEventListener('click', function() {
+        document.getElementById('avatarInput').click();
+      });
+  }
 
   // Listen for when a file is selected
-  document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload);
+  const inputEl = document.getElementById('avatarInput');
+  if(inputEl) {
+      inputEl.addEventListener('change', handleAvatarUpload);
+  }
 })();
+
  
-function renderProfile() {
-  const user = Store.get('user') || {};
+function renderProfile(user) {
+  if (!user) return; // Safety check
   const initials = getInitials(user.name || 'U');
  
   // Nav & sidebar avatar
   document.getElementById('navInitial').textContent = initials;
  
-  // Summary card avatar (use uploaded image if exists, else initials)
+  // Summary card avatar
   const avatarDiv = document.getElementById('profileAvatar');
-  if (user.avatar) {
-    avatarDiv.innerHTML = `<img src="${user.avatar}" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
+  if (user.avatar && user.avatar.trim() !== "") {
+    avatarDiv.innerHTML = `<img src="${user.avatar}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
+    avatarDiv.textContent = ""; // Clear initials if image exists
   } else {
+    avatarDiv.innerHTML = ""; 
     avatarDiv.textContent = initials;
   }
 
   // Summary card
   document.getElementById('profileName').textContent   = user.name  || '—';
   document.getElementById('profileEmail').textContent  = user.email || '—';
-  document.getElementById('memberSince').textContent   = 'Member since ' + (user.joinedAt || '—');
+  document.getElementById('memberSince').textContent   = 'Member since ' + (user.joinedAt || '2026');
   document.getElementById('tripCount').textContent     = (user.trips || 0) + ' trips completed';
  
   // Stats
-  document.getElementById('statFavs').textContent  = user.favorites || 0;
+  const favCount = user.favorites ? user.favorites.length : 0;
+  document.getElementById('statFavs').textContent  = favCount;
   document.getElementById('statTrips').textContent = user.trips     || 0;
   document.getElementById('statDays').textContent  = user.days      || 0;
+  document.getElementById('statCO2').textContent   = user.co2Saved  || 0;
  
   // Badge based on trips
   const trips = user.trips || 0;
@@ -107,33 +122,48 @@ function renderProfile() {
   const budgetSel = document.getElementById('editBudget');
   if (user.budget) budgetSel.value = user.budget;
 
-  // Add this where you update the stats
-  document.getElementById('statCO2').textContent = user.co2Saved || 0;
-  
-  // Add this where you pre-fill the edit form
-  document.getElementById('editCity').value = user.city || '';
-
-  // Add this to set the toggle switches
+  // Toggle switches
   const tripToggle = document.getElementById('notifTrip');
   const ecoToggle = document.getElementById('notifEco');
   if(tripToggle) tripToggle.checked = user.notifTrip !== false;
   if(ecoToggle) ecoToggle.checked = user.notifEco === true;
 }
  
-function renderInterestDisplay() {
-  const user = Store.get('user') || {};
+function renderInterestDisplay(user) {
+  if (!user) return;
   const interests = user.interests || [];
   const container = document.getElementById('interestDisplay');
+  
+  // What to show if they have no interests yet
+  if (interests.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; color: #6c757d; font-size: 0.85rem; text-align: center; border: 1px dashed #ddd;">
+          No travel interests added yet. <br>
+          <button class="btn btn-sm mt-2" style="background:#e8f5e9; color:#27ae60; border:none; font-weight: 600;" onclick="openInterestModal()">+ Add Your Favorites</button>
+        </div>`;
+      return;
+  }
+
+  // Draw the beautiful green pill-badges!
   container.innerHTML = interests.map(i =>
-    `<span class="pref-tag">${i} <span style="margin-left:.2rem;opacity:.5;font-size:.7rem;" onclick="removeInterest('${i}')">✕</span></span>`
+    `<span class="badge rounded-pill text-dark shadow-sm" style="background-color: #e8f5e9; border: 1px solid #c8e6c9; padding: 8px 12px; margin: 4px 4px 8px 0; font-weight: 500; font-size: 0.85rem;">
+        ${i} 
+        <i class="bi bi-x-circle-fill ms-2" style="color: #27ae60; opacity: 0.7; cursor: pointer; font-size: 0.9rem;" 
+           onclick="removeInterest('${i}')" 
+           onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7"></i>
+     </span>`
   ).join('') +
-  `<span class="pref-tag add-tag" onclick="openInterestModal()">+ Add</span>`;
+  `<span class="badge rounded-pill shadow-sm" onclick="openInterestModal()" 
+         style="background-color: #fff; border: 1px dashed #adb5bd; color: #6c757d; padding: 8px 12px; margin: 4px 0 8px 0; cursor: pointer; transition: all 0.2s;" 
+         onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#fff'">
+      <i class="bi bi-plus-lg"></i> Add
+   </span>`;
 }
 
 /* ══════════════════════════════════════════
    SAVE PROFILE
    ══════════════════════════════════════════ */
-function saveProfile() {
+async function saveProfile() {
   const name  = document.getElementById('editName').value.trim();
   const email = document.getElementById('editEmail').value.trim();
   let valid = true;
@@ -152,15 +182,31 @@ function saveProfile() {
   }
   if (!valid) { showToast('Please fix the errors above ⚠️', 'warn'); return; }
  
-  const user = Store.get('user') || {};
-  user.name   = name;
-  user.email  = email;
-  user.city   = document.getElementById('editCity').value.trim() || 'Kuala Lumpur';/*Kuala Lumpur akan be a default city */
-  user.budget = document.getElementById('editBudget').value;
-  Store.set('user', user);
+  currentUserData.name   = name;
+  currentUserData.email  = email;
+  currentUserData.city   = document.getElementById('editCity').value.trim() || 'Kuala Lumpur';
+  currentUserData.budget = document.getElementById('editBudget').value;
  
   renderProfile();
-  showToast('Profile updated successfully! ✅');
+  try {
+      const userEmail = localStorage.getItem('ecoUserEmail');
+      const response = await fetch(`/api/users/${userEmail}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentUserData)
+      });
+      
+      const result = await response.json();
+      if(result.success){
+          currentUserData = result.data;
+          
+          showToast('Profile updated successfully! ✅');
+      }else
+          showToast('Error saving to database.', 'error');
+    } catch (error) {
+        console.error("Failed to save profile:", error);
+        showToast('Network error saving profile.', 'error');
+    }
 }
  
 /* ══════════════════════════════════════════
@@ -205,44 +251,80 @@ function changePassword() {
 }
  
 /* ══════════════════════════════════════════
-   INTERESTS
+   INTERESTS MODAL & MONGODB LOGIC
    ══════════════════════════════════════════ */
 function openInterestModal() {
-  const user = Store.get('user') || {};
-  tempInterests = [...(user.interests || [])];
+  // 1. Read from the REAL MongoDB object
+  tempInterests = [...(currentUserData.interests || [])];
  
   const container = document.getElementById('interestChips');
-  container.innerHTML = ALL_INTERESTS.map(i =>
-    `<span class="interest-chip ${tempInterests.includes(i) ? 'selected' : ''}" onclick="toggleInterest(this,'${i}')">${i}</span>`
-  ).join('');
+  
+  // 2. Draw the chips with dynamic highlighting logic
+  container.innerHTML = ALL_INTERESTS.map(i => {
+    const isSelected = tempInterests.includes(i);
+    const bg = isSelected ? '#e8f5e9' : 'transparent';
+    const border = isSelected ? '#27ae60' : '#ddd';
+    const color = isSelected ? '#27ae60' : 'inherit';
+    
+    return `<span class="interest-chip" 
+             onclick="toggleInterest(this,'${i}')"
+             style="display:inline-block; padding:8px 16px; margin:4px; border-radius:20px; cursor:pointer; transition:0.2s; background:${bg}; border:1px solid ${border}; color:${color}; user-select:none;">
+              ${i}
+            </span>`;
+  }).join('');
  
   openModal('interestModal');
 }
  
 function toggleInterest(el, interest) {
   if (tempInterests.includes(interest)) {
+    // Visually un-select it
     tempInterests = tempInterests.filter(x => x !== interest);
-    el.classList.remove('selected');
+    el.style.background = 'transparent';
+    el.style.borderColor = '#ddd';
+    el.style.color = 'inherit';
   } else {
+    // Visually select it
     tempInterests.push(interest);
-    el.classList.add('selected');
+    el.style.background = '#e8f5e9';
+    el.style.borderColor = '#27ae60';
+    el.style.color = '#27ae60';
   }
 }
  
-function saveInterests() {
-  const user = Store.get('user') || {};
-  user.interests = [...tempInterests];
-  Store.set('user', user);
-  renderInterestDisplay();
+async function saveInterests() {
+  // 1. Update the global object & close modal
+  currentUserData.interests = [...tempInterests];
+  renderInterestDisplay(currentUserData);
   closeModal('interestModal');
-  showToast('Interests updated! 🌿');
+  
+  // 2. Fire the save off to MongoDB!
+  try {
+      const userEmail = localStorage.getItem('ecoUserEmail');
+      await fetch(`/api/users/${userEmail}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentUserData)
+      });
+      showToast('Interests updated! 🌿');
+  } catch(e) { console.error("Save error:", e); }
 }
  
-function removeInterest(interest) {
-  const user = Store.get('user') || {};
-  user.interests = (user.interests || []).filter(x => x !== interest);
-  Store.set('user', user);
-  renderInterestDisplay();
+async function removeInterest(interest) {
+  // 1. Instantly remove from the global object
+  currentUserData.interests = (currentUserData.interests || []).filter(x => x !== interest);
+  renderInterestDisplay(currentUserData);
+  
+  // 2. Fire the deletion off to MongoDB!
+  try {
+      const userEmail = localStorage.getItem('ecoUserEmail');
+      await fetch(`/api/users/${userEmail}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentUserData)
+      });
+      showToast('Interest removed!');
+  } catch(e) { console.error("Remove error:", e); }
 }
  
 /* ══════════════════════════════════════════
@@ -326,27 +408,19 @@ function showToast(msg, type = 'success') {
    ══════════════════════════════════════════ */
 function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 function getInitials(name) { return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2); }
-function showHint(id)  { document.getElementById(id).classList.add('show'); }
-function clearHint(id) { document.getElementById(id).classList.remove('show'); }
-
-
-function seedDemoUser() {
-  if (!Store.get('user')) {
-    Store.set('user', {
-      name:      'Ahmad Razif',
-      email:     'demo@ecoplanner.com',
-      city:      'Kuala Lumpur', // NEW
-      password:  'password123',       
-      budget:    'mid',
-      interests: ['🏞 Nature', '🚲 Cycling', '🍃 Vegan Food'],
-      joinedAt:  'Jan 2025',
-      trips:     3,
-      favorites: 5,
-      co2Saved:  42, // NEW
-      notifTrip: true, // NEW
-      notifEco:  false // NEW
-    });
-  }
+function showHint(id)  { 
+    const el = document.getElementById(id);
+    if (el) { 
+        el.style.display = 'block'; 
+        el.style.color = '#c0392b'; // Make it angpao ang ang
+        el.style.fontSize = '0.8rem';
+        el.style.marginTop = '0.25rem';
+    }
+}
+function clearHint(id){
+  const el = document.getElementById(id);
+  if(el)
+    el.style.display = 'none';// force the hint disappear
 }
 
 function saveToggles() {
@@ -375,12 +449,8 @@ function handleAvatarUpload(event) {
   // Convert image to Base64 string to store in sessionStorage
   reader.onload = function(e) {
     const base64Image = e.target.result;
-    
-    const user = Store.get('user') || {};
-    user.avatar = base64Image;
-    Store.set('user', user);
-    
-    renderProfile();
+    currentUserData.avatar = base64Image;
+    renderProfile(currentUserData); // Re-render profile to show new avatar
     showToast('Profile picture updated! 📸');
   };
   

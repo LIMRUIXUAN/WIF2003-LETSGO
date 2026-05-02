@@ -179,9 +179,30 @@ function filterCat(btn, cat) {
 
 // ── ADD TO TRIP ──
 function addToTrip(id) {
+  // Find the specific destination the user clicked on
   const item = LISTINGS.find(l => l.id === id);
-  itineraries.push(item);
-  showToast(`Added to your trip! 📍`);
+  if (!item) return;
+
+  // 1. Grab our "Shopping Cart" of pending ideas from the browser
+  let savedIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
+
+  // 2. Add this new destination to the cart
+  savedIdeas.push({
+      time: 'Flexible',
+      icon: item.icon,
+      name: item.name,
+      sub: item.cat,
+      // Extract just the numbers from strings like "↓62 kg CO₂"
+      carbon: parseInt(item.co2.replace(/\D/g,'')) || 5 
+  });
+
+  // 3. Save the cart back to the browser's memory
+  localStorage.setItem('ecoPendingIdeas', JSON.stringify(savedIdeas));
+
+  // 4. Show a helpful prompt directing them to the Planner
+  if (typeof showToast === 'function') {
+    showToast(`${item.name} saved! Head to the Planner to schedule it. 📍`);
+  }
 }
 
 // ── FILTER MODAL ──
