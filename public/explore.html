@@ -62,18 +62,15 @@
         <div class="search-bar-wrap">
           <i class="bi bi-search" style="color:#9ab3a0;"></i>
           <input type="text" placeholder="Search city, eco hotel, activity..."
-                 id="exploreSearch" oninput="onSearchInput(this)">
-          <button class="btn-eco" style="padding:8px 18px; font-size:.85rem;">
+                 id="exploreSearch" oninput="handleSearchInput(this)"
+                 onkeydown="handleSearchKeydown(event)">
+          <button class="btn-eco" style="padding:8px 18px; font-size:.85rem;" onclick="openFilterModal()">
             <i class="bi bi-sliders"></i> Filter
           </button>
         </div>
         <!-- Autocomplete dropdown -->
         <div class="suggestion-dropdown" id="searchSuggest" style="display:none;">
-          <div class="suggestion-item" onclick="selectCity('Langkawi')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Langkawi, Kedah</div>
-          <div class="suggestion-item" onclick="selectCity('Cameron Highlands')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Cameron Highlands, Pahang</div>
-          <div class="suggestion-item" onclick="selectCity('Penang')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Penang Island, Penang</div>
-          <div class="suggestion-item" onclick="selectCity('Sabah')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Kota Kinabalu, Sabah</div>
-          <div class="suggestion-item" onclick="selectCity('Taman Negara')"><i class="bi bi-geo-alt" style="color:#9ab3a0;"></i> Taman Negara, Pahang</div>
+          <div id="suggestionsList"></div>
         </div>
       </div>
 
@@ -86,6 +83,9 @@
         <button class="filter-chip"        onclick="filterCat(this,'activity')">🌊 Activities</button>
         <button class="filter-chip"        onclick="filterCat(this,'high')">⭐ Eco 9+</button>
       </div>
+
+      <!-- Active filters display -->
+      <div id="activeFiltersDisplay" class="mb-3"></div>
     </div>
 
     <!-- Listings grid (populated by explore.js) -->
@@ -97,5 +97,100 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/app.js"></script>
 <script src="js/explore.js"></script>
+
+<!-- Advanced Filter Modal -->
+<div class="filter-modal" id="filterModal">
+  <div class="filter-modal-content">
+    <div class="filter-modal-header">
+      <h5>Advanced Filters</h5>
+      <button class="btn-close-modal" onclick="closeFilterModal()">&times;</button>
+    </div>
+    <div class="filter-modal-body">
+      <!-- Budget Filter -->
+      <div class="filter-section">
+        <label class="filter-label">Budget Range</label>
+        <div class="budget-inputs">
+          <input type="number" id="budgetMin" placeholder="Min" class="filter-input-small">
+          <span>–</span>
+          <input type="number" id="budgetMax" placeholder="Max" class="filter-input-small">
+          <span style="font-size:.85rem; color:#7f8c8d;">RM</span>
+        </div>
+      </div>
+
+      <!-- Category Filter -->
+      <div class="filter-section">
+        <label class="filter-label">Category</label>
+        <div class="filter-checkboxes">
+          <label class="filter-checkbox">
+            <input type="checkbox" value="hotel" onchange="updateAdvancedFilters()"> Hotels
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="restaurant" onchange="updateAdvancedFilters()"> Restaurants
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="transport" onchange="updateAdvancedFilters()"> Transport
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="activity" onchange="updateAdvancedFilters()"> Activities
+          </label>
+        </div>
+      </div>
+
+      <!-- Eco-Rating Filter -->
+      <div class="filter-section">
+        <label class="filter-label">Eco-Rating (Minimum)</label>
+        <div class="eco-rating-slider">
+          <input type="range" id="ecoSlider" min="0" max="10" value="0" 
+                 style="width:100%;" onchange="updateAdvancedFilters()">
+          <div style="display:flex; justify-content:space-between; font-size:.8rem; color:#7f8c8d; margin-top:.5rem;">
+            <span>0</span>
+            <span id="ecoSliderValue">0</span>
+            <span>10</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certifications Filter -->
+      <div class="filter-section">
+        <label class="filter-label">Sustainability Certifications</label>
+        <div class="filter-checkboxes">
+          <label class="filter-checkbox">
+            <input type="checkbox" value="solar" onchange="updateAdvancedFilters()"> ☀️ Solar Powered
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="organic" onchange="updateAdvancedFilters()"> 🌱 Organic/Local
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="zerowaste" onchange="updateAdvancedFilters()"> ♻️ Zero-Waste
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="electric" onchange="updateAdvancedFilters()"> ⚡ Electric/Renewable
+          </label>
+        </div>
+      </div>
+
+      <!-- CO₂ Impact Filter -->
+      <div class="filter-section">
+        <label class="filter-label">CO₂ Reduction Preference</label>
+        <div class="filter-checkboxes">
+          <label class="filter-checkbox">
+            <input type="checkbox" value="highreduction" onchange="updateAdvancedFilters()"> High (↓50+ kg)
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="mediumreduction" onchange="updateAdvancedFilters()"> Medium (↓20-50 kg)
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" value="zeroimpact" onchange="updateAdvancedFilters()"> Zero Emission
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="filter-modal-footer">
+      <button class="btn-secondary" onclick="clearAdvancedFilters()">Clear All</button>
+      <button class="btn-eco" onclick="applyFilters()">Apply Filters</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

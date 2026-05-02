@@ -6,28 +6,88 @@
 
 'use strict';
 
-function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pw    = document.getElementById('loginPw').value;
+// File: public/js/auth.js
 
-  if (!email || !pw) { showToast('Please enter your credentials ⚠️', 'warn'); return; }
+async function doLogin() {
+    // 1. Grab the values from the HTML inputs
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPw').value;
 
-  // TODO: replace with real API call — POST /api/auth/login
-  sessionStorage.setItem('user', JSON.stringify({ name: 'Ahmad Razif', email }));
-  showToast('Welcome back! 🌿');
-  setTimeout(() => window.location.href = 'explore.html', 400);
+    try {
+        // 2. Send the data to your Node.js server
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 3. THE CRITICAL HANDSHAKE: Save the user's identity to the browser!
+            // This is what Explore.js and Favorites.js will look for.
+            localStorage.setItem('ecoUserEmail', result.email);
+            localStorage.setItem('ecoUserName', result.name);
+            localStorage.setItem('isLoggedIn', 'true');
+
+            // Show success and redirect to explore.html
+            if (typeof showToast === 'function') showToast(`Welcome back, ${result.name}! 🌿`);
+            setTimeout(() => {
+                window.location.href = 'explore.html'; 
+            }, 800);
+
+        } else {
+            // If the got "Invalid password" backend, popup the warning
+            showToast('Please enter your credentials ⚠️', 'warn');
+            return;
+        }
+
+    } catch (error) {
+        console.error("Fetch error during login:", error);
+        alert("Failed to connect to the server. Is Node.js running?");
+    }
 }
 
-function doRegister() {
-  const name  = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pw    = document.getElementById('regPw').value;
+// ── 2. REGISTER FUNCTION ──
+async function doRegister() {
+    // Grab values
+    const name  = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password    = document.getElementById('regPw').value;
 
-  if (!name || !email || !pw) { showToast('Please fill in all fields ⚠️', 'warn'); return; }
-  if (pw.length < 8)          { showToast('Password must be at least 8 characters ⚠️', 'warn'); return; }
+    // Frontend Validation
+    if (!name || !email || !password) { 
+        if (typeof showToast === 'function') showToast('Please fill in all fields ⚠️', 'warn'); 
+        return; 
+    }
+    if (password.length < 8) { 
+        if (typeof showToast === 'function') showToast('Password must be at least 8 characters ⚠️', 'warn'); 
+        return; 
+    }
 
-  // TODO: replace with real API call — POST /api/auth/register
-  sessionStorage.setItem('user', JSON.stringify({ name, email }));
-  showToast('Account created! Welcome, ' + name + ' 🌿');
-  setTimeout(() => window.location.href = 'explore.html', 600);
+    try {
+        // Send the data to your Node.js backend
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, email: email, password: password })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Success! Send them to the login page to sign in
+            if (typeof showToast === 'function') showToast('Account created! Please Sign In 🌿');
+            setTimeout(() => {
+                window.location.href = 'login.html'; // Assuming Cha Zi Yu named it login.html
+            }, 1200);
+        } else {
+            // Usually hits if email is already registered
+            if (typeof showToast === 'function') showToast(result.message + ' ⚠️', 'error');
+            else alert(result.message);
+        }
+    } catch (error) {
+        console.error("Registration error:", error);
+        alert("Failed to connect to the server.");
+    }
 }
