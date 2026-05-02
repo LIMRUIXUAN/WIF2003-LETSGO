@@ -7,7 +7,6 @@
 
 /* ── SHARED STATE ── */
 let favorites   = new Set();
-let itineraries = [];
 
 /* ── SHARED DATA: Eco listings ── */
 const LISTINGS = [

@@ -7,54 +7,51 @@ const Trip = require('../models/Trip');
 // 1. DESTINATIONS (For Explore Flip Cards)
 // ────────────────────────────────────────────────────────────────
 
-router.get('/destinations', async (req, res) => {
+// POST - Create a new trip
+router.post('/', async (req, res) => {
   try {
-    const spots = await Destination.find();
-    
-    // IMPORTANT: Mapping DB names to the names your app.js expects
-    // This ensures your Flip Cards don't show "undefined"
-    const formattedSpots = spots.map(s => ({
-      id: s._id,
-      name: s.name,
-      location: s.location,
-      cat: s.category,
-      eco: s.ecoScore,
-      price: s.price,
-      co2: s.co2Impact,
-      icon: s.icon,
-      rating: s.rating,
-      desc: s.description
-    }));
-
-    res.json(formattedSpots);
+    const trip = await Trip.create(req.body);
+    res.status(201).json({ success: true, data: trip });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 });
 
-// ────────────────────────────────────────────────────────────────
-// 2. ITINERARIES (For Trip Planning)
-// ────────────────────────────────────────────────────────────────
-
-// POST a new green itinerary
-router.post('/itineraries', async (req, res) => {
-  const trip = new Trip(req.body);
+// GET - Get trips for a specific user
+router.get('/:email', async (req, res) => {
   try {
-    const newTrip = await trip.save();
-    res.status(201).json(newTrip);
+    const trips = await Trip.find({ userEmail: req.params.email });
+    res.json({ success: true, data: trips });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// DELETE an itinerary by ID
-router.delete('/itineraries/:id', async (req, res) => {
+// PUT - Update a trip (Used for adding/moving activities)
+router.put('/:id', async (req, res) => {
   try {
-    const deletedTrip = await Trip.findByIdAndDelete(req.params.id);
-    if (!deletedTrip) return res.status(404).json({ message: 'Itinerary not found' });
-    res.json({ message: 'Itinerary deleted successfully' });
+    const updatedData = { ...req.body };
+    delete updatedData._id;
+
+    // Find the trip by its ID and overwrite it with the new data
+    const updatedTrip = await Trip.findByIdAndUpdate(
+      req.params.id, 
+      updatedData,
+      { new: true }
+    );
+    res.json({ success: true, data: updatedTrip });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE - Delete a trip
+router.delete('/:id', async (req, res) => {
+  try {
+    await Trip.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Trip deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

@@ -6,6 +6,9 @@
 
 'use strict';
 
+let itineraries = [];
+let currentTripId = null;
+//below hardcoded sample lah, later we will fetch real itineraries from MongoDB based on logged in user
 const ITINERARY_SAMPLE = [
   {
     id: 1, name: 'Langkawi Green Escape', city: 'Langkawi', style: 'Mid-range',
@@ -25,18 +28,30 @@ const ITINERARY_SAMPLE = [
   }
 ];
 
-// utilize local storage
-function saveState() {
-  localStorage.setItem('ecoPlannerData', JSON.stringify(itineraries));
-}
+async function saveState() {
+  if (!currentTripId) return;
 
-function loadState() {
-  const savedData = localStorage.getItem('ecoPlannerData');
-  if (savedData) {
-    itineraries = JSON.parse(savedData);
-  }
-  else {
-    itineraries = JSON.parse(JSON.stringify(ITINERARY_SAMPLE)); // Deep copy of sample data
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!trip) return;
+
+  try {
+    const res = await fetch(`/api/trips/${currentTripId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(trip) 
+    });
+
+    const data = await res.json();
+    
+    // kalau the backend fails, throw alert
+    if (!res.ok) {
+        console.error("Backend refused to save:", data.message);
+        alert("Database Save Error: " + data.message);
+    } else {
+        console.log("Trip successfully synced to MongoDB!");
+    }
+  } catch (err) {
+    console.error("Failed to save to MongoDB:", err);
   }
 }
 
@@ -66,7 +81,7 @@ function renderItineraries() {
         </div>
         <div class="d-flex gap-2">
           <span class="eco-badge"><i class="bi bi-leaf"></i> Eco Trip</span>
-          <button onclick="removeItin(${idx})"
+          <button onclick="removeItin('${itin._id}')"
                   style="background:#fdecea; border:none; border-radius:8px; padding:4px 10px;
                          color:#c0392b; cursor:pointer; font-size:.8rem;">
             <i class="bi bi-trash3"></i>
@@ -92,7 +107,7 @@ function renderItineraries() {
 
       <div class="d-flex gap-2 mt-2">
         <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
-                onclick="switchView('board', ${itin.id})">
+                onclick="switchView('board', '${itin._id}')">
           <i class="bi bi-pencil"></i> Edit
         </button>
         <button class="btn-eco" style="font-size:.82rem; padding:7px 16px; justify-content:center;"
@@ -104,40 +119,80 @@ function renderItineraries() {
   `).join('');
 }
 
-function createItinerary() {
-  const name  = document.getElementById('itinName').value  || 'My Green Trip';
-  const city  = document.getElementById('itinCity').value  || 'Destination';
-  const start = document.getElementById('itinStart').value || '2025-08-01';
-  const end   = document.getElementById('itinEnd').value   || '2025-08-05';
+async function createItinerary() {
+  const name  = document.getElementById('itinName').value || 'My Trip';
+  const city  = document.getElementById('itinCity').value || 'Destination';
+  const today = new Date().toISOString().split('T')[0];
+  const start = document.getElementById('itinStart').value || today;
+  const end   = document.getElementById('itinEnd').value || today;
 
-  // TODO: replace with real API call — POST /api/trips { name, city, start, end }
-  itineraries.unshift({
-    id: Date.now(), name, city, start, end,
-    days: [{ date: start, stops: [
-      { time: '09:00', icon: '✈️', name: 'Arrival & Check-in',  sub: 'Eco-certified accommodation', carbon: 5 },
-      { time: '14:00', icon: '🌿', name: 'Local Nature Walk',    sub: 'Low-impact guided tour', carbon: 2 },
-    ]}]
-  });
+  // Grab the user's email from when they logged in!
+  const userEmail = localStorage.getItem('ecoUserEmail');
 
-  closeModal('createItinModal');
-  showToast(`Itinerary "${name}" created! 🗺`);
-  saveState();
-  renderItineraries();
+  try {
+    const res = await fetch('/api/trips', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userEmail: userEmail,
+        name: name,
+        city: city,
+        start: start,
+        end: end,
+        days: generateDays(start, end),
+        ideaBank: [] // Initialize empty idea bank for new trip
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("Backend error: god damn it!" + data.message);
+      return;
+    }
+
+    itineraries.unshift(data.data);
+    renderItineraries();
+
+    showToast("Trip created!");
+    closeModal('createItinModal');
+
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-function removeItin(idx) {
-  // TODO: replace with real API call — DELETE /api/trips/:id
-  itineraries.splice(idx, 1);
-  saveState();
-  renderItineraries();
-  showToast('Itinerary removed');
+async function loadState() {
+  //1. get the logged-in user's email from mongodb hehe
+  const userEmail = localStorage.getItem('ecoUserEmail');
+  console.log("DEBUG: Browser thinks the user is:", userEmail);
+  if(!userEmail) {
+    console.warn("No user email found in localStorage. Itineraries won't load.");
+    return;
+  }
+  try {
+    //2. fetch itineraries from backend for that user email
+    console.log(`🌐 DEBUG: Sending GET request to /api/trips/${userEmail}`);
+    const res = await fetch(`/api/trips/${userEmail}`);
+    const data = await res.json();
+    itineraries = data.data || [];
+    renderItineraries();
+  } catch (err) {
+    console.error("Failed to load trips:", err);
+    itineraries = [];
+  }
 }
 
-/* Load sample data and render on page load */
-document.addEventListener('DOMContentLoaded', () => {
-  loadState(); //load from disk first, if exist. Otherwise load sample data
-  renderItineraries();
-});
+async function removeItin(id) {
+  try {
+    await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+    itineraries = itineraries.filter(t => t._id !== id);
+    renderItineraries();
+    showToast("Deleted!");
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 /*
  * Switches between the kanban-view and trip-view
@@ -158,7 +213,7 @@ function switchView(view, tripId = null) {
         currentTripId = tripId;
 
         // Find the trip data
-        const trip = itineraries.find(t => t.id == tripId);
+        const trip = itineraries.find(t => t._id == tripId);
         if (trip) {
             document.getElementById('activeTripTitle').innerText = trip.name;
             generateTimelineColumns(trip.start, trip.end);
@@ -167,7 +222,22 @@ function switchView(view, tripId = null) {
     }
 }
 
-let currentTripId = null;
+function generateDays(start, end) {
+  const days = [];
+  let temp = new Date(start);
+  const endDate = new Date(end);
+
+  while (temp <= endDate) {
+    days.push({
+      date: temp.toISOString().split('T')[0],
+      stops: []
+    });
+    temp.setDate(temp.getDate() + 1);
+  }
+
+  return days;
+}
+
 /**
  * Calculates the days between two dates and generates the columns
  */
@@ -182,63 +252,41 @@ function generateTimelineColumns(startStr, endStr) {
     let tempDate = new Date(start);
     
     while (tempDate <= end) {
-        const dateLabel = tempDate.toLocaleDateString('en-MY', { 
-            weekday: 'short', 
-            day: 'numeric', 
-            month: 'short' 
-        });
+        const dayId = tempDate.toISOString().split('T')[0];
 
-        const dayId = tempDate.toISOString().split('T')[0]; // YYYY-MM-DD for ID
+      container.innerHTML += `
+        <div class="kanban-column bg-light rounded-3 p-3" style="min-width: 320px;">
+          <h6 class="text-muted mb-3"><i class="bi bi-calendar-day"></i> ${dayId}</h6>
+          <div id="col-${dayId}" class="d-flex flex-column gap-2 min-vh-25" style="min-height: 150px;"
+               ondragover="allowDrop(event)" 
+               ondrop="handleDrop(event, '${dayId}')">
+          </div>
+        </div>
+      `;
 
-        container.innerHTML += `
-            <div class="kanban-column" 
-                 ondragover="allowDrop(event)" 
-                 ondrop="handleDrop(event, '${dayId}')">
-                <div class="column-header">
-                    <i class="bi bi-calendar-event"></i> ${dateLabel}
-                </div>
-                <div class="column-body" id="col-${dayId}"></div>
-                
-                <div class="p-3 border-top mt-auto d-flex justify-content-between align-items-center bg-white rounded-bottom">
-                    <small class="text-muted fw-bold">Daily Footprint:</small>
-                    <span class="badge bg-success" id="total-carbon-${dayId}" style="font-size:0.85rem;">0kg CO₂</span>
-                </div>
-              </div>
-        `;
-
-        tempDate.setDate(tempDate.getDate() + 1); // Move to next day
+      tempDate.setDate(tempDate.getDate() + 1);//move to next day
     }
 }
 
 function renderBoardItems(trip) {
-    // clear all columns
-    document.querySelectorAll('.column-body').forEach(col => col.innerHTML = '');
-    
-    // Clear the Idea Bank column
-    const ideaBankContainer = document.getElementById('ideaBankContainer');
-    if (ideaBankContainer) ideaBankContainer.innerHTML = '';
+  const ideaContainer = document.getElementById('ideaBankContainer');
+  if (ideaContainer) {
+      ideaContainer.innerHTML = '';
+      if (trip.ideaBank) {
+          ideaContainer.innerHTML = trip.ideaBank.map((stop, index) => 
+              createCardHTML(stop, index, 'ideaBank')
+          ).join('');
+      }
+  }
 
-    // Render items inside the timeline days columns
-    trip.days.forEach(day => {
-        const col = document.getElementById(`col-${day.date}`);
-        const totalDisplay = document.getElementById(`total-carbon-${day.date}`);
-        if (col) {
-            col.innerHTML = day.stops.map((stop, idx) => createCardHTML(stop, idx, day.date)).join('');
-        
-            //CALCULATION for carbon
-              const dailyTotal = day.stops.reduce((sum, stop) => sum + (stop.carbon || 0), 0);
-              if (totalDisplay) {
-                  totalDisplay.innerText = `${dailyTotal}kg CO₂`;
-                  // Change color of total if it gets too high
-                  totalDisplay.className = dailyTotal > 50 ? 'fw-bold text-danger' : 'fw-bold text-success';
-              }
-        }
-    });
-
-    // render items inside the Idea Bank
-    if (trip.ideaBank && ideaBankContainer) {
-        ideaBankContainer.innerHTML = trip.ideaBank.map((stop, idx) => createCardHTML(stop, idx, 'ideaBank')).join('');
+  trip.days.forEach(day => {
+    const col = document.getElementById(`col-${day.date}`);
+    if (col) {
+      sortStopsByTime(day.stops);
+      col.innerHTML = day.stops.map((stop, index) =>
+        createCardHTML(stop, index, day.date)).join('');
     }
+  });
 }
 
 function createCardHTML(stop, idx, sourceLocation) {
@@ -294,7 +342,7 @@ function allowDrop(event) {
 function handleDrop(event, targetLocation) {
     event.preventDefault();
 
-    const trip = itineraries.find(t => t.id == currentTripId);
+    const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
 
     // Gets the correct array whether we drop in the Idea Bank or a Timeline Day
@@ -328,8 +376,19 @@ function handleDrop(event, targetLocation) {
     }
 }
 
+function sortStopsByTime(stopsArray) {
+    stopsArray.sort((a, b) => {
+        // If time is "Flexible" or empty, treat it as 11:59 PM so it goes to the bottom
+        const timeA = (a.time === 'Flexible' || !a.time) ? '23:59' : a.time;
+        const timeB = (b.time === 'Flexible' || !b.time) ? '23:59' : b.time;
+        
+        // Standard alphabetical string sort works perfectly for 24-hour time!
+        return timeA.localeCompare(timeB);
+    });
+}
+
 function openAddActivityModal() {
-    const trip = itineraries.find(t => t.id == currentTripId);
+    const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
 
     // populate location dropdown with timeline days
@@ -351,7 +410,7 @@ function openAddActivityModal() {
 }
 
 function saveNewActivity() {
-    const trip = itineraries.find(t => t.id == currentTripId);
+    const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
 
     // Grab data from form
@@ -387,7 +446,7 @@ function saveNewActivity() {
 }
 
 function deleteActivity(index, sourceLocation) {
-  const trip = itineraries.find(t => t.id == currentTripId);
+  const trip = itineraries.find(t => t._id == currentTripId);
   if (!trip) return;
 
   if (sourceLocation === 'ideaBank') {
@@ -402,3 +461,9 @@ function deleteActivity(index, sourceLocation) {
   saveState();
   showToast("Activity deleted!");
 }
+
+/* Load sample data and render on page load */
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  renderItineraries();
+});

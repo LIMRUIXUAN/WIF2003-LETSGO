@@ -17,7 +17,7 @@ async function renderFavs() {
     const empty = document.getElementById('emptyFavs');
     
     // 1. Who is logged in?
-    const userEmail = localStorage.getItem('ecoUserEmail') || 'demo@ecoplanner.com'; 
+    const userEmail = localStorage.getItem('ecoUserEmail'); 
 
     try {
         // 2. Fetch the user's profile from MongoDB
