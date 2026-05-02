@@ -959,3 +959,24 @@ body {
   .hero h1      { font-size: 2.2rem; }
   .hero-stats   { gap: 1.2rem; }
 }
+
+
+/* ═══════════════════════════════════════
+   .profile-avatar — Add a camera icon on hover to indicate editability
+    (Used in Profile page for user avatar)
+   ═══════════════════════════════════════ */
+.profile-avatar {
+  /* Keep your existing styles, then add: */
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.profile-avatar:hover {
+  background: var(--eco-green-light);
+  color: white;
+}
+.profile-avatar:hover::after {
+  content: '📷';
+  position: absolute;
+  font-size: 1.2rem;
+}

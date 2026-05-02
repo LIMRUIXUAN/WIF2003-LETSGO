@@ -16,8 +16,9 @@
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- Delete Account Confirmation Modal -->
+<!-- ══════════════════════ DELETE MODAL ══════════════════════ -->
 <div id="deleteModal" class="eco-modal-backdrop" style="display:none;">
-  <div class="eco-modal" style="max-width:380px; text-align:center;">
+  <div class="eco-modal" style="text-align:center;">
     <div style="font-size:3rem; margin-bottom:1rem;">⚠️</div>
     <h5 style="font-weight:700; margin-bottom:.5rem;">Delete Account?</h5>
     <p style="color:#6b7c6e; font-size:.9rem; margin-bottom:1.5rem;">
@@ -29,119 +30,213 @@
     </div>
   </div>
 </div>
-
+ 
+<!-- ══════════════════════ INTERESTS MODAL ══════════════════════ -->
+<div id="interestModal" class="eco-modal-backdrop" style="display:none;">
+  <div class="eco-modal">
+    <h5 style="font-weight:700; margin-bottom:.4rem;">Travel Interests</h5>
+    <p style="font-size:.85rem; color:var(--text-muted); margin-bottom:1rem;">Select all that apply to you.</p>
+    <div id="interestChips"></div>
+    <div class="d-flex gap-3 mt-3">
+      <button class="btn-eco-outline flex-fill" onclick="closeModal('interestModal')">Cancel</button>
+      <button class="btn-eco flex-fill" onclick="saveInterests()">Save</button>
+    </div>
+  </div>
+</div>
+ 
 <!-- Top Navigation Bar -->
 <nav class="eco-nav d-flex align-items-center justify-content-between">
   <a href="index.html" class="brand"><span class="leaf">🌿</span> EcoPlanner</a>
   <div class="nav-links d-none d-md-flex">
     <a class="nav-link"        href="index.html"><i class="bi bi-house"></i>Home</a>
     <a class="nav-link"        href="explore.html"><i class="bi bi-compass"></i>Explore</a>
-    <a class="nav-link"        href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
+    <a class="nav-link active" href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
     <a class="nav-link"        href="weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
     <a class="nav-link"        href="carbon.html"><i class="bi bi-bar-chart"></i>Carbon</a>
     <a class="nav-link"        href="favorites.html"><i class="bi bi-heart"></i>Favorites</a>
   </div>
   <div class="d-flex align-items-center gap-3">
-    <div class="user-badge" id="navInitial">?</div>
+    <div class="user-badge" onclick="window.location.href='profile.html'" id="navInitial">?</div>
   </div>
 </nav>
-
+ 
 <div class="dash-layout">
-
+ 
   <!-- Sidebar -->
   <div class="dash-sidebar d-none d-lg-block">
     <div class="section-label">Main</div>
-    <a class="sidebar-link"        href="index.html"><i class="bi bi-house-fill"></i>Dashboard</a>
-    <a class="sidebar-link"        href="explore.html"><i class="bi bi-compass-fill"></i>Explore</a>
-    <a class="sidebar-link"        href="planner.html"><i class="bi bi-map-fill"></i>My Itinerary</a>
+    <a class="sidebar-link" href="index.html"><i class="bi bi-house-fill"></i> Dashboard</a>
+    <a class="sidebar-link" href="explore.html"><i class="bi bi-compass-fill"></i> Explore</a>
+    <a class="sidebar-link" href="planner.html"><i class="bi bi-map-fill"></i> My Itinerary</a>
     <div class="section-label">Tools</div>
-    <a class="sidebar-link" href="weather.html"><i class="bi bi-cloud-sun-fill"></i>Weather</a>
-    <a class="sidebar-link" href="carbon.html"><i class="bi bi-bar-chart-fill"></i>Carbon Calc</a>
-    <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
+    <a class="sidebar-link" href="weather.html"><i class="bi bi-cloud-sun-fill"></i> Weather</a>
+    <a class="sidebar-link" href="carbon.html"><i class="bi bi-bar-chart-fill"></i> Carbon Calc</a>
+    <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i> Favorites</a>
     <div class="section-label">Account</div>
-    <a class="sidebar-link active" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-    <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    <a class="sidebar-link active" href="profile.html"><i class="bi bi-person-fill"></i> Profile</a>
+    <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </div>
-
+ 
   <!-- Main Content -->
   <div class="dash-main">
     <div class="toast-wrap" id="toastWrap"></div>
-
+ 
     <h4 class="section-title mb-0">My Profile</h4>
     <p class="section-sub">Manage your account and preferences</p>
-
+ 
     <div class="row g-4">
-
-      <!-- Profile summary card -->
+ 
+      <!-- ── Profile Summary Card ── -->
       <div class="col-lg-4">
         <div class="stat-card text-center">
-          <div class="profile-avatar" id="profileAvatar">AR</div>
-          <div style="font-weight:700; font-size:1.1rem;" id="profileName">Ahmad Razif</div>
-          <div style="color:#9ab3a0; font-size:.85rem; margin-bottom:1rem;" id="profileEmail">demo@ecoplanner.com</div>
-          <div class="eco-badge mx-auto"><i class="bi bi-leaf"></i> Green Traveler</div>
+          <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+          <div class="profile-avatar" id="profileAvatar" style="cursor: pointer; position: relative; overflow: hidden;" title="Click to upload image">LR</div>
+          <div style="font-weight:700; font-size:1.1rem;" id="profileName">Lim</div>
+          <div style="color:#9ab3a0; font-size:.85rem; margin-bottom:1rem;" id="profileEmail">ruixuan0805@gmail.com</div>
+          <div class="eco-badge mx-auto"><i class="bi bi-leaf"></i> <span id="profileBadge">Green Traveler</span></div>
           <hr class="divider-line">
-          <div style="font-size:.8rem; color:#9ab3a0;">Member since Jan 2025</div>
-          <div style="font-size:.8rem; color:#9ab3a0; margin-top:3px;">12 trips completed</div>
-        </div>
-      </div>
-
-      <!-- Edit panels -->
-      <div class="col-lg-8">
-
-        <!-- Edit profile form -->
-        <div class="stat-card mb-3">
-          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">Edit Profile</strong>
-          <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input class="form-control-eco" id="editName" value="Ahmad Razif">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input class="form-control-eco" id="editEmail" value="demo@ecoplanner.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Travel Interests</label>
-            <div class="mt-1">
-              <span class="pref-tag">🏞 Nature</span>
-              <span class="pref-tag">🚲 Cycling</span>
-              <span class="pref-tag">🍃 Vegan Food</span>
-              <span class="pref-tag">+ Add</span>
+          <div style="font-size:.8rem; color:#9ab3a0;" id="memberSince">Member since Jan 2025</div>
+          <div style="font-size:.8rem; color:#9ab3a0; margin-top:3px;" id="tripCount">0 trips completed</div>
+ 
+          <!-- Stats row -->
+          <div class="d-flex justify-content-around mt-3">
+            <!-- display how many favorites the user has jadi later phrase 2 kena update-->
+            <div>
+              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statFavs">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">Favorites</div>
+            </div>
+            <!-- display how many trips the user has taken -->
+            <div>
+              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statTrips">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">Trips</div>
+            </div>
+            <!-- display how many days the user has traveled later phrase 2 kena link with server for fetch() data-->
+            <div>
+              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statDays">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">Days</div>
+            </div>
+            <div>
+            <!-- this will display the CO2 saved for user okayha-->
+            <div style="font-weight:700; font-size:1.1rem; color:var(--eco-amber);" id="statCO2">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Saved</div>
             </div>
           </div>
+        </div>
+      </div>
+ 
+      <!-- ── Edit Panels ── -->
+      <div class="col-lg-8">
+ 
+        <!-- Edit Profile -->
+        <div class="stat-card mb-3">
+          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">Edit Profile</strong>
+ 
+          <!-- read user name -->
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-control-eco" id="editName" placeholder="Your full name">
+            <div class="field-hint" id="hintName">Name cannot be empty.</div>
+          </div>
+ 
+          <!-- read user email and supposed to sh some hint example@gmail.com-->
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control-eco" id="editEmail" placeholder="you@example.com">
+            <div class="field-hint" id="hintEmail">Enter a valid email address.</div>
+          </div>
+
+          <!-- read user home city and kami kena link to weather.html or weather.js -->
+          <div class="form-group">
+            <label class="form-label">Home City</label>
+            <input class="form-control-eco" id="editCity" placeholder="e.g., Kuala Lumpur">
+          </div>
+ 
+          <!-- read user travel interests -->
+          <div class="form-group">
+            <label class="form-label">Travel Interests</label>
+            <div id="interestDisplay" class="mt-1">
+              <!-- rendered by profile.js -->
+            </div>
+          </div>
+ 
+          <!-- read user budget preference maybe we can use this for trip recommendations or adding the customize the top to bottom range-->
           <div class="form-group">
             <label class="form-label">Budget Preference</label>
-            <select class="form-control-eco">
-              <option>Budget (&lt; RM 100/day)</option>
-              <option selected>Mid-range (RM 100–300/day)</option>
-              <option>Luxury (RM 300+/day)</option>
+            <select class="form-control-eco" id="editBudget">
+              <option value="budget">Budget (&lt; RM 100/day)</option>
+              <option value="mid">Mid-range (RM 100–300/day)</option>
+              <option value="luxury">Luxury (RM 300+/day)</option>
             </select>
           </div>
+ 
           <button class="btn-eco me-2" onclick="saveProfile()">
             <i class="bi bi-check2"></i> Save Changes
           </button>
         </div>
-
-        <!-- Change password form -->
+ 
+        <!-- Change Password -->
         <div class="stat-card mb-3">
           <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">Change Password</strong>
+ 
           <div class="form-group">
             <label class="form-label">Current Password</label>
-            <input type="password" class="form-control-eco" placeholder="Enter current password">
+            <div style="position:relative;">
+              <input type="password" class="form-control-eco" id="currentPw" placeholder="Enter current password" style="padding-right:2.5rem;">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('currentPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            </div>
+            <div class="field-hint" id="hintCurrentPw">Incorrect current password.</div>
           </div>
+ 
           <div class="form-group">
             <label class="form-label">New Password</label>
-            <input type="password" class="form-control-eco" placeholder="Min. 8 characters">
+            <div style="position:relative;">
+              <input type="password" class="form-control-eco" id="newPw" placeholder="Min. 8 characters" style="padding-right:2.5rem;" oninput="checkStrength(this.value)">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('newPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            </div>
+            <div class="strength-bar" id="strengthBar"></div>
+            <div class="strength-label" id="strengthLabel"></div>
+            <div class="field-hint" id="hintNewPw">Password must be at least 8 characters.</div>
           </div>
+ 
           <div class="form-group">
             <label class="form-label">Confirm New Password</label>
-            <input type="password" class="form-control-eco" placeholder="Repeat new password">
+            <div style="position:relative;">
+              <input type="password" class="form-control-eco" id="confirmPw" placeholder="Repeat new password" style="padding-right:2.5rem;">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('confirmPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            </div>
+            <div class="field-hint" id="hintConfirmPw">Passwords do not match.</div>
           </div>
-          <button class="btn-eco-outline" onclick="showToast('Password updated successfully! 🔒')">
+ 
+          <button class="btn-eco-outline" onclick="changePassword()">
             <i class="bi bi-lock"></i> Update Password
           </button>
         </div>
+ 
+          <div class="stat-card mb-3">
+          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">App Preferences</strong>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div style="font-size:0.9rem; font-weight:500;">Trip Reminders</div>
+              <div style="font-size:0.75rem; color:#9ab3a0;">Get notified 3 days before a trip</div>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="notifTrip" checked onchange="saveToggles()">
+            </div>
+          </div>
 
-        <!-- Danger zone -->
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div style="font-size:0.9rem; font-weight:500;">Carbon Offset Tips</div>
+              <div style="font-size:0.75rem; color:#9ab3a0;">Weekly eco-travel suggestions</div>
+            </div>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="notifEco" onchange="saveToggles()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
         <div class="stat-card" style="border-color:#fdecea;">
           <strong style="font-size:.95rem; display:block; margin-bottom:.5rem; color:#c0392b;">Danger Zone</strong>
           <p style="font-size:.85rem; color:#9ab3a0; margin-bottom:1rem;">
@@ -151,12 +246,11 @@
             <i class="bi bi-trash3"></i> Delete Account
           </button>
         </div>
-
-      </div><!-- /col-lg-8 -->
-    </div><!-- /row -->
-
-  </div><!-- /dash-main -->
-</div><!-- /dash-layout -->
+ 
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/app.js"></script>
