@@ -65,6 +65,8 @@ function filterListings() {
 function renderListings(list = LISTINGS) {
   const grid = document.getElementById('listingsGrid');
   
+  // if the grid doesn't exist on this page, stop the function here to avoid errors hehehe
+  if (!grid) return;
   if (!list.length) {
     grid.innerHTML = '<div class="col-12 text-center py-5" style="color:#9ab3a0;">No results found</div>';
     return;
@@ -121,31 +123,50 @@ function toggleFlip(card) {
 }
 
 // ── FAVORITES ──
-function toggleFav(e, id, name) {
-  e.stopPropagation();
-  const btn = e.currentTarget;
-  
-  if (favorites.has(id)) {
-    favorites.delete(id);
-    btn.classList.remove('saved');
-    btn.innerHTML = '<i class="bi bi-heart"></i>';
-    showToast('Removed from favorites', 'info');
-  } else {
-    favorites.add(id);
-    btn.classList.add('saved');
-    btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
-    showToast(`${name} bookmarked! 💚`);
+// Upate for this toggleFav func: designed for Phase 1 (mock) and Phase 2 (real API) with optimistic UI updates.
+async function toggleFav(e, id, name) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
     
-    // Save to backend/localStorage
-    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-    if (user.id) {
-      fetch(`/api/favorites`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, destinationId: id })
-      }).catch(err => console.log('Offline: saved locally'));
+    // 1. Get the logged-in user's email (from Zi Yu's login)
+    const userEmail = localStorage.getItem('ecoUserEmail') || 'demo@ecoplanner.com';
+
+    // 2. Optimistic UI Update (Visuals)
+    if (favorites.has(id)) {
+        favorites.delete(id);
+        btn.classList.remove('saved');
+        btn.innerHTML = '<i class="bi bi-heart"></i>';
+        if(typeof showToast === 'function') showToast('Removed from favorites', 'info');
+    } else {
+        favorites.add(id);
+        btn.classList.add('saved');
+        btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+        if(typeof showToast === 'function') showToast(`${name} bookmarked! 💚`);
     }
-  }
+
+    // 3. The Database Update
+    try {
+        console.log(`Sending PUT request to add ID ${id} for ${userEmail}...`); 
+        
+        const response = await fetch(`/api/users/${userEmail}/favorites`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destinationId: Number(id) }) // Force it to be a Number!
+        });
+
+        const result = await response.json();
+        
+        console.log("Server Response from clicking heart:", result); 
+
+        if (!result.success) {
+            console.error("Backend refused to save:", result.message);
+            // Revert the heart visually if the database failed
+            if(typeof showToast === 'function') showToast("Error saving: " + result.message, "error");
+        }
+        
+    } catch (error) {
+        console.error("Network Fetch Error:", error);
+    }
 }
 
 // ── CATEGORY FILTER ──
@@ -260,17 +281,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Load favorites from API
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-  if (user.id) {
-    fetch(`/api/favorites?userId=${user.id}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.favoriteIds) {
-          data.favoriteIds.forEach(id => favorites.add(id));
-          renderListings();
-        }
-      })
-      .catch(() => console.log('Using local favorites'));
-  }
+  const userEmail = localStorage.getItem('ecoUserEmail') || 'test@ecoplanner.com';
+
+  fetch(`/api/users/profile/${userEmail}`)
+    .then(res => res.json())
+    .then(data => {
+      console.log("Loaded favorites:", data.data.favorites);// ini used for tracking if favorites are loaded correctly
+
+      if (data.success && data.data.favorites) {
+        data.data.favorites.forEach(id => favorites.add(id));
+        renderListings();
+      }
+    })
+  .catch(err => {
+    console.log('Failed to load favorites:', err);
+  });
 });
 
