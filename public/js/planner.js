@@ -10,20 +10,35 @@ const ITINERARY_SAMPLE = [
   {
     id: 1, name: 'Langkawi Green Escape', city: 'Langkawi', style: 'Mid-range',
     start: '2025-07-15', end: '2025-07-20',
+    ideaBank: [
+      { time: 'Flexible', icon: '🛶', name: 'Mangrove Kayaking', sub: 'Nature', carbon: 2}, //carbon is integer value in kg
+      { time: 'Flexible', icon: '🥗', name: 'Vegan Cafe', sub: 'Food', carbon: 1 }
+    ],
     days: [
-      { date: 'Jul 15', stops: [
-        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort',  sub: 'Sustainable beachfront hotel' },
-        { time: '14:00', icon: '🚲', name: 'Mangrove Cycling Tour',        sub: '3-hour eco cycling route' },
-        { time: '19:00', icon: '🍃', name: 'Dinner at Green Palm Cafe',    sub: 'Farm-to-table cuisine' },
+      { date: '2025-07-15', stops: [
+        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort', sub: 'Sustainable beachfront hotel', carbon: 5 }
       ]},
-      { date: 'Jul 16', stops: [
-        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour',          sub: 'Morning paddle through wetlands' },
-        { time: '13:00', icon: '🌿', name: 'Langkawi Geopark Visit',       sub: 'UNESCO heritage site' },
-        { time: '18:00', icon: '🌅', name: 'Sunset Watch at Tanjung Rhu',  sub: 'Low-impact eco trail' },
-      ]},
+      { date: '2025-07-16', stops: [
+        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour', sub: 'Morning paddle through wetlands', carbon: 3 }
+      ]}
     ]
   }
 ];
+
+// utilize local storage
+function saveState() {
+  localStorage.setItem('ecoPlannerData', JSON.stringify(itineraries));
+}
+
+function loadState() {
+  const savedData = localStorage.getItem('ecoPlannerData');
+  if (savedData) {
+    itineraries = JSON.parse(savedData);
+  }
+  else {
+    itineraries = JSON.parse(JSON.stringify(ITINERARY_SAMPLE)); // Deep copy of sample data
+  }
+}
 
 function renderItineraries() {
   const list = document.getElementById('itineraryList');
@@ -76,7 +91,8 @@ function renderItineraries() {
       `).join('')}
 
       <div class="d-flex gap-2 mt-2">
-        <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;">
+        <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
+                onclick="switchView('board', ${itin.id})">
           <i class="bi bi-pencil"></i> Edit
         </button>
         <button class="btn-eco" style="font-size:.82rem; padding:7px 16px; justify-content:center;"
@@ -98,25 +114,291 @@ function createItinerary() {
   itineraries.unshift({
     id: Date.now(), name, city, start, end,
     days: [{ date: start, stops: [
-      { time: '09:00', icon: '✈️', name: 'Arrival & Check-in',  sub: 'Eco-certified accommodation' },
-      { time: '14:00', icon: '🌿', name: 'Local Nature Walk',    sub: 'Low-impact guided tour' },
+      { time: '09:00', icon: '✈️', name: 'Arrival & Check-in',  sub: 'Eco-certified accommodation', carbon: 5 },
+      { time: '14:00', icon: '🌿', name: 'Local Nature Walk',    sub: 'Low-impact guided tour', carbon: 2 },
     ]}]
   });
 
   closeModal('createItinModal');
   showToast(`Itinerary "${name}" created! 🗺`);
+  saveState();
   renderItineraries();
 }
 
 function removeItin(idx) {
   // TODO: replace with real API call — DELETE /api/trips/:id
   itineraries.splice(idx, 1);
+  saveState();
   renderItineraries();
   showToast('Itinerary removed');
 }
 
 /* Load sample data and render on page load */
 document.addEventListener('DOMContentLoaded', () => {
-  itineraries = [...ITINERARY_SAMPLE];
+  loadState(); //load from disk first, if exist. Otherwise load sample data
   renderItineraries();
 });
+
+/*
+ * Switches between the kanban-view and trip-view
+ */
+function switchView(view, tripId = null) {
+    const listView = document.getElementById('listView');
+    const boardView = document.getElementById('boardView');
+
+    if (view === 'list') {
+        listView.style.display = 'block';
+        boardView.style.display = 'none';
+        renderItineraries();
+    } else {
+        listView.style.display = 'none';
+        boardView.style.display = 'block';
+        
+        // Sync current trip ID to board view
+        currentTripId = tripId;
+
+        // Find the trip data
+        const trip = itineraries.find(t => t.id == tripId);
+        if (trip) {
+            document.getElementById('activeTripTitle').innerText = trip.name;
+            generateTimelineColumns(trip.start, trip.end);
+            renderBoardItems(trip); // Put real data in column based on current trip
+        }
+    }
+}
+
+let currentTripId = null;
+/**
+ * Calculates the days between two dates and generates the columns
+ */
+function generateTimelineColumns(startStr, endStr) {
+    const container = document.getElementById('timelineContainer');
+    container.innerHTML = ''; // Clear existing days
+
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    
+    //if end is before start, just show 1 day just to be safe lah
+    let tempDate = new Date(start);
+    
+    while (tempDate <= end) {
+        const dateLabel = tempDate.toLocaleDateString('en-MY', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short' 
+        });
+
+        const dayId = tempDate.toISOString().split('T')[0]; // YYYY-MM-DD for ID
+
+        container.innerHTML += `
+            <div class="kanban-column" 
+                 ondragover="allowDrop(event)" 
+                 ondrop="handleDrop(event, '${dayId}')">
+                <div class="column-header">
+                    <i class="bi bi-calendar-event"></i> ${dateLabel}
+                </div>
+                <div class="column-body" id="col-${dayId}"></div>
+                
+                <div class="p-3 border-top mt-auto d-flex justify-content-between align-items-center bg-white rounded-bottom">
+                    <small class="text-muted fw-bold">Daily Footprint:</small>
+                    <span class="badge bg-success" id="total-carbon-${dayId}" style="font-size:0.85rem;">0kg CO₂</span>
+                </div>
+              </div>
+        `;
+
+        tempDate.setDate(tempDate.getDate() + 1); // Move to next day
+    }
+}
+
+function renderBoardItems(trip) {
+    // clear all columns
+    document.querySelectorAll('.column-body').forEach(col => col.innerHTML = '');
+    
+    // Clear the Idea Bank column
+    const ideaBankContainer = document.getElementById('ideaBankContainer');
+    if (ideaBankContainer) ideaBankContainer.innerHTML = '';
+
+    // Render items inside the timeline days columns
+    trip.days.forEach(day => {
+        const col = document.getElementById(`col-${day.date}`);
+        const totalDisplay = document.getElementById(`total-carbon-${day.date}`);
+        if (col) {
+            col.innerHTML = day.stops.map((stop, idx) => createCardHTML(stop, idx, day.date)).join('');
+        
+            //CALCULATION for carbon
+              const dailyTotal = day.stops.reduce((sum, stop) => sum + (stop.carbon || 0), 0);
+              if (totalDisplay) {
+                  totalDisplay.innerText = `${dailyTotal}kg CO₂`;
+                  // Change color of total if it gets too high
+                  totalDisplay.className = dailyTotal > 50 ? 'fw-bold text-danger' : 'fw-bold text-success';
+              }
+        }
+    });
+
+    // render items inside the Idea Bank
+    if (trip.ideaBank && ideaBankContainer) {
+        ideaBankContainer.innerHTML = trip.ideaBank.map((stop, idx) => createCardHTML(stop, idx, 'ideaBank')).join('');
+    }
+}
+
+function createCardHTML(stop, idx, sourceLocation) {
+    // Determine color based on carbon weight
+    const carbon = stop.carbon || 0;
+    let badgeClass = 'bg-success'; // Low
+    if (carbon > 10) badgeClass = 'bg-warning text-dark'; // Medium
+    if (carbon > 20) badgeClass = 'bg-danger'; // High
+
+    return `
+        <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm position-relative"
+             draggable="true" style="cursor: grab;"
+             ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')">
+
+            <button onclick="deleteActivity(${idx}, '${sourceLocation}')" 
+                    class="btn-close position-absolute top-0 end-0 m-1" 
+                    style="font-size: 0.5rem;"></button>
+
+            <div class="d-flex gap-2 pe-3 w-100"> 
+                
+                <div style="font-size: 1.2rem; min-width: 25px;">${stop.icon}</div>
+                
+                <div class="flex-grow-1" style="min-width: 0;"> 
+                    
+                    <div class="fw-bold text-wrap text-break mb-1" style="font-size:0.85rem; line-height: 1.2;">
+                        ${stop.name}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+                        <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${carbon}kg CO₂</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+let draggedItemIndex = null;
+let sourceDayDate = null;
+
+function handleDragStart(event, index, date) {
+  draggedItemIndex = index;
+  sourceDayDate = date;
+  event.dataTransfer.setData('text/plain', index);
+}
+
+function allowDrop(event) {
+  event.preventDefault();
+}
+
+function handleDrop(event, targetLocation) {
+    event.preventDefault();
+
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // Gets the correct array whether we drop in the Idea Bank or a Timeline Day
+    function getTargetArray(locationId) {
+        if (locationId === 'ideaBank') {
+            if (!trip.ideaBank) trip.ideaBank = []; // Safety check
+            return trip.ideaBank;
+        } else {
+            let day = trip.days.find(d => d.date === locationId);
+            if (!day) {
+                day = { date: locationId, stops: [] };
+                trip.days.push(day);
+            }
+            return day.stops;
+        }
+    }
+
+    //identify two arrays we are moving to and fro
+    const sourceArray = getTargetArray(sourceDayDate);
+    const targetArray = getTargetArray(targetLocation);
+
+    //removes item from old array, push to new array
+    if (sourceArray && sourceArray[draggedItemIndex]) {
+        const [movedItem] = sourceArray.splice(draggedItemIndex, 1);
+        targetArray.push(movedItem);
+        
+        saveState();
+        //Redraw the board to reflect the new data structure
+        renderBoardItems(trip);
+        showToast("Activity moved!");
+    }
+}
+
+function openAddActivityModal() {
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // populate location dropdown with timeline days
+    const select = document.getElementById('actTargetDay');
+    
+    // Always offer the Idea Bank as an option default
+    select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
+    
+    //loop through the trip days and add them as options
+    trip.days.forEach(day => {
+        select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
+    });
+
+    // Clear out any old text from the inputs
+    document.getElementById('actName').value = '';
+    document.getElementById('actSub').value = '';
+    
+    openModal('addActivityModal');
+}
+
+function saveNewActivity() {
+    const trip = itineraries.find(t => t.id == currentTripId);
+    if (!trip) return;
+
+    // Grab data from form
+    const name = document.getElementById('actName').value || 'New Activity';
+    const time = document.getElementById('actTime').value || 'Flexible';
+    const icon = document.getElementById('actIcon').value || '📍';
+    const sub = document.getElementById('actSub').value || 'Custom';
+    const targetId = document.getElementById('actTargetDay').value;
+    const carbon = parseInt(document.getElementById('actCarbon').value) || 0;
+
+    // Create the new Stop Object
+    const newStop = { time, icon, name, sub, carbon };
+
+    // Push it to the correct Array
+    if (targetId === 'ideaBank') {
+        if (!trip.ideaBank) trip.ideaBank = [];
+        trip.ideaBank.push(newStop);
+    } else {
+        let targetDay = trip.days.find(d => d.date === targetId);
+        // if day don't exist, create it
+        if (!targetDay) {
+            targetDay = { date: targetId, stops: [] };
+            trip.days.push(targetDay);
+        }
+        targetDay.stops.push(newStop);
+    }
+
+    // refresh UI
+    closeModal('addActivityModal');
+    renderBoardItems(trip);
+    saveState();
+    showToast("Activity added! ✨");
+}
+
+function deleteActivity(index, sourceLocation) {
+  const trip = itineraries.find(t => t.id == currentTripId);
+  if (!trip) return;
+
+  if (sourceLocation === 'ideaBank') {
+    trip.ideaBank.splice(index, 1);
+  } else {
+    const day = trip.days.find(d => d.date === sourceLocation);
+    if (day) {
+      day.stops.splice(index, 1);
+    }
+  }
+  renderBoardItems(trip);
+  saveState();
+  showToast("Activity deleted!");
+}

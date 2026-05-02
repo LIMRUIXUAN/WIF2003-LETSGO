@@ -2,3 +2,496 @@
    explore.css  —  Owner: Tan Jin Xiang
    Eco-options grid & flip cards
    ═══════════════════════════════════════════════════════════ */
+
+/* ── SEARCH BAR ── */
+.search-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.search-bar-wrap:focus-within {
+  border-color: var(--eco-green);
+  box-shadow: 0 0 0 3px rgba(154, 179, 160, 0.1);
+}
+
+.search-bar-wrap input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  outline: none;
+  color: #2c3e50;
+}
+
+.search-bar-wrap input::placeholder {
+  color: #bdc3c7;
+}
+
+/* ── AUTOCOMPLETE SUGGESTIONS ── */
+.suggestion-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f5f3;
+  color: var(--eco-green);
+}
+
+/* ── FILTER CHIPS ── */
+.filter-chip {
+  padding: 8px 16px;
+  border: 2px solid #e8e8e8;
+  background: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+}
+
+.filter-chip:hover {
+  border-color: var(--eco-green);
+  color: var(--eco-green);
+}
+
+.filter-chip.active {
+  background: var(--eco-green);
+  border-color: var(--eco-green);
+  color: white;
+}
+
+/* ── FLIP CARD 3D ── */
+.flip-card {
+  height: 400px;
+  cursor: pointer;
+  perspective: 1000px;
+  position: relative;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform-style: preserve-3d;
+}
+
+.flip-card.is-flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* ── LISTING CARD (FRONT) ── */
+.listing-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e8e8e8;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.listing-card:hover {
+  border-color: var(--eco-green);
+  box-shadow: 0 4px 16px rgba(154, 179, 160, 0.15);
+}
+
+.card-img {
+  position: relative;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5faf8 0%, #f0f5f3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.fav-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  color: #e74c3c;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.fav-btn:hover {
+  transform: scale(1.1);
+  background: #f0f5f3;
+}
+
+.fav-btn.saved {
+  /* Keep background white and heart red - visual cue is the filled heart icon */
+}
+
+.card-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.card-location {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.eco-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #ecf0ee;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--eco-green);
+}
+
+.eco-score.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.eco-score.low {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.price-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #e8f4f8;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #0c5460;
+}
+
+.co2-badge {
+  padding: 8px;
+  background: #d1ecf1;
+  border-left: 4px solid #17a2b8;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #0c5460;
+  font-weight: 600;
+  text-align: center;
+}
+
+.flip-hint {
+  padding: 8px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #9ab3a0;
+  background: #f9fafb;
+  border-top: 1px solid #e8e8e8;
+}
+
+/* ── FLIP CARD BACK ── */
+.flip-card-back {
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.flip-card-back h5 {
+  color: #2c3e50;
+  font-weight: 700;
+  margin: 12px 0;
+  font-size: 1.05rem;
+}
+
+.flip-card-back p {
+  color: #555;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.flip-card-back .btn-eco,
+.flip-card-back .btn-secondary {
+  font-size: 0.85rem;
+  padding: 8px 14px;
+}
+
+.flip-card-back .btn-secondary {
+  background: #f0f0f0;
+  color: #666;
+  border: none;
+}
+
+.flip-card-back .btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* ── ADVANCED FILTER MODAL ── */
+.filter-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.filter-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.filter-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.filter-modal-header h5 {
+  margin: 0;
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close-modal:hover {
+  color: #2c3e50;
+}
+
+.filter-modal-body {
+  padding: 20px;
+}
+
+.filter-section {
+  margin-bottom: 24px;
+}
+
+.filter-label {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.budget-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-input-small {
+  width: 100px;
+  padding: 8px 12px;
+  border: 2px solid #e8e8e8;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.filter-input-small:focus {
+  border-color: var(--eco-green);
+}
+
+.filter-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #2c3e50;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--eco-green);
+}
+
+.eco-rating-slider {
+  padding: 10px 0;
+}
+
+.eco-rating-slider input[type="range"] {
+  accent-color: var(--eco-green);
+}
+
+.filter-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-top: 2px solid #e8e8e8;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-eco {
+  padding: 10px 20px;
+  background: var(--eco-green);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-eco:hover {
+  background: #7d9f91;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(154, 179, 160, 0.3);
+}
+
+/* ── ACTIVE FILTERS DISPLAY ── */
+#activeFiltersDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .filter-modal-content {
+    max-width: 90%;
+  }
+
+  .flip-card {
+    height: 350px;
+  }
+
+  .search-bar-wrap {
+    flex-wrap: wrap;
+  }
+
+  .search-bar-wrap input {
+    min-width: 100%;
+  }
+
+  .filter-chip {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+}
