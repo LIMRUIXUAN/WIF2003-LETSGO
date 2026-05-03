@@ -2,3 +2,81 @@
    carbon.css  —  Owner: Chin Kin Hiung
    Charts, calculator UI & weather cards
    ═══════════════════════════════════════════════════════════ */
+
+   .suggestion-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    z-index: 2000;
+    overflow: hidden;
+    margin-top: 0px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f5f2;
+    transition: all 0.2s ease;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #e8f5e9; /* Matches Eco theme */
+    padding-left: 20px; /* Slight indent on hover for premium feel */
+}
+
+.suggestion-item i {
+    font-size: 1.2rem;
+    color: #40916c;
+}
+
+/* Input Group Polishing */
+.input-group-text {
+    border-radius: 8px 0 0 8px;
+    border-color: #ced4da;
+}
+
+.form-control-eco.border-start-0 {
+    border-radius: 0 8px 8px 0;
+}
+
+.form-control-eco:focus {
+    box-shadow: none;
+    border-color: #40916c;
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: #40916c;
+}
+
+.input-group:focus-within .form-control-eco {
+    border-color: #40916c;
+}
+
+/* Custom Scrollbar for Suggestions */
+.suggestion-box::-webkit-scrollbar {
+    width: 6px;
+}
+.suggestion-box::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+.suggestion-box::-webkit-scrollbar-thumb {
+    background: #b7e4c7; 
+    border-radius: 10px;
+}
+.suggestion-box::-webkit-scrollbar-thumb:hover {
+    background: #40916c; 
+}

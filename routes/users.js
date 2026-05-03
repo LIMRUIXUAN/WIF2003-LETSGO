@@ -57,14 +57,19 @@ router.put('/:email', async (req, res) => {
 
         // Map the fields allowed to be updated from the frontend
         const updateData = {
-            name: req.body.name,
-            city: req.body.city,
-            budget: req.body.budget,
-            avatar: req.body.avatar,
-            interests: req.body.interests,
-            notifTrip: req.body.notifTrip,
-            notifEco: req.body.notifEco
+            name:         req.body.name,
+            city:         req.body.city,
+            budget:       req.body.budget,
+            avatar:       req.body.avatar,
+            interests:    req.body.interests,
+            notifTrip:    req.body.notifTrip,
+            notifEco:     req.body.notifEco,
+            co2Saved:     req.body.co2Saved,
+            co2Footprint: req.body.co2Footprint
         };
+
+        // Remove undefined fields so partial updates don't wipe existing values
+        Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
 
         // Find the user and update, returning the new version
         const updatedUser = await User.findOneAndUpdate(

@@ -46,9 +46,9 @@
  
 <!-- Top Navigation Bar -->
 <nav class="eco-nav d-flex align-items-center justify-content-between">
-  <a href="index.html" class="brand"><span class="leaf">🌿</span> EcoPlanner</a>
+  <a href="index.html" class="brand"><img src="images/logo_letsgo.png" alt="EcoPlanner"></a>
   <div class="nav-links d-none d-md-flex">
-    <a class="nav-link"        href="index.html"><i class="bi bi-house"></i>Home</a>
+    <a class="nav-link"        href="dashboard.html"><i class="bi bi-speedometer2"></i>Dashboard</a>
     <a class="nav-link"        href="explore.html"><i class="bi bi-compass"></i>Explore</a>
     <a class="nav-link active" href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
     <a class="nav-link"        href="weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
@@ -65,7 +65,7 @@
   <!-- Sidebar -->
   <div class="dash-sidebar d-none d-lg-block">
     <div class="section-label">Main</div>
-    <a class="sidebar-link" href="index.html"><i class="bi bi-house-fill"></i> Dashboard</a>
+    <a class="sidebar-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
     <a class="sidebar-link" href="explore.html"><i class="bi bi-compass-fill"></i> Explore</a>
     <a class="sidebar-link" href="planner.html"><i class="bi bi-map-fill"></i> My Itinerary</a>
     <div class="section-label">Tools</div>
@@ -116,9 +116,12 @@
               <div style="font-size:.72rem; color:var(--text-faint);">Days</div>
             </div>
             <div>
-            <!-- this will display the CO2 saved for user okayha-->
-            <div style="font-weight:700; font-size:1.1rem; color:var(--eco-amber);" id="statCO2">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Saved</div>
+              <div style="font-weight:700; font-size:1.1rem; color:var(--eco-green);" id="statCO2">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Saved ✅</div>
+            </div>
+            <div>
+              <div style="font-weight:700; font-size:1.1rem; color:var(--eco-amber);" id="statFootprint">0</div>
+              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Produced ⚠️</div>
             </div>
           </div>
         </div>
@@ -168,10 +171,6 @@
               <option value="luxury">Luxury (RM 300+/day)</option>
             </select>
           </div>
- 
-          <button class="btn-eco me-2" onclick="saveProfile()">
-            <i class="bi bi-check2"></i> Save Changes
-          </button>
         </div>
  
         <!-- Change Password -->

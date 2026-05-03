@@ -18,9 +18,9 @@
 
   <!-- Top Navigation Bar -->
   <nav class="eco-nav d-flex align-items-center justify-content-between">
-    <a href="index.html" class="brand"><span class="leaf">🌿</span> EcoPlanner</a>
+    <a href="index.html" class="brand"><img src="images/logo_letsgo.png" alt="EcoPlanner"></a>
     <div class="nav-links d-none d-md-flex">
-      <a class="nav-link"        href="index.html"><i class="bi bi-house"></i>Home</a>
+      <a class="nav-link"        href="dashboard.html"><i class="bi bi-speedometer2"></i>Dashboard</a>
       <a class="nav-link"        href="explore.html"><i class="bi bi-compass"></i>Explore</a>
       <a class="nav-link"        href="planner.html"><i class="bi bi-map"></i>Itinerary</a>
       <a class="nav-link"        href="weather.html"><i class="bi bi-cloud-sun"></i>Weather</a>
@@ -37,7 +37,7 @@
     <!-- Sidebar -->
     <div class="dash-sidebar d-none d-lg-block">
       <div class="section-label">Main</div>
-      <a class="sidebar-link"        href="index.html"><i class="bi bi-house-fill"></i>Dashboard</a>
+      <a class="sidebar-link"        href="dashboard.html"><i class="bi bi-speedometer2"></i>Dashboard</a>
       <a class="sidebar-link"        href="explore.html"><i class="bi bi-compass-fill"></i>Explore</a>
       <a class="sidebar-link"        href="planner.html"><i class="bi bi-map-fill"></i>My Itinerary</a>
       <div class="section-label">Tools</div>
@@ -51,115 +51,147 @@
 
     <!-- Main Content -->
     <div class="dash-main">
-      <div class="toast-wrap" id="toastWrap"></div>
+    <div class="toast-wrap" id="toastWrap"></div>
+    <div class="welcome-banner" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #40916c 100%); border-radius: 16px; padding: 2rem 2.5rem; color: #fff; margin-bottom: 2rem; position: relative; overflow: hidden;">
+      <h2 style="font-family: 'DM Serif Display', serif; margin-bottom: .25rem;">Carbon Footprint Calculator</h2>
+      <p style="opacity: .8; margin: 0; font-size: .95rem;">Calculate your travel emissions and track your eco-savings.</p>
+      <i class="bi bi-tree-fill" style="position: absolute; right: 2rem; top: 50%; transform: translateY(-50%); font-size: 6rem; opacity: .15;"></i>
+    </div>
 
-      <!-- ── CARBON CALCULATOR ── -->
-      <div id="tab-carbon">
-        <h4 class="section-title mb-0">Carbon Footprint Calculator</h4>
-        <p class="section-sub">Calculate and offset the environmental impact of your travel</p>
-        <div class="row g-4">
-
-          <!-- Input panel -->
-          <div class="col-lg-7">
-            <div class="calc-wrap">
-              <div class="mb-3 position-relative">
-                <label class="form-label">From (Origin)</label>
-                <input class="form-control-eco" placeholder="e.g. Kuala Lumpur" id="carbonFrom" autocomplete="off">
-                <div class="suggestion-dropdown" id="suggestFrom" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100; background:#fff; border:1px solid #e8f0eb; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.12); overflow:hidden;"></div>
+    <div class="row g-4">
+      
+      <div class="col-lg-7">
+        <div class="section-card shadow-sm" style="background: #fff; border: 1px solid #e8f0eb; border-radius: 14px; padding: 1.5rem;">
+          <h6 class="mb-4" style="font-weight: 700; color: #1b4332;">
+            <i class="bi bi-geo-alt-fill text-success me-2"></i> Plan Your Journey
+          </h6>
+          
+          <div class="row g-3">
+            <div class="col-md-6 position-relative">
+              <label class="form-label small fw-bold text-muted">Origin</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-success"></i></span>
+                <input type="text" id="calcFrom" class="form-control form-control-eco border-start-0 bg-light" placeholder="e.g. Kuala Lumpur" autocomplete="off" style="border: 1px solid #ced4da;">
               </div>
-              
-              <div class="mb-3 position-relative">
-                <label class="form-label">To (Destination)</label>
-                <input class="form-control-eco" placeholder="e.g. Langkawi" id="carbonTo" autocomplete="off">
-                <div class="suggestion-dropdown" id="suggestTo" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:100; background:#fff; border:1px solid #e8f0eb; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.12); overflow:hidden;"></div>
-              </div>
+              <div id="fromSuggestions" class="suggestion-box" style="display:none;"></div>
+            </div>
 
-              <div class="row g-3 mb-3">
-                <div class="col-6">
-                  <label class="form-label">Distance (km)</label>
-                  <input type="number" class="form-control-eco" id="carbonDist" value="0" readonly style="background:#f0f7f4;">
-                </div>
-                <div class="col-6">
-                  <label class="form-label">Travelers 👥</label>
-                  <input type="number" class="form-control-eco" id="carbonPax" value="1" min="1" max="10" oninput="calcCarbon()">
-                </div>
+            <div class="col-md-6 position-relative">
+              <label class="form-label small fw-bold text-muted">Destination</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-fill text-danger"></i></span>
+                <input type="text" id="calcTo" class="form-control form-control-eco border-start-0 bg-light" placeholder="e.g. Singapore" autocomplete="off" style="border: 1px solid #ced4da;">
               </div>
+              <div id="toSuggestions" class="suggestion-box" style="display:none;"></div>
+            </div>
 
-              <label class="form-label">Select Transport Mode</label>
-              <div class="row g-2 mb-3" id="transportOptions">
-                <div class="col-3"><div class="transport-option selected" onclick="selectTransport(this,'flight',255)"><div class="t-icon">✈️</div><div class="t-label">Flight</div></div></div>
-                <div class="col-3"><div class="transport-option" onclick="selectTransport(this,'car',171)"><div class="t-icon">🚗</div><div class="t-label">Car</div></div></div>
-                <div class="col-3"><div class="transport-option" onclick="selectTransport(this,'train',41)"><div class="t-icon">🚂</div><div class="t-label">Train</div></div></div>
-                <div class="col-3"><div class="transport-option" onclick="selectTransport(this,'bus',68)"><div class="t-icon">🚌</div><div class="t-label">Bus</div></div></div>
-              </div>
-
-              <label class="form-label">Accommodation (nights)</label>
-              <input type="range" min="0" max="14" value="3" step="1" id="accomNights"
-                     oninput="calcCarbon(); document.getElementById('nightsOut').textContent = this.value + ' nights'"
-                     class="form-range" style="accent-color:var(--eco-green);">
-              <div class="d-flex justify-content-between" style="font-size:.8rem; color:#9ab3a0;">
-                <span>0</span><span id="nightsOut">3 nights</span><span>14</span>
+            <div class="col-12 mt-3">
+              <label class="form-label small fw-bold text-muted">Transport Mode</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-car-front-fill" style="color: #40916c;"></i></span>
+                <select id="transportMode" class="form-control form-control-eco border-start-0 bg-light" style="border: 1px solid #ced4da;">
+                  <optgroup label="Road">
+                    <option value="car_petrol">🚗 Petrol Car (Baseline)</option>
+                    <option value="car_ev">🔌 Electric Vehicle (EV)</option>
+                    <option value="bus">🚌 Public Bus</option>
+                  </optgroup>
+                  <optgroup label="Rail">
+                    <option value="train_electric">🚆 MRT / LRT / KTM</option>
+                    <option value="klia_ekspres">🚄 KLIA Ekspres</option>
+                  </optgroup>
+                  <optgroup label="Air">
+                    <option value="flight_short">✈️ Short-haul Flight</option>
+                  </optgroup>
+                  <optgroup label="Zero Emission">
+                    <option value="walking">🚶 Walking / Bicycle</option>
+                  </optgroup>
+                </select>
               </div>
             </div>
           </div>
+          
+          <button class="btn-eco w-100 mt-4 py-2" id="btnCalculate" onclick="calculateCarbon()" style="font-size: 1rem; font-weight: 600;">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Calculate Impact
+          </button>
+        </div>
 
-          <!-- Results panel -->
-          <div class="col-lg-5">
+        <div id="carbonResult" class="mt-4" style="display:none;"></div>
+      </div>
 
-            <style>
-              .info-tooltip { position: relative; display: inline-block; cursor: help; }
-              .info-tooltip .tooltip-text {
-                visibility: hidden; width: 280px; background-color: #1a2e1e; color: #fff; text-align: left;
-                border-radius: 12px; padding: 14px; position: absolute; z-index: 100;
-                bottom: 150%; left: 50%; transform: translateX(-50%); font-size: 0.8rem; line-height: 1.5;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s, bottom 0.3s;
-                font-weight: 400; font-family: var(--font-body); pointer-events: none;
-              }
-              .info-tooltip:hover .tooltip-text { visibility: visible; opacity: 1; bottom: 130%; }
-              .info-tooltip .tooltip-text::after {
-                content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px;
-                border-width: 6px; border-style: solid; border-color: #1a2e1e transparent transparent transparent;
-              }
-            </style>
-
-            <<div class="emission-result mb-3">
-              <div style="font-size:.85rem; opacity:.8; margin-bottom:.5rem; display:flex; justify-content:center; align-items:center; gap:8px;">
-                Your estimated emissions
-                
-                <div class="info-tooltip">
-                  <i class="bi bi-question-circle" style="opacity: 0.9;"></i>
-                  <div class="tooltip-text">
-                    <strong style="color:var(--eco-leaf); font-size: 0.85rem;">Calculation Methodology</strong><br>
-                    <div style="margin-top:6px; margin-bottom:8px;">
-                      <em>Formula:</em> Activity Data (Distance/Nights) × Emission Factor
-                    </div>
-                    <em>Standards:</em> Calculations align with official global methodologies provided by <strong>UK DEFRA</strong>, <strong>US EPA</strong>, and <strong>ICAO</strong>.
-                  </div>
-                </div>
-                
-              </div>
-              <div class="emission-num" id="carbonTotal">0</div>
-              <div class="emission-unit">kg CO₂ equivalent</div>
-              <div style="margin-top:1rem; font-size:.82rem; opacity:.75;">
-                ≈ <span id="treesCount">0</span> trees to offset for 1 year
-              </div>
+      <div class="col-lg-5">
+        <div class="section-card shadow-sm" style="background: #fff; border: 1px solid #e8f0eb; border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <h6 class="mb-4" style="font-weight: 700; color: #1b4332;">
+            <i class="bi bi-award-fill text-warning me-2"></i> My Eco Progress
+          </h6>
+          
+          <!-- CO2 Saved -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:.75rem; color:#6b7c6e; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.2rem;">
+              ✅ CO₂ Saved vs Petrol
             </div>
-
-            <div style="background:#fff; border-radius:16px; padding:1.2rem; border:1px solid #e8f0eb; margin-bottom:1rem;">
-              <div style="font-weight:600; margin-bottom:1rem; font-size:.9rem;">Transport Comparison</div>
-              <div id="comparisonBars"></div>
+            <div class="d-flex align-items-end gap-2">
+              <h1 class="mb-0 fw-bold" style="color: #2d6a4f; font-size: 2.6rem; line-height: 1;" id="totalSaved">0</h1>
+              <span class="text-muted pb-1 fw-bold">kg</span>
             </div>
-            <div id="offsetSuggestions"></div>
+            <div class="d-flex align-items-center gap-2 mt-2 px-3 py-2 rounded-pill" style="background-color: #e8f5e9; border: 1px solid #c8e6c9; width: fit-content;">
+              <i class="bi bi-tree-fill" style="color: #27ae60;"></i>
+              <span style="color: #1b4332; font-weight: 600; font-size: 0.85rem;">
+                = <span id="treesSaved">0</span> trees planted/yr
+              </span>
+            </div>
           </div>
 
+          <!-- CO2 Footprint -->
+          <div style="background:#fff3cd; border-radius:10px; padding:.75rem 1rem; margin-bottom:1rem;">
+            <div style="font-size:.75rem; color:#7d4e00; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.2rem;">
+              ⚠️ CO₂ Footprint (Trips Produced)
+            </div>
+            <div class="d-flex align-items-end gap-2">
+              <h2 class="mb-0 fw-bold" style="color: #7d4e00; font-size: 2rem; line-height: 1;" id="totalFootprint">0</h2>
+              <span style="color:#7d4e00; font-weight:600; padding-bottom:2px;">kg</span>
+            </div>
+            <div style="font-size:.75rem; color:#7d4e00; margin-top:.3rem;">From activities logged in your trip planner</div>
+          </div>
+          
+          <div class="progress mb-2" style="height: 12px; border-radius: 8px; background-color: #e8f0eb;">
+            <div id="goalProgress" class="progress-bar" role="progressbar" style="background-color: #40916c; width: 0%"></div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <p class="small text-muted mb-0">Target: <strong id="goalText" style="color: #1b4332;">500</strong> kg</p>
+            <button class="btn btn-sm" style="background: #e8f5e9; color: #27ae60; font-weight: 600;" onclick="openGoalModal()">Edit Goal</button>
+          </div>
+        </div>
+
+        <div class="section-card shadow-sm" style="background: #fff; border: 1px solid #e8f0eb; border-radius: 14px; padding: 1.5rem;">
+          <h6 class="mb-3" style="font-weight: 700; color: #1b4332;"><i class="bi bi-graph-up text-primary me-2"></i> Monthly Impact</h6>
+          <div style="height: 220px;">
+            <canvas id="co2Chart"></canvas>
+          </div>
         </div>
       </div>
 
-    </div><!-- /dash-main -->
-  </div><!-- /dash-layout -->
+    </div>
+  </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/carbon.js"></script>
-  </body>
+<div id="goalModal" class="eco-modal-backdrop" style="display:none;">
+  <div class="eco-modal" style="max-width:360px; text-align: center;">
+    <h5 class="fw-bold mb-3">🎯 Set Your Target</h5>
+    <p class="small text-muted mb-3">Set a target for how much CO₂ you want to save.</p>
+    <div class="input-group mb-4">
+      <input type="number" id="goalInput" class="form-control-eco" placeholder="e.g. 500">
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn-eco-outline flex-fill" onclick="closeModal('goalModal')">Cancel</button>
+      <button class="btn-eco flex-fill" onclick="saveGoal()">Save Target</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/app.js"></script>
+<script src="js/carbon.js"></script>
+</body>
 </html>

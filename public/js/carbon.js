@@ -7,254 +7,343 @@
 
 /* ── DATA & STATE ── */
 // Emission factors based on DEFRA/EPA standard averages (g CO2/km)
-const TRANSPORT_FACTORS = { flight: 255, car: 171, train: 41, bus: 68 };
-const ACCOM_FACTOR      = 21; // kg CO₂ per night per room
-let selectedTransport   = { type: 'flight', factor: 255 };
+// 1. Your Research Data (Source: DEFRA / Industry Standards)
+const EMISSION_FACTORS = {
+  "car_petrol": 0.1405,
+  "car_diesel": 0.1418,
+  "car_ev": 0.0449,
+  "car_hybrid": 0.10,
+  "motorcycle": 0.103,
+  "bus": 0.105,
+  "train_electric": 0.0275,
+  "klia_ekspres": 0.044,
+  "flight_short": 0.13,
+  "flight_long": 0.11,
+  "ferry": 0.1523,
+  "bicycle": 0.0,
+  "walking": 0.0
+};
+const BASELINE = EMISSION_FACTORS.car_petrol;// Baseline for comparison (petrol car)
+let currentUserData = null;
+let co2ChartInst = null;
+let currentTrips = [];
 
 // Store coordinates for automated distance calculation
-let locationCoords = {
-  from: null, // { lat, lon }
-  to: null    // { lat, lon }
-};
+async function loadCarbon() {
+  const email = localStorage.getItem('ecoUserEmail');
+  if (!email) return;
+
+  try {
+    const [uRes, tRes] = await Promise.all([
+      fetch(`/api/users/profile/${email}`),
+      fetch(`/api/trips/${email}`)
+    ]);
+    const uData = await uRes.json();
+    const tData = await tRes.json();
+    if (uData.success) {
+      currentUserData = uData.data;
+      currentTrips = tData.success ? tData.data : [];
+      updateStatsUI();
+      renderCO2Chart(currentTrips);
+    }
+  } catch (e) {
+    console.error("Failed to load user data:", e);
+  }
+}
+
+// 3. The Calculation Engine
+async function calculateCarbon() {
+  const from = document.getElementById('calcFrom').value.trim();
+  const to = document.getElementById('calcTo').value.trim();
+  const mode = document.getElementById('transportMode').value;
+  const btn = document.getElementById('btnCalculate');
+  const resultDiv = document.getElementById('carbonResult');
+
+  if (!from || !to) {
+    showToast("Please enter both origin and destination.", "warn");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finding Route...';
+
+  try {
+    // 🌍 Step A: Geocode cities to get Lat/Lon
+    const [res1, res2] = await Promise.all([
+      fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(from)}&count=1`),
+      fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(to)}&count=1`)
+    ]);
+    
+    const d1 = await res1.json();
+    const d2 = await res2.json();
+
+    if (!d1.results || !d2.results) {
+      showToast("Could not find one of those cities. Try adding the country name.", "error");
+      btn.disabled = false;
+      btn.innerHTML = 'Calculate Eco Impact';
+      return;
+    }
+
+    // 📏 Step B: Haversine Math
+    const dist = calculateHaversine(d1.results[0], d2.results[0]);
+    
+    // 🧪 Step C: Carbon Math
+    const factor = EMISSION_FACTORS[mode];
+    const userEmissions = dist * factor;
+    const petrolBaseline = dist * BASELINE;
+    const savings = petrolBaseline - userEmissions;
+
+    // 🎨 Step D: Update UI
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `
+      <div class="stat-card border-success" style="border-width:2px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted small">Route: <strong>${d1.results[0].name} → ${d2.results[0].name}</strong></span>
+          <span class="badge bg-light text-dark">${Math.round(dist)} km</span>
+        </div>
+        <div class="text-center py-3">
+          <div class="small text-muted mb-1">By choosing <strong>${mode.replace('_',' ')}</strong>, you:</div>
+          <h2 class="${savings >= 0 ? 'text-success' : 'text-danger'} fw-bold mb-0">
+            ${savings >= 0 ? 'Saved ' : 'Added '} ${Math.abs(savings).toFixed(2)} kg CO₂
+          </h2>
+          <p class="text-muted small mt-2">vs. driving a petrol car (${userEmissions.toFixed(2)}kg produced)</p>
+        </div>
+        <button class="btn btn-success w-100" onclick="logEcoProgress(${savings.toFixed(2)})">
+          <i class="bi bi-plus-circle-fill"></i> Add to My Eco Progress
+        </button>
+      </div>
+    `;
+
+    showToast("Calculation complete! 🌿");
+  } catch (e) {
+    showToast("Network error. Please try again.", "error");
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-lightning-charge"></i> Calculate Eco Impact';
+  }
+}
 
 /* ── 1. DISTANCE & MATH LOGIC ── */
 
 // Haversine Formula: Calculates distance between two points on Earth
-function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  
-  // Multiply by 1.2 to account for routing (roads/flight paths aren't perfectly straight)
-  return Math.round((R * c) * 1.2); 
+function calculateHaversine(p1, p2) {
+  const R = 6371; // km
+  const dLat = (p2.latitude - p1.latitude) * Math.PI / 180;
+  const dLon = (p2.longitude - p1.longitude) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(p1.latitude * Math.PI / 180) * Math.cos(p2.latitude * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  // okay we multiply by 1.2 to account for routing assume that paths are not perfectly straight
+  return R * c * 1.2;
 }
-
-function updateDistance() {
-  if (locationCoords.from && locationCoords.to) {
-    const dist = calculateHaversineDistance(
-      locationCoords.from.lat, locationCoords.from.lon,
-      locationCoords.to.lat, locationCoords.to.lon
-    );
-    document.getElementById('carbonDist').value = dist;
-    calcCarbon(); // Trigger calculation when distance updates
-  }
-}
-
-/* ── 2. AUTOCOMPLETE GEOLOCATION LOGIC ── */
-let debounceTimer;
-
-async function fetchLocationSuggestions(query, targetId) {
-  const suggestBox = document.getElementById(targetId === 'carbonFrom' ? 'suggestFrom' : 'suggestTo');
   
-  if (query.length < 2) {
-    suggestBox.style.display = 'none';
-    return;
-  }
+// okay it will send the calculation to the Planner page to be added as an activity idea, and then the user can choose to add it to their progress when they complete the activity
+// In carbon.js: Silently save to Planner Ideas without redirecting
+async function logEcoProgress(savings) {
+    const from = document.getElementById('calcFrom').value;
+    const to = document.getElementById('calcTo').value;
+    const mode = document.getElementById('transportMode').options[document.getElementById('transportMode').selectedIndex].text;
 
-  try {
-    // Increased count to 10 so we have enough data to filter out duplicates
-    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json`);
-    const data = await res.json();
-    
-    if (!data.results || data.results.length === 0) {
-      suggestBox.style.display = 'none';
-      return;
+    const savingsKg = Math.max(0, parseFloat(savings));
+
+    // 1. Directly update user.co2Saved in MongoDB
+    const email = localStorage.getItem('ecoUserEmail');
+    if (email && currentUserData) {
+        const newTotal = Math.round(((currentUserData.co2Saved || 0) + savingsKg) * 10) / 10;
+        try {
+            await fetch(`/api/users/${email}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ co2Saved: newTotal })
+            });
+            currentUserData.co2Saved = newTotal;
+            updateStatsUI();
+        } catch (e) {
+            console.error("Failed to update co2Saved:", e);
+        }
     }
 
-    // --- NEW: Deduplication Logic ---
-    const uniqueCities = [];
-    const seenIdentifiers = new Set();
+    // 2. Also save as a planner activity idea (tagged so planner won't count it as footprint)
+    const newActivity = {
+        id: 'eco_' + Date.now(),
+        icon: '🚌',
+        name: `Travel: ${from.split(',')[0]} → ${to.split(',')[0]}`,
+        sub: `Transport: ${mode}`,
+        time: 'Flexible',
+        carbon: savingsKg,
+        source: 'calculator'
+    };
+    let pendingIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
+    pendingIdeas.push(newActivity);
+    localStorage.setItem('ecoPendingIdeas', JSON.stringify(pendingIdeas));
 
-    for (const city of data.results) {
-      // Create a unique identifier based on name and country
-      const identifier = `${city.name}-${city.country || ''}`;
-      
-      // If we haven't seen this specific city/country combo yet, add it
-      if (!seenIdentifiers.has(identifier)) {
-        seenIdentifiers.add(identifier);
-        uniqueCities.push(city);
+    // 3. UI feedback
+    showToast("Eco savings logged & saved to Planner! 🌿");
+    document.getElementById('carbonResult').style.display = 'none';
+    document.getElementById('calcFrom').value = '';
+    document.getElementById('calcTo').value = '';
+}
+
+// UI rendering for stats and progress bars
+function updateStatsUI() {
+  const goal      = parseInt(localStorage.getItem('ecoGoalCO2') || '500');
+  const saved     = currentUserData.co2Saved     || 0;
+  const footprint = currentUserData.co2Footprint || 0;
+  const pct       = Math.min(100, Math.round((saved / goal) * 100));
+  const trees     = (saved / 22).toFixed(1);
+
+  document.getElementById('totalSaved').textContent    = saved;
+  document.getElementById('goalText').textContent      = goal;
+  document.getElementById('goalProgress').style.width  = pct + '%';
+  document.getElementById('navInitial').textContent    =
+    currentUserData.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+  const treeEl = document.getElementById('treesSaved');
+  if (treeEl) treeEl.textContent = trees;
+
+  const fpEl = document.getElementById('totalFootprint');
+  if (fpEl) fpEl.textContent = footprint;
+}
+
+function renderCO2Chart(trips = []) {
+  const ctx = document.getElementById('co2Chart');
+  if (!ctx) return;
+  if (co2ChartInst) co2ChartInst.destroy();
+
+  // Build last-6-month labels
+  const now    = new Date();
+  const labels = [];
+  const co2Data = [];
+  const goalLine = [];
+  const monthlyGoal = parseInt(localStorage.getItem('ecoGoalCO2') || '500') / 6;
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+
+    // Sum carbon from all stops in trips created this month
+    const monthCO2 = trips.reduce((sum, trip) => {
+      const created = new Date(trip.createdAt);
+      if (created.getFullYear() !== d.getFullYear() || created.getMonth() !== d.getMonth()) return sum;
+      return sum + (trip.days || []).reduce((ds, day) =>
+        ds + (day.stops || []).reduce((ss, stop) => ss + (parseFloat(stop.carbon) || 0), 0), 0);
+    }, 0);
+
+    co2Data.push(+monthCO2.toFixed(1));
+    goalLine.push(+monthlyGoal.toFixed(1));
+  }
+
+  co2ChartInst = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'CO₂ Saved (kg)',
+          data: co2Data,
+          backgroundColor: 'rgba(45,106,79,.75)',
+          borderRadius: 6
+        },
+        {
+          type: 'line',
+          label: 'Monthly Target',
+          data: goalLine,
+          borderColor: '#f39c12',
+          borderDash: [5, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } }
+      },
+      scales: {
+        y: { grid: { color: '#f0f5f2' }, ticks: { font: { size: 10 } }, beginAtZero: true },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
       }
-      
-      // Stop once we have 5 unique suggestions
-      if (uniqueCities.length >= 5) break; 
-    }
-
-    // Render the unique cities
-    suggestBox.innerHTML = uniqueCities.map(city => `
-      <div class="suggestion-item" style="padding:10px 16px; font-size:0.88rem; cursor:pointer; color:#1a2e1e; border-bottom:1px solid #f0f7f4;" 
-           onmouseover="this.style.background='#f0f7f4'" onmouseout="this.style.background='transparent'"
-           onclick="selectLocation('${targetId}', '${city.name}, ${city.country || ''}', ${city.latitude}, ${city.longitude})">
-        <i class="bi bi-geo-alt" style="color:#9ab3a0; margin-right:8px;"></i> 
-        <strong>${city.name}</strong> <span style="color:#9ab3a0; font-size:0.8rem;">${city.admin1 ? ', ' + city.admin1 : ''} ${city.country ? '(' + city.country + ')' : ''}</span>
-      </div>
-    `).join('');
-    
-    suggestBox.style.display = 'block';
-  } catch (error) {
-    console.error("Geocoding fetch failed", error);
-  }
-}
-
-function selectLocation(targetId, fullName, lat, lon) {
-  document.getElementById(targetId).value = fullName;
-  document.getElementById(targetId === 'carbonFrom' ? 'suggestFrom' : 'suggestTo').style.display = 'none';
-  
-  // Save coordinates
-  if (targetId === 'carbonFrom') locationCoords.from = { lat, lon };
-  if (targetId === 'carbonTo') locationCoords.to = { lat, lon };
-  
-  updateDistance();
-}
-
-// Close dropdowns if clicking outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.position-relative')) {
-    document.getElementById('suggestFrom').style.display = 'none';
-    document.getElementById('suggestTo').style.display = 'none';
-  }
-});
-
-
-/* ── 3. CARBON CALCULATION & UI ── */
-function selectTransport(el, type, factor) {
-  document.querySelectorAll('.transport-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedTransport = { type, factor };
-  calcCarbon();
-}
-
-function animateValue(obj, start, end, duration) {
-  let startTimestamp = null;
-  const step = (timestamp) => {
-    if (!startTimestamp) startTimestamp = timestamp;
-    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-    const easeOut = 1 - Math.pow(1 - progress, 4);
-    obj.innerHTML = Math.floor(easeOut * (end - start) + start);
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    } else {
-      obj.innerHTML = end;
-    }
-  };
-  window.requestAnimationFrame(step);
-}
-
-function calcCarbon() {
-  const distInput = document.getElementById('carbonDist');
-  const paxInput  = document.getElementById('carbonPax');
-  if (!distInput || !paxInput) return;
-
-  const dist   = parseFloat(distInput.value) || 0;
-  const pax    = parseInt(paxInput.value) || 1;
-  const nights = parseInt(document.getElementById('accomNights').value) || 0;
-
-  let travelEmit = 0;
-  if (selectedTransport.type === 'car') {
-    const carsNeeded = Math.ceil(pax / 4);
-    travelEmit = (dist * TRANSPORT_FACTORS.car * carsNeeded) / 1000;
-  } else {
-    travelEmit = (dist * selectedTransport.factor * pax) / 1000;
-  }
-
-  const roomsNeeded = Math.ceil(pax / 2);
-  const accomEmit  = nights * ACCOM_FACTOR * roomsNeeded;
-  
-  const total = Math.round(travelEmit + accomEmit);
-  const trees = Math.ceil(total / 21);
-
-  const totalDisplay = document.getElementById('carbonTotal');
-  const oldTotal = parseInt(totalDisplay.innerText) || 0;
-  animateValue(totalDisplay, oldTotal, total, 800);
-
-  document.getElementById('treesCount').textContent = trees;
-
-  renderComparison(dist, pax);
-  renderOffsetSuggestions(total, trees);
-}
-
-function renderComparison(dist, pax) {
-  const container = document.getElementById('comparisonBars');
-  const modes = [
-    { name: '✈️ Flight', type: 'flight', color: '#e74c3c', calc: (dist * TRANSPORT_FACTORS.flight * pax) / 1000 },
-    { name: '🚗 Car',    type: 'car',    color: '#e67e22', calc: (dist * TRANSPORT_FACTORS.car * Math.ceil(pax/4)) / 1000 },
-    { name: '🚌 Bus',    type: 'bus',    color: '#f39c12', calc: (dist * TRANSPORT_FACTORS.bus * pax) / 1000 },
-    { name: '🚂 Train',  type: 'train',  color: '#27ae60', calc: (dist * TRANSPORT_FACTORS.train * pax) / 1000 },
-  ];
-  
-  const max = Math.max(...modes.map(m => m.calc));
-
-  container.innerHTML = modes.map(m => {
-    const val = Math.round(m.calc);
-    const pct = max > 0 ? Math.round((val / max) * 100) : 0;
-    const isSelected = m.type === selectedTransport.type;
-    return `
-      <div style="margin-bottom:.75rem;">
-        <div style="display:flex; justify-content:space-between; font-size:.8rem; margin-bottom:4px;">
-          <span style="font-weight:${isSelected ? '700' : '400'}">${m.name}</span>
-          <span style="font-weight:600; color:${m.color}">${val} kg CO₂</span>
-        </div>
-        <div class="progress-eco">
-          <div style="width:${pct}%; height:100%; border-radius:10px; background:${m.color}; transition:width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function renderOffsetSuggestions(total, trees) {
-  // Replace carbon credits with Operational Cost Savings logic
-  // Estimate: Optimizing eco-efficiency saves roughly RM 0.85 per kg of CO2 reduced
-  const costSavings = Math.round(total * 0.85).toLocaleString(); 
-  
-  const smartphones = (total * 121).toLocaleString();
-  const burgers = Math.round(total / 3.6).toLocaleString();
-
-  document.getElementById('offsetSuggestions').innerHTML = `
-    <div style="background:#fff; border-radius:16px; padding:1.2rem; border:1px solid #e8f0eb;">
-      <strong style="font-size:.9rem; display:block; margin-bottom:.75rem;">Impact & Savings 🌱</strong>
-      
-      <div class="offset-tip mb-3" style="background:#f0f7f4; border-color:var(--eco-green-light);">
-        <strong>🌳 Plant ${trees} trees</strong> — offsets this trip for 1 year
-      </div>
-      <div class="offset-tip mb-3" style="background:#e3f0fb; border-color:#2196f3;">
-        <strong>💰 RM ${costSavings}</strong> — Est. Operational Cost Savings via eco-efficiency
-      </div>
-
-      <hr style="border-top:1px dashed #d4e6d9; margin: 1rem 0;">
-      
-      <strong style="font-size:.85rem; color:#4a5e4f; display:block; margin-bottom:8px;">This trip's emission is equivalent to:</strong>
-      <div style="display:flex; justify-content:space-between; text-align:center; gap:8px;">
-        <div style="flex:1; background:#fafffe; padding:8px; border-radius:12px; border:1px solid #e8f0eb;">
-          <div style="font-size:1.5rem;">📱</div>
-          <div style="font-weight:700; font-size:1rem; color:#2d6a4f;">${smartphones}</div>
-          <div style="font-size:.7rem; color:#9ab3a0;">Phones Charged</div>
-        </div>
-        <div style="flex:1; background:#fafffe; padding:8px; border-radius:12px; border:1px solid #e8f0eb;">
-          <div style="font-size:1.5rem;">🍔</div>
-          <div style="font-weight:700; font-size:1rem; color:#2d6a4f;">${burgers}</div>
-          <div style="font-size:.7rem; color:#9ab3a0;">Beef Burgers</div>
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ── 4. INITIALIZATION & EVENT LISTENERS ── */
-document.addEventListener('DOMContentLoaded', () => {
-  calcCarbon();
-
-  // Setup debounce listeners for both origin and destination inputs
-  ['carbonFrom', 'carbonTo'].forEach(id => {
-    const inputEl = document.getElementById(id);
-    if (inputEl) {
-      inputEl.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          fetchLocationSuggestions(e.target.value.trim(), id);
-        }, 300);
-      });
     }
   });
+}
+
+// Modal Helpers
+function openGoalModal() { document.getElementById('goalModal').style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function saveGoal() {
+  const val = document.getElementById('goalInput').value;
+  if (val > 0) {
+    localStorage.setItem('ecoGoalCO2', val);
+    updateStatsUI();
+    renderCO2Chart(currentTrips);
+    closeModal('goalModal');
+    showToast("New goal set! 🎯");
+  }
+}
+
+loadCarbon();
+
+async function fetchLocationHints(inputId, suggestionId) {
+    const query = document.getElementById(inputId).value.trim();
+    const suggestionBox = document.getElementById(suggestionId);
+
+    // Only search if user types 3+ characters to save API calls
+    if (query.length < 3) {
+        suggestionBox.style.display = 'none';
+        return;
+    }
+
+    try {
+        // Calling the Geocoding Map API
+        const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            suggestionBox.innerHTML = data.results.map(loc => `
+                <div class="suggestion-item" onclick="selectLocation('${inputId}', '${suggestionId}', '${loc.name}', '${loc.country}', ${loc.latitude}, ${loc.longitude})">
+                    <i class="bi bi-geo-alt-fill me-2 text-muted"></i>
+                    <div>
+                        <div class="fw-bold" style="font-size:0.85rem;">${loc.name}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">${loc.admin1 ? loc.admin1 + ', ' : ''}${loc.country}</div>
+                    </div>
+                </div>
+            `).join('');
+            suggestionBox.style.display = 'block';
+        } else {
+            suggestionBox.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Map API Error:", error);
+    }
+}
+
+/**
+ * Handles clicking a suggestion
+ */
+function selectLocation(inputId, suggestionId, name, country, lat, lon) {
+    const input = document.getElementById(inputId);
+    input.value = `${name}, ${country}`;
+    
+    // Store the precise lat/lon on the element to avoid re-fetching during calculation!
+    input.dataset.lat = lat;
+    input.dataset.lon = lon;
+    
+    document.getElementById(suggestionId).style.display = 'none';
+}
+
+// Scripts load after DOM when placed at bottom of <body> — attach directly
+document.getElementById('calcFrom').addEventListener('input', () => fetchLocationHints('calcFrom', 'fromSuggestions'));
+document.getElementById('calcTo').addEventListener('input', () => fetchLocationHints('calcTo', 'toSuggestions'));
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.position-relative')) {
+        document.getElementById('fromSuggestions').style.display = 'none';
+        document.getElementById('toSuggestions').style.display = 'none';
+    }
 });

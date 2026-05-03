@@ -11,7 +11,8 @@ const userSchema = new mongoose.Schema({
     city: { type: String, default: '' },
     budget: { type: String, default: 'mid' },
     interests: { type: [String], default: [] },
-    co2Saved: { type: Number, default: 0 },
+    co2Saved:      { type: Number, default: 0 }, // kg saved vs petrol (from carbon calculator)
+    co2Footprint:  { type: Number, default: 0 }, // kg produced (from planner trip activities)
     notifTrip: { type: Boolean, default: true },
     notifEco: { type: Boolean, default: false },
     

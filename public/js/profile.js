@@ -72,6 +72,23 @@ async function loadProfile() {
   if(inputEl) {
       inputEl.addEventListener('change', handleAvatarUpload);
   }
+
+  const autoSaveFields = ['editName', 'editEmail', 'editCity', 'editBudget', 'notifTrip', 'notifEco'];
+  
+  //bagi any change be autosaved
+  autoSaveFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // For text inputs: save after user stops typing (blur)
+    if (el.tagName === 'INPUT' && el.type !== 'checkbox') {
+      el.addEventListener('blur', autoSaveProfile);
+    } 
+    // For selects and toggles: save immediately on change
+    else {
+      el.addEventListener('change', autoSaveProfile);
+    }
+  });
 })();
 
  
@@ -103,7 +120,9 @@ function renderProfile(user) {
   document.getElementById('statFavs').textContent  = favCount;
   document.getElementById('statTrips').textContent = user.trips     || 0;
   document.getElementById('statDays').textContent  = user.days      || 0;
-  document.getElementById('statCO2').textContent   = user.co2Saved  || 0;
+  document.getElementById('statCO2').textContent   = user.co2Saved      || 0;
+  const fpEl = document.getElementById('statFootprint');
+  if (fpEl) fpEl.textContent = user.co2Footprint || 0;
  
   // Badge based on trips
   const trips = user.trips || 0;
@@ -455,4 +474,38 @@ function handleAvatarUpload(event) {
   };
   
   reader.readAsDataURL(file);
+}
+
+/* ══════════════════════════════════════════
+    AUTO-SAVE PROFILE ON CHANGE
+   ══════════════════════════════════════════ */
+async function autoSaveProfile() {
+  const name  = document.getElementById('editName').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+ 
+  // Basic validation before sending to DB
+  if (!name || !isValidEmail(email)) return; 
+ 
+  // 1. Sync global object with UI
+  currentUserData.name   = name;
+  currentUserData.email  = email;
+  currentUserData.city   = document.getElementById('editCity').value.trim();
+  currentUserData.budget = document.getElementById('editBudget').value;
+  currentUserData.notifTrip = document.getElementById('notifTrip').checked;
+  currentUserData.notifEco  = document.getElementById('notifEco').checked;
+ 
+  // 2. Silently update MongoDB
+  try {
+      const userEmail = localStorage.getItem('ecoUserEmail');
+      await fetch(`/api/users/${userEmail}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentUserData)
+      });
+      // Update the UI elements (initials, name display) instantly
+      renderProfile(currentUserData);
+      console.log("Autosave successful...");
+  } catch (error) {
+      console.error("Autosave failed:", error);
+  }
 }

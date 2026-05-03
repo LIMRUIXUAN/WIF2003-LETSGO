@@ -41,20 +41,46 @@ async function saveState() {
     const res = await fetch(`/api/trips/${currentTripId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(trip) 
+      body: JSON.stringify(trip)
     });
 
     const data = await res.json();
-    
-    // kalau the backend fails, throw alert
+
     if (!res.ok) {
         console.error("Backend refused to save:", data.message);
         alert("Database Save Error: " + data.message);
     } else {
         console.log("Trip successfully synced to MongoDB!");
+        syncCO2ToProfile();
     }
   } catch (err) {
     console.error("Failed to save to MongoDB:", err);
+  }
+}
+
+async function syncCO2ToProfile() {
+  const email = localStorage.getItem('ecoUserEmail');
+  if (!email) return;
+
+  // Sum carbon from planner activities only (exclude calculator imports)
+  const totalFootprint = itineraries.reduce((tripSum, trip) => {
+    const tripCO2 = (trip.days || []).reduce((daySum, day) => {
+      return daySum + (day.stops || []).reduce((s, stop) => {
+        if (stop.source === 'calculator') return s;
+        return s + (parseFloat(stop.carbon) || 0);
+      }, 0);
+    }, 0);
+    return tripSum + tripCO2;
+  }, 0);
+
+  try {
+    await fetch(`/api/users/${email}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ co2Footprint: Math.round(totalFootprint * 10) / 10 })
+    });
+  } catch (err) {
+    console.error("Failed to sync CO₂ to profile:", err);
   }
 }
 
@@ -191,6 +217,7 @@ async function removeItin(id) {
     await fetch(`/api/trips/${id}`, { method: 'DELETE' });
     itineraries = itineraries.filter(t => t._id !== id);
     renderItineraries();
+    syncCO2ToProfile();
     showToast("Deleted!");
   } catch (err) {
     console.error(err);
@@ -295,10 +322,12 @@ function renderBoardItems(trip) {
 
 function createCardHTML(stop, idx, sourceLocation) {
     // Determine color based on carbon weight
-    const carbon = stop.carbon || 0;
+    const carbonRaw = parseFloat(stop.carbon) || 0;
+
+    const carbonDisplay = carbonRaw % 1 === 0 ? carbonRaw : carbonRaw.toFixed(2);
     let badgeClass = 'bg-success'; // Low
-    if (carbon > 10) badgeClass = 'bg-warning text-dark'; // Medium
-    if (carbon > 20) badgeClass = 'bg-danger'; // High
+    if (carbonRaw > 10) badgeClass = 'bg-warning text-dark'; // Medium
+    if (carbonRaw > 20) badgeClass = 'bg-danger'; // High
 
     return `
         <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm position-relative"
@@ -326,7 +355,7 @@ function createCardHTML(stop, idx, sourceLocation) {
                     
                     <div class="d-flex justify-content-between align-items-center mt-1">
                         <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
-                        <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${carbon}kg CO₂</span>
+                        <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${carbonDisplay}kg CO₂</span>
                     </div>
 
                 </div>
@@ -464,7 +493,7 @@ function saveNewActivity() {
     const icon = document.getElementById('actIcon').value || '📍';
     const sub = document.getElementById('actSub').value || 'Custom';
     const targetId = document.getElementById('actTargetDay').value;
-    const carbon = parseInt(document.getElementById('actCarbon').value) || 0;
+    const carbon = parseFloat(document.getElementById('actCarbon').value) || 0;
 
     // Create the new Stop Object
     const newStop = { time, icon, name, sub, carbon };
@@ -543,6 +572,7 @@ function processPendingIdeas(trip) {
         }
     }
 }
+
 
 /* Load sample data and render on page load */
 document.addEventListener('DOMContentLoaded', () => {
