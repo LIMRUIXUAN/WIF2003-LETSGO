@@ -198,8 +198,6 @@ function updateStatsUI() {
   document.getElementById('totalSaved').textContent    = saved;
   document.getElementById('goalText').textContent      = goal;
   document.getElementById('goalProgress').style.width  = pct + '%';
-  document.getElementById('navInitial').textContent    =
-    currentUserData.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   const treeEl = document.getElementById('treesSaved');
   if (treeEl) treeEl.textContent = trees;

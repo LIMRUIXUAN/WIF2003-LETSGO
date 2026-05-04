@@ -41,14 +41,7 @@ function showToast(msg, type = 'success') {
 /* ── CHIP TOGGLE (used on register, planner, explore) ── */
 function toggleChip(btn) { btn.classList.toggle('active'); }
 
-/* ── NAV INITIAL from sessionStorage ── */
-(function setNavInitial() {
-  const user = JSON.parse(sessionStorage.getItem('user') || 'null');
-  const el   = document.getElementById('navInitial');
-  if (el && user) {
-    el.textContent = (user.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  }
-})();
+
 
 /* ── Close search dropdown when clicking outside ── */
 document.addEventListener('click', e => {
@@ -58,11 +51,41 @@ document.addEventListener('click', e => {
   }
 });
 
-/* ── Set minimum date on date inputs to today ── */
-document.addEventListener('DOMContentLoaded', () => {
-  const today = new Date().toISOString().split('T')[0];
-  ['itinStart', 'itinEnd'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.min = today;
-  });
+/* ══════════════════════════════════════════
+   GLOBAL ON-LOAD INITIALIZATION
+   ══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+    
+    // ── 1. Set minimum date on date inputs to today ──
+    const today = new Date().toISOString().split('T')[0];
+    ['itinStart', 'itinEnd'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.min = today;
+    });
+
+    // ── 2. Global UI: Update Navigation Avatar ──
+    const navBadge = document.getElementById('navInitial');
+    const email = localStorage.getItem('ecoUserEmail'); 
+
+    if (navBadge && email) {
+        // Check local storage first for instant loading
+        const savedInitials = localStorage.getItem('ecoUserInitials');
+        if (savedInitials) {
+            navBadge.textContent = savedInitials;
+        } else {
+            // Otherwise, fetch from the database
+            try {
+                const res = await fetch(`/api/users/profile/${email}`);
+                const data = await res.json();
+                
+                if (data.success && data.data.name) {
+                    const initials = data.data.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                    navBadge.textContent = initials;
+                    localStorage.setItem('ecoUserInitials', initials);
+                }
+            } catch (error) {
+                console.error("Failed to load global navigation avatar:", error);
+            }
+        }
+    }
 });
