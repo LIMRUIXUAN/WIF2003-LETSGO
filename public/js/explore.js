@@ -289,8 +289,7 @@ function handleSearchKeydown(event) {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
-  renderListings();
-  
+  loadDestinations();
   // Close modal when clicking outside
   const modal = document.getElementById('filterModal');
   if (modal) {
@@ -319,3 +318,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+/* ══════════════════════════════════════════
+   FETCH DESTINATIONS FROM MONGODB
+   ══════════════════════════════════════════ */
+async function loadDestinations() {
+    try {
+        const response = await fetch('/api/destinations');
+        const data = await response.json();
+        
+        if (data.success) {
+            LISTINGS = data.data; // Populate global array
+            renderListings();     // Draw the flip cards
+        } else {
+            console.error("Failed to fetch listings:", data.message);
+            if(typeof showToast === 'function') showToast("Could not load destinations", "error");
+        }
+    } catch (error) {
+        console.error("Database connection error:", error);
+    }
+}

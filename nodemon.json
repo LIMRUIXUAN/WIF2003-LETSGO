@@ -1,0 +1,14 @@
+{
+  "watch": [
+    "server.js",
+    "routes",
+    "models",
+    "public"
+  ],
+  "ext": "js,json,html,css",
+  "ignore": [
+    "node_modules"
+  ],
+  "exec": "node server.js",
+  "delay": "250"
+}
