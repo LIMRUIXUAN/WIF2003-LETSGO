@@ -91,3 +91,12 @@ async function doRegister() {
         alert("Failed to connect to the server.");
     }
 }
+
+// ── 3. ENTER KEY SUPPORT ──
+// Allows users to submit forms by pressing Enter instead of clicking the button
+document.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        if (window.location.pathname.includes('login.html')) doLogin();
+        if (window.location.pathname.includes('register.html')) doRegister();
+    }
+});
