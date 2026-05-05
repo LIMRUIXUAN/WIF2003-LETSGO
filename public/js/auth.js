@@ -13,6 +13,10 @@ async function doLogin() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPw').value;
 
+    const btn = document.querySelector('.btn-eco');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
     try {
         // 2. Send the data to your Node.js server
         const response = await fetch('/api/auth/login', {
@@ -64,6 +68,10 @@ async function doRegister() {
         if (typeof showToast === 'function') showToast('Password must be at least 8 characters ⚠️', 'warn'); 
         return; 
     }
+
+    const btn = document.querySelector('.btn-eco');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
 
     try {
         // Send the data to your Node.js backend
