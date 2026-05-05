@@ -69,6 +69,13 @@ async function doRegister() {
         return; 
     }
 
+    // Client-side email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email format.', 'warn');
+        return;
+    }
+
     const btn = document.querySelector('.btn-eco');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
