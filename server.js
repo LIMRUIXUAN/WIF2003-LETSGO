@@ -30,3 +30,8 @@ mongoose.connect(process.env.MONGO_URL, {
 app.use(express.static('public'));
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+
+// create a new route just to send google maps key to frontend
+app.get('/api/config/maps', (req, res) => {
+  res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY });
+})
