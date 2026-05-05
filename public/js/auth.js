@@ -13,6 +13,10 @@ async function doLogin() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPw').value;
 
+    const btn = document.querySelector('.btn-eco');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
     try {
         // 2. Send the data to your Node.js server
         const response = await fetch('/api/auth/login', {
@@ -65,6 +69,17 @@ async function doRegister() {
         return; 
     }
 
+    // Client-side email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email format.', 'warn');
+        return;
+    }
+
+    const btn = document.querySelector('.btn-eco');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
     try {
         // Send the data to your Node.js backend
         const response = await fetch('/api/auth/register', {
@@ -91,3 +106,12 @@ async function doRegister() {
         alert("Failed to connect to the server.");
     }
 }
+
+// ── 3. ENTER KEY SUPPORT ──
+// Allows users to submit forms by pressing Enter instead of clicking the button
+document.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        if (window.location.pathname.includes('login.html')) doLogin();
+        if (window.location.pathname.includes('register.html')) doRegister();
+    }
+});
