@@ -78,18 +78,35 @@
 
       <div class="form-group">
         <label class="form-label">Activity Name</label>
-        <input type="text" class="form-control-eco" id="actName" placeholder="e.g. Jungle Trekking">
+        <div class="input-group">
+          <!-- The Emoji Dropdown Button -->
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="actIconBtn" style="background-color: #fff; border-color: #dee2e6;">📍</button>
+          
+          <!-- The Mini Emoji Palette -->
+          <div class="dropdown-menu p-2 shadow-sm" style="min-width: 220px;">
+            <div class="d-flex flex-wrap gap-2 justify-content-center" id="emojiGrid">
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('📍')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📍</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🏨')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🏨</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🥗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🥗</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🚶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚶</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🚗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚗</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('✈️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">✈️</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🌳')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🌳</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🛶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛶</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('📸')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📸</span>
+              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🛍️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛍️</span>
+            </div>
+          </div>
+          
+          <!-- The Text Input -->
+          <input type="text" class="form-control-eco form-control" id="actName" placeholder="e.g. Jungle Trekking">
+        </div>
       </div>
 
-      <div class="row g-3">
-        <div class="col-6">
-          <label class="form-label">Time</label>
-          <input type="time" class="form-control-eco" id="actTime" value="09:00">
-        </div>
-        <div class="col-6">
-          <label class="form-label">Icon (Emoji)</label>
-          <input type="text" class="form-control-eco" id="actIcon" placeholder="🌳" value="🌳">
-        </div>
+      <!-- Time Field -->
+      <div class="form-group mt-3">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-control-eco" id="actTime" value="09:00">
       </div>
 
       <div class="row g-3 mt-1">
@@ -105,7 +122,7 @@
       </div>
 
       <div class="form-group mt-3">
-        <label class="form-label">Add to Location</label>
+        <label class="form-label">Add to: </label>
         <select class="form-control-eco" id="actTargetDay">
         </select>
       </div>
