@@ -318,6 +318,9 @@ function renderBoardItems(trip) {
         createCardHTML(stop, index, day.date)).join('');
     }
   });
+
+  // for google maps
+  syncMapWithItinerary(trip);
 }
 
 function createCardHTML(stop, idx, sourceLocation) {
@@ -578,4 +581,105 @@ function processPendingIdeas(trip) {
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   renderItineraries();
+  loadGoogleMapsScript(); // Fetch API key and load Google Maps script
 });
+
+/*
+NEW MAP LOGIC!!!
+*/
+let map;
+let mapMarkers = [];
+
+window.initMap = function() {
+  const mapElement = document.getElementById('map');
+  if (!mapElement) return; //safety check
+
+  //Defaults to malaysia
+  map = new google.maps.Map(mapElement, {
+    center: { lat: 4.2105, lng: 101.9758 }, 
+    zoom: 6,
+    mapTypeControl: false,
+    streetViewControl: false
+  });
+}
+
+function syncMapWithItinerary(trip) {
+  //ensure google map is loaded
+  if (!map || !window.google) return;
+
+  const mapContainer = document.getElementById('mapContainer');
+  if (mapContainer) mapContainer.style.display = 'block';
+
+  // Clear old markers
+  mapMarkers.forEach(marker => marker.setMap(null));
+  mapMarkers = [];
+
+  // set bounds to auto zooom
+  const bounds = new google.maps.LatLngBounds();
+  let hasLocations = false;
+  let stopCounter = 1; //number pins
+
+  // Loop through days and draw pins for scheduled activities
+  (trip.days || []).forEach(day => {
+    (day.stops || []).forEach(stop => {
+      // Only draw a pin if the stop has latitude and longitude
+      if (stop.location && stop.location.lat && stop.location.lng) {
+        const position = { 
+            lat: parseFloat(stop.location.lat), 
+            lng: parseFloat(stop.location.lng) 
+        };
+        
+        const marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: stop.name,
+            label: stopCounter.toString(),
+            animation: google.maps.Animation.DROP
+        });
+
+        mapMarkers.push(marker);
+        bounds.extend(position);
+        hasLocations = true;
+        stopCounter++;
+      }
+    });
+  });
+
+  //adjust camera
+  if (hasLocations) {
+    map.fitBounds(bounds);
+    
+    const listener = google.maps.event.addListener(map, "idle", function() {
+      if (map.getZoom() > 14) map.setZoom(14);
+      google.maps.event.removeListener(listener);
+    });
+  } else {
+    // If no locations, center on Malaysia
+    map.setCenter({ lat: 4.2105, lng: 101.9758 });
+    map.setZoom(6);
+  }
+}
+
+// Function to fetch the API key and load the Google Maps script
+async function loadGoogleMapsScript() {
+    try {
+        const response = await fetch('/api/config/maps');
+        const data = await response.json();
+        const apiKey = data.apiKey;
+
+        if (!apiKey) {
+            console.error("No API key found!");
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places`;
+        script.async = true;
+        script.defer = true;
+
+        document.head.appendChild(script);
+
+    } catch (error) {
+        console.error("Failed to load Google Maps API key:", error);
+    }
+}
