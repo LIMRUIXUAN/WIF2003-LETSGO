@@ -11,15 +11,19 @@ const app = express();
 const isDev = process.env.NODE_ENV !== 'production';
 
 if (isDev) {
-  const livereload = require('livereload');
-  const connectLiveReload = require('connect-livereload');
-  const liveReloadServer = livereload.createServer({
-    exts: ['html', 'css', 'js'],
-    delay: 100
-  });
+  try {
+    const livereload = require('livereload');
+    const connectLiveReload = require('connect-livereload');
+    const liveReloadServer = livereload.createServer({
+      exts: ['html', 'css', 'js'],
+      delay: 100
+    });
 
-  liveReloadServer.watch(__dirname + '/public');
-  app.use(connectLiveReload());
+    liveReloadServer.watch(__dirname + '/public');
+    app.use(connectLiveReload());
+  } catch (error) {
+    console.warn('Live reload disabled:', error.message);
+  }
 }
 
 app.use(express.json({ limit: '10mb' }));

@@ -20,20 +20,14 @@ The application is designed to promote sustainable tourism by combining data-dri
 
 ## Core Features
 
-### Advanced Search Interface
-- Real-time filtering of destinations using client-side JavaScript  
-- Displays recent searches and popular eco-destinations  
-- Reduces server load by minimizing unnecessary requests  
-
-### Interactive Destination Cards
-- Flip-card design to compare standard vs eco-friendly travel data  
-- Displays sustainability certifications such as LEED and Green Key  
-- Simplifies complex environmental information for users  
-
-### Favorites Management
-- Save destinations asynchronously using Fetch API  
-- Data stored in MongoDB without page reload  
-- Generates quick suggestions based on saved items  
+### Explore Module
+- Autocomplete search suggests matching city names, destination names, and categories while users type
+- Quick category chips filter listings by hotels, restaurants, transport, activities, or high eco-score items
+- Advanced filter modal supports budget range, eco-rating threshold, category selection, certifications, and CO2 preference options
+- Destination cards use a flip-card layout to show summary information on the front and detailed descriptions on the back
+- Favorites can be toggled asynchronously and synced to the logged-in user's saved destinations without reloading the page
+- "Add to Trip" stores selected places in browser storage so they can be scheduled later in the Planner page
+- Destination data is loaded from MongoDB through `GET /api/destinations` and rendered dynamically in the Explore grid
 
 ### Itinerary Planner
 - Timeline-based scheduling for daily activities  
@@ -72,18 +66,20 @@ WIF2003-ECOTRAVEL-PLANNER/
 │
 ├── 📂 css/
 │   ├── style.css            # Shared styles (Nav, Footer, Colors) - EVERYONE USES THIS
-│   ├── explore.css          # Tan Jin Xiang (Eco-Options grid & flip cards)
+│   ├── explore.css          # Tan Jin Xiang (Search UI, filter modal, eco-options grid & flip cards)
 │   ├── planner.css          # Julius Lim Jun Herng (Calendar drag-and-drop)
+│   ├── dashboard.css        # Lim Rui Xuan (Dashboard UI)
 │   └── carbon.css           # Chin Kin Hiung (Charts and calculator UI)
 │
 ├── 📂 js/
 │   ├── app.js               # Shared logic (Nav bar toggle, global helpers)
 │   ├── auth.js              # Cha Zi Yu (Form validation, LocalStorage mock sessions)
 │   ├── profile.js           # Lim Rui Xuan (Profile edit logic, mock soft delete)
-│   ├── explore.js           # Tan Jin Xiang (Search, filter logic, flip card logic)
+│   ├── dashboard.js         # Lim Rui Xuan (Dashboard UI)
+│   ├── explore.js           # Tan Jin Xiang (Autocomplete, filters, favorites, planner handoff)
 │   ├── planner.js           # Julius Lim Jun Herng (Drag/drop logic, CRUD mock)
 │   ├── carbon.js            # Chin Kin Hiung (CO2 math)
-|   ├── weather.js           # Chin Kin Hiung (Weather API fetch)
+│   ├── weather.js           # Chin Kin Hiung (Weather API fetch)
 │   └── favorites.js         # Ye Qinglan (Rendering saved items)
 │
 ├── 📂 img/                  # All logos, icons, and placeholder images
@@ -92,6 +88,7 @@ WIF2003-ECOTRAVEL-PLANNER/
 ├── login.html               # Cha Zi Yu
 ├── register.html            # Cha Zi Yu
 ├── profile.html             # Lim Rui Xuan
+├── dashboard.html           # Lim Rui Xuan
 ├── explore.html             # Tan Jin Xiang
 ├── planner.html             # Julius Lim Jun Herng
 ├── carbonr.html             # Chin Kin Hiung
@@ -148,8 +145,7 @@ cd WIF2003-EcoTravel-Planner
 ```
 
 ---
-* BELOW PART IS FOR Phrase 2
-* Install dependencies:
+Install dependencies:
 ```bash
 npm install
 ```
@@ -157,8 +153,14 @@ npm install
 ### Environment Setup
 Create a `.env` file in the root directory and add:
 ```env
-MONGO_URI=your_mongodb_uri
+MONGO_URL=your_mongodb_uri
 PORT=3000
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+```
+
+Optional:
+```env
+NODE_ENV=production
 ```
 
 ### Running the Application
@@ -166,16 +168,32 @@ PORT=3000
 ```bash
 npm start
 ```
+
+For development with live reload:
+```bash
+npm run dev
+```
+
 The application will be available at:
 `http://localhost:3000`
 
 ---
 
 ### API Overview
-Example endpoint:
-* `GET /api/spots` – Retrieve available destinations
-* `POST /api/favorites` – Save a destination
-* `GET /api/trips` – Retrieve user itineraries
+Example endpoints:
+* `POST /api/auth/register` – Create a new user account
+* `POST /api/auth/login` – Log in an existing user
+* `GET /api/users/profile/:email` – Retrieve a user profile
+* `PUT /api/users/:email` – Update user profile details
+* `PUT /api/users/:email/favorites` – Toggle a destination in favorites
+* `GET /api/destinations` – Retrieve all eco destinations
+* `GET /api/destinations/search/suggestions` – Retrieve search suggestions
+* `GET /api/destinations/:id` – Retrieve one destination
+* `GET /api/trips/:email` – Retrieve a user's itineraries
+* `POST /api/trips` – Create a trip
+* `PUT /api/trips/:id` – Update a trip
+* `DELETE /api/trips/:id` – Delete a trip
+* `GET /api/config/maps` – Retrieve the Google Maps API key for the planner page
 
 ---
 
