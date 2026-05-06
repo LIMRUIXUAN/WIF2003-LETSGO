@@ -15,9 +15,12 @@
   --eco-sky:         #2196f3;
   --eco-leaf:        #74c69d;
   --eco-bark:        #5c3d2e;
-  --eco-cream:       #fefaf4;
+  --eco-cream:       #f7faf8;
   --eco-mist:        #f0f7f4;
-  --eco-shadow:      rgba(45, 106, 79, 0.12);
+  --eco-shadow:      rgba(45, 106, 79, 0.10);
+  --eco-radius:      16px;
+  --eco-radius-lg:   24px;
+  --eco-transition:  all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --font-display:    'DM Serif Display', Georgia, serif;
   --font-body:       'DM Sans', system-ui, sans-serif;
 }
@@ -37,6 +40,8 @@ body {
   background: var(--eco-cream);
   color: #1a2e1e;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ═══════════════════════════════════════
@@ -49,16 +54,17 @@ body {
    NAVBAR
    ═══════════════════════════════════════ */
 .eco-nav {
-  background: var(--eco-green);
-  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+  padding: 0.85rem 2rem;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
-  position: sticky;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .eco-nav .brand {
@@ -88,36 +94,50 @@ body {
 }
 
 .eco-nav .nav-link {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.85rem;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 7px 14px;
+  border-radius: 10px;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: var(--eco-transition);
   cursor: pointer;
+  letter-spacing: 0.01em;
 }
 
-.eco-nav .nav-link:hover,
+.eco-nav .nav-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 .eco-nav .nav-link.active {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
+  font-weight: 600;
 }
 
-.eco-nav .nav-link i { margin-right: 5px; }
+.eco-nav .nav-link i { margin-right: 6px; }
 
 .eco-nav .user-badge {
-  background: var(--eco-leaf);
-  color: var(--eco-bark);
+  background: linear-gradient(135deg, var(--eco-leaf), var(--eco-green-light));
+  color: #fff;
   border-radius: 50%;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.8rem;
   cursor: pointer;
+  transition: var(--eco-transition);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.eco-nav .user-badge:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
 }
 
 /* ═══════════════════════════════════════
@@ -241,7 +261,7 @@ body {
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
-  transition: all 0.25s;
+  transition: var(--eco-transition);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -385,11 +405,11 @@ body {
    DASHBOARD LAYOUT
    ═══════════════════════════════════════ */
 .dash-layout  { display: flex; align-items: flex-start; }
-.dash-main    { flex: 1; padding: 2rem; max-width: 100%; overflow-x: hidden; }
+.dash-main    { flex: 1; padding: 2.5rem; max-width: 100%; overflow-x: hidden; min-height: calc(100vh - 60px); }
 
 /* Sidebar */
 .dash-sidebar {
-  width: 240px;
+  width: 250px;
   background: #fff;
   border-right: 1px solid #e8f0eb;
   height: calc(100vh - 60px);
@@ -399,6 +419,8 @@ body {
   flex-shrink: 0;
   align-self: flex-start;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d4e6d9 transparent;
 }
 
 .dash-sidebar .sidebar-brand {
@@ -431,25 +453,29 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   color: #4a5e4f;
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: var(--eco-transition);
   text-decoration: none;
+  border-left: 3px solid transparent;
+  margin-bottom: 2px;
 }
 
 .dash-sidebar .sidebar-link:hover {
   background: var(--eco-mist);
   color: var(--eco-green);
+  border-left-color: var(--eco-green-light);
 }
 
 .dash-sidebar .sidebar-link.active {
   background: var(--eco-green-pale);
   color: var(--eco-green);
   font-weight: 600;
+  border-left-color: var(--eco-green);
 }
 
 .dash-sidebar .sidebar-link i {
@@ -463,10 +489,16 @@ body {
    ═══════════════════════════════════════ */
 .stat-card {
   background: #fff;
-  border-radius: 16px;
-  padding: 1.3rem 1.5rem;
+  border-radius: var(--eco-radius);
+  padding: 1.4rem 1.5rem;
   border: 1px solid #e8f0eb;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: var(--eco-transition);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px var(--eco-shadow);
 }
 
 .stat-card .icon {
@@ -1268,23 +1300,37 @@ body {
 .eco-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  animation: modalFadeIn 0.2s ease;
 }
 
 .eco-modal {
   background: #fff;
-  border-radius: 20px;
+  border-radius: var(--eco-radius-lg);
   padding: 2rem;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
   max-height: 90vh;
   overflow-y: auto;
+  animation: modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* ═══════════════════════════════════════
@@ -1292,9 +1338,10 @@ body {
    ═══════════════════════════════════════ */
 .section-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
-  color: var(--eco-green);
+  font-size: 1.6rem;
+  color: #1b4332;
   margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
 }
 
 .section-sub   { color: #9ab3a0; font-size: 0.88rem; margin-bottom: 1.5rem; }
@@ -1349,7 +1396,7 @@ body {
    ═══════════════════════════════════════ */
 @media (max-width: 768px) {
   .dash-sidebar { display: none; }
-  .dash-main    { padding: 1rem; }
+  .dash-main    { padding: 1.25rem; }
   .hero h1      { font-size: 2.2rem; }
   .hero-stats   { gap: 1.2rem; }
 }

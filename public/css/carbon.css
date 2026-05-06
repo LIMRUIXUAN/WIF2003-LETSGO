@@ -9,10 +9,10 @@
     left: 0;
     right: 0;
     background: #ffffff;
-    border: 1px solid #ced4da;
+    border: 1px solid #e8f0eb;
     border-top: none;
-    border-radius: 0 0 12px 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.1);
     z-index: 2000;
     overflow: hidden;
     margin-top: 0px;
@@ -26,7 +26,7 @@
     padding: 12px 16px;
     cursor: pointer;
     border-bottom: 1px solid #f0f5f2;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .suggestion-item:last-child {
@@ -34,7 +34,7 @@
 }
 
 .suggestion-item:hover {
-    background-color: #e8f5e9; /* Matches Eco theme */
+    background-color: var(--eco-mist, #f0f7f4);
     padding-left: 20px; /* Slight indent on hover for premium feel */
 }
 
@@ -45,12 +45,12 @@
 
 /* Input Group Polishing */
 .input-group-text {
-    border-radius: 8px 0 0 8px;
-    border-color: #ced4da;
+    border-radius: 12px 0 0 12px;
+    border-color: #e8f0eb;
 }
 
 .form-control-eco.border-start-0 {
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 12px 12px 0;
 }
 
 .form-control-eco:focus {
@@ -71,7 +71,7 @@
     width: 6px;
 }
 .suggestion-box::-webkit-scrollbar-track {
-    background: #f1f1f1; 
+    background: transparent;
 }
 .suggestion-box::-webkit-scrollbar-thumb {
     background: #b7e4c7; 

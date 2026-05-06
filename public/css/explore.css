@@ -9,15 +9,16 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #f9fafb;
-  border: 2px solid #e8e8e8;
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  background: #fff;
+  border: 2px solid #e8f0eb;
+  border-radius: 14px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .search-bar-wrap:focus-within {
   border-color: var(--eco-green);
-  box-shadow: 0 0 0 3px rgba(154, 179, 160, 0.1);
+  box-shadow: 0 0 0 4px rgba(82, 183, 136, 0.12);
 }
 
 .search-bar-wrap input {
@@ -93,7 +94,7 @@
 .flip-card {
   height: 400px;
   cursor: pointer;
-  perspective: 1000px;
+  perspective: 1200px;
   position: relative;
 }
 
@@ -126,16 +127,17 @@
   display: flex;
   flex-direction: column;
   background: white;
-  border-radius: 12px;
-  border: 2px solid #e8e8e8;
+  border-radius: 16px;
+  border: 1px solid #e8f0eb;
   overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .listing-card:hover {
-  border-color: var(--eco-green);
-  box-shadow: 0 4px 16px rgba(154, 179, 160, 0.15);
+  border-color: var(--eco-green-light, #52b788);
+  box-shadow: 0 12px 32px rgba(45, 106, 79, 0.12);
+  transform: translateY(-4px);
 }
 
 .card-img {
@@ -254,15 +256,15 @@
 
 /* ── FLIP CARD BACK ── */
 .flip-card-back {
-  background: white;
-  border: 2px solid #e8e8e8;
-  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e8f0eb;
+  border-radius: 16px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .flip-card-back h5 {
@@ -311,12 +313,13 @@
 
 .filter-modal-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-modal-header {

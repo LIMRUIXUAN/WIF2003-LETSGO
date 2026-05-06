@@ -8,33 +8,104 @@
   flex-wrap: nowrap; /* prevents wrapping */
   overflow-x: auto;  /*Enables horizontal scrolling */
   gap: 1.5rem;
-  padding: 10px 5px;
+  padding: 12px 6px 16px;
   /* Custom scrollbar for extra sexiness :) */
   scrollbar-width: thin;
-  scrollbar-color: #9ab3a0 #f0f0f0;
+  scrollbar-color: var(--eco-green-light) transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Webkit scrollbar styling */
+.kanban-arena::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-arena::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.kanban-arena::-webkit-scrollbar-thumb {
+  background: var(--eco-green-light);
+  border-radius: 10px;
+}
+
+.kanban-arena::-webkit-scrollbar-thumb:hover {
+  background: var(--eco-green-mid);
 }
 
 /* Day Columns kanban-styled*/
 .kanban-column {
   flex: 0 0 320px; /* Does not shrink, stays exactly 320px wide */
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 15px;
+  background: #fff;
+  border: 1px solid #e8f0eb;
+  border-radius: var(--eco-radius, 16px);
   display: flex;
   flex-direction: column;
   max-height: 70vh;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.25s ease;
+}
+
+.kanban-column:hover {
+  box-shadow: 0 6px 24px rgba(45, 106, 79, 0.08);
 }
 
 .column-header {
-  padding: 1rem;
+  padding: 1rem 1.2rem;
   font-weight: 700;
-  border-bottom: 2px solid #eef2f3;
-  color: #2c3e50;
+  border-bottom: 2px solid #e8f0eb;
+  color: #1b4332;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-radius: var(--eco-radius, 16px) var(--eco-radius, 16px) 0 0;
+  z-index: 1;
 }
 
 .column-body {
-  padding: 1rem;
+  padding: 0.8rem;
   flex-grow: 1;
   overflow-y: auto; /* within the column can scroll vertically */
   min-height: 150px; /* minimum height in case no activities */
+  scrollbar-width: thin;
+  scrollbar-color: #d4e6d9 transparent;
+}
+
+.column-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.column-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-body::-webkit-scrollbar-thumb {
+  background: #d4e6d9;
+  border-radius: 10px;
+}
+
+/* Activity cards within kanban columns */
+.column-body .card {
+  border-radius: 12px;
+  border: 1px solid #e8f0eb;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: grab;
+}
+
+.column-body .card:hover {
+  border-color: var(--eco-green-light, #52b788);
+  box-shadow: 0 4px 16px rgba(45, 106, 79, 0.1);
+  transform: translateY(-1px);
+}
+
+.column-body .card:active {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(45, 106, 79, 0.15);
 }
