@@ -172,10 +172,6 @@
   background: #f0f5f3;
 }
 
-.fav-btn.saved {
-  /* Keep background white and heart red - visual cue is the filled heart icon */
-}
-
 .card-body {
   padding: 16px;
   flex: 1;
