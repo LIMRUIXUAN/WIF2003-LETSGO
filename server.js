@@ -34,13 +34,18 @@ app.use('/api/favorites', favoritesRoutes);
 mongoose.connect(process.env.MONGO_URL, {
   serverSelectionTimeoutMS: 3000 // stop trying after 3s
 })
-.then(() => console.log("MongoDB connected"))
-.catch(err => {
-  console.log("MongoDB failed try to resolve connection:");
-  console.log(err.message);
-});
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => {
+    console.log("MongoDB failed try to resolve connection:");
+    console.log(err.message);
+  });
 
 // Serve all static files from public/
 app.use(express.static('public'));
 
 app.listen(3000, () => console.log(`Server running on http://localhost:3000 (${isDev ? 'dev with live reload' : 'production'})`));
+
+// create a new route just to send google maps key to frontend
+app.get('/api/config/maps', (req, res) => {
+  res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY });
+})
