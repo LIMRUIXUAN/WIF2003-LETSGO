@@ -121,6 +121,203 @@
 
 ---
 
+## Test Data Setup and Cleanup
+
+| Field | Details |
+|---|---|
+| **Purpose** | Define reusable setup and cleanup steps required before running navigation test cases that depend on login state, user profile data, trips, favorites, and local browser storage. |
+| **Recommended Test User** | Email: `demo@ecoplanner.com`; Password: `password123`; Name: `Demo User`; City: any supported city such as `Kuala Lumpur`. |
+| **Required Browser Storage Before Protected-Page Tests** | `localStorage.ecoUserEmail = demo@ecoplanner.com`; `localStorage.ecoUserName = Demo User`; `localStorage.isLoggedIn = true`; optional `localStorage.ecoUserInitials = DU`. |
+| **Required Test Data** | At least 1 trip exists for the user. At least 1 favorite destination exists for the user. CO₂ goal can be reset to default by removing `localStorage.ecoGoalCO2`. |
+| **Cleanup** | After testing, remove test-only trips/favorites if created during execution. Clear browser storage keys created by the tests: `ecoUserEmail`, `ecoUserName`, `ecoUserInitials`, `isLoggedIn`, `ecoGoalCO2`, and any planner draft/session keys. |
+
+---
+
+## Test Case 6: Complete Sidebar Navigation Across Protected Pages
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_NAV_004 |
+| **Test Case ID** | TC_NAV_004 |
+| **Test Case Description** | Verify that every sidebar link navigates to the correct protected page and that each destination page highlights the correct sidebar active state. |
+| **Test Priority** | High |
+| **Pre-Requisite** | 1. Server is running at `http://localhost:3000`. 2. User is logged in. 3. Browser width is ≥ 992px so the sidebar is visible. 4. User starts on `dashboard.html`. |
+| **Post-Requisite** | All sidebar links have been tested. The tester returns to `dashboard.html` at the end of the test. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Click Dashboard in sidebar. | `a.sidebar-link[href="dashboard.html"]` | URL changes to `/dashboard.html`. Dashboard page loads. Sidebar Dashboard link has `active` class. Top nav Dashboard link has `active` class. | | Google Chrome v126 | | |
+| 2 | Click Explore in sidebar. | `a.sidebar-link[href="explore.html"]` | URL changes to `/explore.html`. Explore page loads. Sidebar Explore link has `active` class. Top nav Explore link has `active` class. | | Google Chrome v126 | | |
+| 3 | Click My Itinerary in sidebar. | `a.sidebar-link[href="planner.html"]` | URL changes to `/planner.html`. Planner page loads. Sidebar My Itinerary link has `active` class. Top nav Itinerary link has `active` class. | | Google Chrome v126 | | |
+| 4 | Click Weather in sidebar. | `a.sidebar-link[href="weather.html"]` | URL changes to `/weather.html`. Weather page loads. Sidebar Weather link has `active` class. Top nav Weather link has `active` class. | | Google Chrome v126 | | |
+| 5 | Click Carbon Calc in sidebar. | `a.sidebar-link[href="carbon.html"]` | URL changes to `/carbon.html`. Carbon Calculator page loads. Sidebar Carbon Calc link has `active` class. Top nav Carbon link has `active` class. | | Google Chrome v126 | | |
+| 6 | Click Favorites in sidebar. | `a.sidebar-link[href="favorites.html"]` | URL changes to `/favorites.html`. Favorites page loads. Sidebar Favorites link has `active` class. Top nav Favorites link has `active` class. | | Google Chrome v126 | | |
+| 7 | Click Profile in sidebar. | `a.sidebar-link[href="profile.html"]` | URL changes to `/profile.html`. Profile page loads. Sidebar Profile link has `active` class. No unrelated top nav item should be active. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 7: Logout Navigation and Session Cleanup
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_NAV_005 |
+| **Test Case ID** | TC_NAV_005 |
+| **Test Case Description** | Verify that clicking Logout clears the user's local session data and navigates away from protected pages. |
+| **Test Priority** | High |
+| **Pre-Requisite** | 1. User is logged in. 2. `localStorage.ecoUserEmail`, `localStorage.ecoUserName`, and `localStorage.isLoggedIn` exist. 3. Browser DevTools Application tab is available to inspect storage. |
+| **Post-Requisite** | User is logged out and cannot return to Dashboard without signing in again. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Open Dashboard and click Logout in the sidebar. | `a.sidebar-link[href="index.html"]` with Logout icon. | Browser navigates to `/index.html`. `localStorage.ecoUserEmail` is removed. `sessionStorage` is cleared. | | Google Chrome v126 | | |
+| 2 | Press browser Back button after logout. | Browser Back button or `Alt + Left Arrow`. | Protected dashboard must not remain accessible as an authenticated page. User should be redirected to `/login.html` or shown an unauthenticated state. | | Google Chrome v126 | | |
+| 3 | Log in again, open Explore, and click Logout from the Explore sidebar. | `explore.html` sidebar Logout link. | Browser navigates to `/index.html`. User session keys should be cleared the same way as Dashboard logout. If keys remain in `localStorage`, record as failed behavior. | | Google Chrome v126 | | |
+| 4 | Repeat Logout from Planner, Weather, Carbon, Favorites, and Profile. | Each page sidebar Logout link. | All protected pages should provide consistent logout behavior: navigate away from protected area and clear login-related storage. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 8: Mobile Responsive Navigation
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_NAV_006 |
+| **Test Case ID** | TC_NAV_006 |
+| **Test Case Description** | Verify that the top navigation remains usable on small screens and the desktop sidebar is hidden. |
+| **Test Priority** | High |
+| **Pre-Requisite** | 1. User is logged in. 2. Browser DevTools device toolbar is available. 3. Test with viewport widths `375px`, `390px`, and `768px`. |
+| **Post-Requisite** | User can navigate between all protected pages on mobile without using the desktop sidebar. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Resize viewport to mobile width. | Width `375px`, height `812px`. | `.dash-sidebar` is hidden. `.eco-nav` remains visible. Top nav links are displayed as icon-only square buttons with no text labels. User badge remains visible and does not overlap the nav icons. | | Google Chrome v126 | | |
+| 2 | Horizontally scroll the top nav icons. | Swipe/drag the top nav links row. | All six protected-page icons can be reached: Dashboard, Explore, Itinerary, Weather, Carbon, Favorites. No icon is clipped permanently. | | Google Chrome v126 | | |
+| 3 | Tap each top nav icon. | Tap Dashboard, Explore, Itinerary, Weather, Carbon, Favorites icons. | Each tap navigates to the correct page. The active icon has the active visual state. Page content remains readable without horizontal page overflow. | | Google Chrome v126 | | |
+| 4 | Tap the user badge on mobile. | Tap `#navInitial`. | Browser navigates to `/profile.html`. Profile content is readable. Sidebar remains hidden. User badge still appears in top nav. | | Google Chrome v126 | | |
+| 5 | Rotate or resize to tablet width. | Width `768px`. | Top nav remains usable. There is no overlap between nav icons/text, page heading, and user badge. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 9: Authentication Page Navigation
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_AUTH_001 |
+| **Test Case ID** | TC_AUTH_001 |
+| **Test Case Description** | Verify navigation between public authentication pages: landing page, login, registration, and password reset. |
+| **Test Priority** | High |
+| **Pre-Requisite** | 1. Server is running. 2. Browser storage is cleared before starting. 3. User starts at `index.html`. |
+| **Post-Requisite** | Public auth navigation paths are verified and user can return to sign in. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Open landing page. | `http://localhost:3000/index.html` | Landing page loads with CTA buttons: "Start Planning Free" and "Sign In". Browser tab title is "EcoPlanner – Sustainable Travel, Reimagined". | | Google Chrome v126 | | |
+| 2 | Click Sign In. | `a[href="login.html"]` | Browser navigates to `/login.html`. Sign In form is visible. Browser tab title is "EcoPlanner – Sign In". | | Google Chrome v126 | | |
+| 3 | Click Create Account from login page. | `a[href="register.html"]` | Browser navigates to `/register.html`. Create Account form is visible. Browser tab title is "EcoPlanner – Create Account". | | Google Chrome v126 | | |
+| 4 | Click Sign In from register page. | `a[href="login.html"]` | Browser navigates back to `/login.html`. Login form is visible. | | Google Chrome v126 | | |
+| 5 | Click Forgot password. | `a[href="reset-password.html"]` | Browser navigates to `/reset-password.html`. Reset password form is visible with email, code, new password, and confirm password fields. Browser tab title is "EcoPlanner - Reset Password". | | Google Chrome v126 | | |
+| 6 | Click Back to Sign In from reset page. | `a[href="login.html"]` | Browser navigates to `/login.html`. Login form is visible. | | Google Chrome v126 | | |
+| 7 | Register a new test account with valid fields. | Unique email such as `uitest+[timestamp]@ecoplanner.test`; valid password length ≥ 8. | Registration request succeeds. Success toast appears. Browser redirects to `/login.html`. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 10: Unauthorized Direct Access to Protected Pages
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_AUTH_002 |
+| **Test Case ID** | TC_AUTH_002 |
+| **Test Case Description** | Verify that protected pages cannot be accessed directly when the user is not logged in. |
+| **Test Priority** | High |
+| **Pre-Requisite** | 1. Clear `localStorage` and `sessionStorage`. 2. Server is running. 3. User is not logged in. |
+| **Post-Requisite** | All protected pages either redirect to login or prevent authenticated content from rendering. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Directly open Dashboard. | `http://localhost:3000/dashboard.html` | Browser redirects to `/login.html` because `ecoUserEmail` is missing. Protected dashboard content does not remain visible. | | Google Chrome v126 | | |
+| 2 | Directly open Explore. | `http://localhost:3000/explore.html` | User should be redirected to `/login.html` or shown an unauthenticated state. Protected user-specific actions such as favorites should not use fallback demo/test accounts silently. | | Google Chrome v126 | | |
+| 3 | Directly open Planner. | `http://localhost:3000/planner.html` | User should be redirected to `/login.html` or blocked from loading user itinerary data. | | Google Chrome v126 | | |
+| 4 | Directly open Weather, Carbon, Favorites, and Profile. | `/weather.html`, `/carbon.html`, `/favorites.html`, `/profile.html`. | Each protected page should handle missing login state consistently. If page-specific content loads using fallback email values, record as failed behavior. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 11: Profile Page Active Navigation State
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_NAV_007 |
+| **Test Case ID** | TC_NAV_007 |
+| **Test Case Description** | Verify that Profile page navigation state is not incorrectly assigned to another top navigation item. |
+| **Test Priority** | Medium |
+| **Pre-Requisite** | 1. User is logged in. 2. User navigates to `profile.html` from the user badge or sidebar Profile link. |
+| **Post-Requisite** | Navigation state for Profile is documented correctly. Any incorrect active state is recorded as a UI defect. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Open Profile from the top-right badge. | Click `#navInitial`. | Browser navigates to `/profile.html`. Sidebar Profile link has `active` class. | | Google Chrome v126 | | |
+| 2 | Inspect the top navigation active state. | Check `.eco-nav .nav-link.active`. | No unrelated top nav link should be active on Profile. Specifically, Itinerary should not be highlighted while viewing Profile. If Profile is not part of the top nav, the top nav may have no active item. | | Google Chrome v126 | | |
+| 3 | Inspect browser tab title and page content. | N/A | Browser tab title is "EcoPlanner – My Profile". Profile form and account sections are visible. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 12: Explore, Favorites, and Planner Cross-Feature Navigation
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_FLOW_001 |
+| **Test Case ID** | TC_FLOW_001 |
+| **Test Case Description** | Verify that feature shortcut actions navigate correctly between Explore, Favorites, and Planner. |
+| **Test Priority** | Medium |
+| **Pre-Requisite** | 1. User is logged in. 2. Explore listings are loaded. 3. Browser storage is available. |
+| **Post-Requisite** | User can move naturally from destination discovery to saved favorites and itinerary planning. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Open Explore and click a destination favorite button. | Click a heart button inside a listing card. | Heart icon changes to saved state. Toast confirms the destination was bookmarked. User favorite data is updated for the logged-in user. | | Google Chrome v126 | | |
+| 2 | Navigate to Favorites from top nav or sidebar. | `favorites.html`. | The saved destination appears in Favorites. Favorites sidebar/top nav active state is correct. | | Google Chrome v126 | | |
+| 3 | Click "Add to Trip" from a favorite card. | Button inside favorite card. | Browser navigates to `/planner.html`. Planner page loads and imports or makes available the selected saved activity for scheduling. | | Google Chrome v126 | | |
+| 4 | Return to Favorites with no saved favorites. | Remove all favorites, then reload `favorites.html`. | Empty state appears with "No favorites yet" and an "Explore Now" button. | | Google Chrome v126 | | |
+| 5 | Click Explore Now from empty Favorites page. | `a[href="explore.html"]`. | Browser navigates to `/explore.html`. Explore page loads and Explore nav state is active. | | Google Chrome v126 | | |
+
+---
+
+## Test Case 13: Weather and Carbon Tool Navigation and Shortcuts
+
+| Field | Details |
+|---|---|
+| **Test Scenario ID** | TS_FLOW_002 |
+| **Test Case ID** | TC_FLOW_002 |
+| **Test Case Description** | Verify navigation and shortcut behavior for Weather and Carbon tools, including API-backed search and saved eco-progress flow. |
+| **Test Priority** | Medium |
+| **Pre-Requisite** | 1. User is logged in. 2. Internet access is available for Open-Meteo geocoding/weather calls. 3. User has at least one planner trip if testing planner activity import from Carbon. |
+| **Post-Requisite** | Weather and Carbon tool navigation works and no broken shortcut leaves the user stuck. |
+
+**Test Execution Steps:**
+
+| S.No | Action | Inputs | Expected Output | Actual Output | Test Browser | Test Result | Test Comments |
+|------|--------|--------|-----------------|---------------|--------------|-------------|---------------|
+| 1 | Open Weather page from Dashboard shortcut. | Click "Full forecast →" from Dashboard weather widget. | Browser navigates to `/weather.html`. Weather nav and sidebar active states are correct. | | Google Chrome v126 | | |
+| 2 | Search for a city on Weather page. | Enter `Kuala Lumpur`, click Search. | Weather data loads without console errors. Current weather and forecast sections update. | | Google Chrome v126 | | |
+| 3 | Open Carbon page from top nav. | Click Carbon top nav link. | Browser navigates to `/carbon.html`. Carbon nav and sidebar active states are correct. | | Google Chrome v126 | | |
+| 4 | Calculate carbon impact. | Enter valid origin and destination, choose transport details if required, click Calculate. | Carbon result panel appears with calculated savings or footprint. No network or console error is shown. | | Google Chrome v126 | | |
+| 5 | Click Log Eco Progress or save action after calculation. | Button rendered in carbon result panel. | Toast confirms eco progress was logged or saved to Planner. User profile/planner data updates as intended. | | Google Chrome v126 | | |
+| 6 | Navigate to Planner after saving from Carbon. | Open `planner.html`. | Saved carbon-related activity or idea is visible/imported in Planner, or a clear confirmation path is provided. | | Google Chrome v126 | | |
+
+---
+
 > [!NOTE]
 > - **Actual Output**, **Test Result**, and **Test Comments** columns are intentionally left blank for the tester to fill in during test execution.
 > - All CSS values referenced (colors, sizes, classes) are based on the actual source code in `style.css`, `dashboard.css`, `dashboard.js`, and `app.js`.

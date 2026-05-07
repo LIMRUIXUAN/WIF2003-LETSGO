@@ -25,17 +25,71 @@ function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 /* ── TOAST NOTIFICATIONS ── */
-function showToast(msg, type = 'success') {
+function showToast(msg, type = 'success', options = {}) {
   const wrap  = document.getElementById('toastWrap');
   if (!wrap) return;
+
+  if (typeof type === 'object' && type !== null) {
+    options = type;
+    type = options.type || 'success';
+  }
+
   const t     = document.createElement('div');
-  const color = type === 'warn' ? '#f39c12' : type === 'info' ? '#3498db' : 'var(--eco-green)';
-  const icon  = type === 'warn' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'check-circle-fill';
-  t.className = 'toast-notif';
+  const color = type === 'warn'
+    ? '#f39c12'
+    : type === 'info'
+      ? '#3498db'
+      : type === 'error'
+        ? '#e74c3c'
+        : 'var(--eco-green)';
+  const icon  = type === 'warn'
+    ? 'exclamation-triangle'
+    : type === 'info'
+      ? 'info-circle'
+      : type === 'error'
+        ? 'x-circle-fill'
+        : 'check-circle-fill';
+  const duration = options.duration || 3500;
+  const hasUndo = typeof options.onUndo === 'function';
+  let closed = false;
+  let timerId = null;
+
+  t.className = `toast-notif${hasUndo ? ' toast-undo' : ''}`;
   t.style.borderLeftColor = color;
-  t.innerHTML = `<i class="bi bi-${icon}" style="color:${color}; font-size:1rem;"></i>${msg}`;
+  t.innerHTML = `
+    <i class="bi bi-${icon}" style="color:${color}; font-size:1rem;"></i>
+    <span class="toast-message">${msg}</span>
+    ${hasUndo ? `<button type="button" class="toast-action">${options.undoLabel || 'Undo'}</button>` : ''}
+    ${hasUndo ? `<span class="toast-timer" style="animation-duration:${duration}ms;"></span>` : ''}
+  `;
   wrap.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+
+  const closeToast = (undone = false) => {
+    if (closed) return;
+    closed = true;
+    clearTimeout(timerId);
+    t.classList.add('toast-leaving');
+    setTimeout(() => t.remove(), 180);
+
+    if (undone && hasUndo) {
+      options.onUndo();
+      return;
+    }
+
+    if (!undone && typeof options.onExpire === 'function') {
+      options.onExpire();
+    }
+  };
+
+  if (hasUndo) {
+    t.querySelector('.toast-action').addEventListener('click', event => {
+      event.stopPropagation();
+      closeToast(true);
+    });
+  }
+
+  timerId = setTimeout(() => closeToast(false), duration);
+  return { close: closeToast, element: t };
 }
 
 /* ── CHIP TOGGLE (used on register, planner, explore) ── */
