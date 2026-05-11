@@ -90,7 +90,7 @@ function renderListings(list = LISTINGS) {
                 <h6 class="card-title">${item.name}</h6>
                 <p class="card-location"><i class="bi bi-geo-alt"></i> ${item.location}</p>
                 <div class="d-flex gap-2">
-                  <span class="eco-badge" style="background:${item.eco >= 9 ? '#27ae60' : item.eco >= 8 ? '#f39c12' : '#e74c3c'};">
+                  <span class="eco-badge" style="background:${item.eco >= 9 ? '#27ae60' : item.eco >= 8 ? '#f39c12' : '#e74c3c'}; color: #fff;">
                     🌿 ${item.eco}/10
                   </span>
                   <span class="price-badge">${item.price}</span>

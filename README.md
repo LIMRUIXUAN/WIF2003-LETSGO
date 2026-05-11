@@ -1,4 +1,4 @@
-# WIF2003 – EcoTravel Planner
+# Lets Go – Eco-Friendly Travel Planner
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-green)
@@ -140,8 +140,8 @@ WIF2003-ECOTRAVEL-PLANNER/
 Clone the repository:
 
 ```bash
-git clone https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner.git
-cd WIF2003-EcoTravel-Planner
+git clone https://github.com/LIMRUIXUAN/letsgo.git
+cd letsgo
 ```
 
 ---

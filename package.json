@@ -1,7 +1,7 @@
 {
-  "name": "wif2003-ecotravel-planner",
+  "name": "letsgo",
   "version": "1.0.0",
-  "description": "A full-stack Web Application developed for WIF2003 Web Programming. The Eco-friendly Travel Planner helps users plan sustainable trips by calculating carbon footprints and suggesting green destinations using HTML5, Bootstrap, Node.js, and MongoDB.",
+  "description": "Lets Go is an eco-friendly travel planner that helps users plan sustainable trips by calculating carbon footprints and suggesting green destinations using Node.js and MongoDB.",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner.git"
+    "url": "git+https://github.com/LIMRUIXUAN/letsgo.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner/issues"
+    "url": "https://github.com/LIMRUIXUAN/letsgo/issues"
   },
-  "homepage": "https://github.com/LIMRUIXUAN/WIF2003-EcoTravel-Planner#readme",
+  "homepage": "https://github.com/LIMRUIXUAN/letsgo#readme",
   "dependencies": {
     "bootstrap": "^5.3.8",
     "dotenv": "^17.3.1",

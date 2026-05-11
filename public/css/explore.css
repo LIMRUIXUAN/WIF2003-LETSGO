@@ -91,7 +91,7 @@
 
 /* ── FLIP CARD 3D ── */
 .flip-card {
-  height: 400px;
+  height: 380px;
   cursor: pointer;
   perspective: 1000px;
   position: relative;
@@ -129,6 +129,7 @@
   border-radius: 12px;
   border: 2px solid #e8e8e8;
   overflow: hidden;
+  height: 100%;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -559,7 +560,7 @@
 }
 
 .flip-card {
-  height: 430px;
+  height: 380px;
   perspective: 1400px;
 }
 
@@ -695,6 +696,6 @@
   }
 
   .flip-card {
-    height: 410px;
+    height: 360px;
   }
 }

@@ -1,12 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    auth.js  —  Owner: Cha Zi Yu
    Form validation & LocalStorage mock sessions
-   Used by: login.html, register.html
+   Used by: login.html, register.html, reset-password.html
    ═══════════════════════════════════════════════════════════ */
 
 'use strict';
-
-// File: public/js/auth.jsf
 
 async function doLogin() {
     // 1. Grab the values from the HTML inputs
@@ -125,6 +123,8 @@ async function requestPasswordResetCode() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
+    let requestSuccessful = false;
+
     try {
         const response = await fetch('/api/auth/password-reset/request', {
             method: 'POST',
@@ -138,14 +138,45 @@ async function requestPasswordResetCode() {
             return;
         }
 
+        requestSuccessful = true;
         showToast(`Code sent. Check your email within ${result.expiresInMinutes || 10} minutes.`, 'info');
-        document.getElementById('resetCode').focus();
+        
+        // Reveal the hidden fields with a smooth fade in
+        const hiddenFields = document.getElementById('resetHiddenFields');
+        if(hiddenFields) {
+            hiddenFields.style.display = 'block';
+            setTimeout(() => { hiddenFields.style.opacity = '1'; }, 50);
+            
+            // Auto-focus the first digit input
+            const firstDigit = document.querySelector('.reset-digit');
+            if(firstDigit) firstDigit.focus();
+        } else {
+            // Fallback for older HTML structure
+            const oldInput = document.getElementById('resetCode');
+            if(oldInput && oldInput.type !== 'hidden') oldInput.focus();
+        }
     } catch (error) {
         console.error("Password reset code request error:", error);
         showToast('Failed to connect to the server.', 'error');
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Send Code';
+        if (!requestSuccessful) {
+            btn.disabled = false;
+            btn.innerHTML = 'Send Code';
+        } else {
+            // Start 60-second cooldown timer to prevent spamming
+            let timeLeft = 60;
+            btn.innerHTML = `Wait ${timeLeft}s`;
+            const timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Send Code';
+                } else {
+                    btn.innerHTML = `Wait ${timeLeft}s`;
+                }
+            }, 1000);
+        }
     }
 }
 
@@ -212,5 +243,69 @@ document.addEventListener('keypress', function (e) {
         if (window.location.pathname.includes('login.html')) doLogin();
         if (window.location.pathname.includes('register.html')) doRegister();
         if (window.location.pathname.includes('reset-password.html')) resetPassword();
+    }
+});
+
+// ── 4. OTP AUTO-TABBING (For Reset Password) ──
+document.addEventListener('DOMContentLoaded', () => {
+    const digits = document.querySelectorAll('.reset-digit');
+    if (digits.length === 0) return;
+
+    digits.forEach((digit, index) => {
+        digit.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // Ensure only numbers are entered
+            if (!/^\d$/.test(val)) {
+                e.target.value = '';
+                return;
+            }
+            // Move to next input
+            if (val && index < digits.length - 1) {
+                digits[index + 1].focus();
+            }
+            // Update hidden full code input
+            updateHiddenResetCode();
+        });
+
+        digit.addEventListener('keydown', (e) => {
+            // Handle backspace to go to previous input
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                digits[index - 1].focus();
+            }
+            // Handle left/right arrow navigation
+            if (e.key === 'ArrowLeft' && index > 0) {
+                digits[index - 1].focus();
+            }
+            if (e.key === 'ArrowRight' && index < digits.length - 1) {
+                digits[index + 1].focus();
+            }
+        });
+        
+        // Paste support
+        digit.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
+            if (!/^\d+$/.test(pastedData)) return; // ensure only digits
+            
+            const chars = pastedData.split('').slice(0, digits.length);
+            chars.forEach((char, i) => {
+                if (index + i < digits.length) {
+                    digits[index + i].value = char;
+                }
+            });
+            // Focus the correct box after pasting
+            const focusIndex = Math.min(index + chars.length, digits.length - 1);
+            digits[focusIndex].focus();
+            updateHiddenResetCode();
+        });
+    });
+
+    function updateHiddenResetCode() {
+        const hiddenInput = document.getElementById('resetCode');
+        if (hiddenInput) {
+            let fullCode = '';
+            digits.forEach(d => fullCode += d.value);
+            hiddenInput.value = fullCode;
+        }
     }
 });
