@@ -78,7 +78,26 @@ async function removeFav(e, id) {
         
         // 2. Re-render the page with the fresh database info
         renderFavs();
-        if(typeof showToast === 'function') showToast('Removed from favorites');
+        if(typeof showToast === 'function') {
+            showToast('Removed from favorites', 'info', {
+                duration: 6000,
+                undoLabel: 'Undo',
+                onUndo: async () => {
+                    try {
+                        await fetch(`/api/users/${userEmail}/favorites`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ destinationId: id })
+                        });
+                        renderFavs();
+                        showToast('Favorite restored', 'info');
+                    } catch (error) {
+                        console.error("Failed to restore favorite:", error);
+                        showToast('Could not restore favorite.', 'error');
+                    }
+                }
+            });
+        }
         
     } catch (error) {
         console.error("Failed to remove from database:", error);

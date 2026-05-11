@@ -19,7 +19,11 @@ const userSchema = new mongoose.Schema({
     // Favorites (Jin Xiang & Ye Qinglan's punya part)
     // This stores an array of destination IDs (macam this format [1, 5, 12] ai generated punya example just looking like that)
     favorites: { type: [Number], default: []}, 
-    avatar: {type: String, default: ''} // URL to profile picture
+    avatar: {type: String, default: ''}, // URL to profile picture
+
+    // Password reset verification
+    resetCodeHash: { type: String, default: '' },
+    resetCodeExpiresAt: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

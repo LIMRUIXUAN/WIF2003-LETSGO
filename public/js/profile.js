@@ -330,6 +330,8 @@ async function saveInterests() {
 }
  
 async function removeInterest(interest) {
+  const previousInterests = [...(currentUserData.interests || [])];
+
   // 1. Instantly remove from the global object
   currentUserData.interests = (currentUserData.interests || []).filter(x => x !== interest);
   renderInterestDisplay(currentUserData);
@@ -342,8 +344,32 @@ async function removeInterest(interest) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentUserData)
       });
-      showToast('Interest removed!');
-  } catch(e) { console.error("Remove error:", e); }
+      showToast('Interest removed', 'info', {
+        duration: 6000,
+        undoLabel: 'Undo',
+        onUndo: async () => {
+          currentUserData.interests = previousInterests;
+          renderInterestDisplay(currentUserData);
+
+          try {
+            await fetch(`/api/users/${userEmail}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(currentUserData)
+            });
+            showToast('Interest restored', 'info');
+          } catch (e) {
+            console.error("Restore error:", e);
+            showToast('Could not restore interest.', 'error');
+          }
+        }
+      });
+  } catch(e) {
+    console.error("Remove error:", e);
+    currentUserData.interests = previousInterests;
+    renderInterestDisplay(currentUserData);
+    showToast('Could not remove interest.', 'error');
+  }
 }
  
 /* ══════════════════════════════════════════
@@ -413,13 +439,71 @@ document.querySelectorAll('.eco-modal-backdrop').forEach(backdrop => {
 /* ══════════════════════════════════════════
    TOAST
    ══════════════════════════════════════════ */
-function showToast(msg, type = 'success') {
+function showToast(msg, type = 'success', options = {}) {
   const wrap  = document.getElementById('toastWrap');
+  if (!wrap) return;
+
+  if (typeof type === 'object' && type !== null) {
+    options = type;
+    type = options.type || 'success';
+  }
+
   const toast = document.createElement('div');
-  toast.className = 'toast-item' + (type !== 'success' ? ' ' + type : '');
-  toast.innerHTML = `<i class="bi bi-${type === 'warn' ? 'exclamation-triangle' : type === 'error' ? 'x-circle' : 'check-circle'}"></i> ${msg}`;
+  const color = type === 'warn'
+    ? '#f39c12'
+    : type === 'info'
+      ? '#3498db'
+      : type === 'error'
+        ? '#e74c3c'
+        : 'var(--eco-green)';
+  const icon = type === 'warn'
+    ? 'exclamation-triangle'
+    : type === 'info'
+      ? 'info-circle'
+      : type === 'error'
+        ? 'x-circle-fill'
+        : 'check-circle-fill';
+  const duration = options.duration || 3500;
+  const hasUndo = typeof options.onUndo === 'function';
+  let closed = false;
+  let timerId = null;
+
+  toast.className = `toast-notif${hasUndo ? ' toast-undo' : ''}`;
+  toast.style.borderLeftColor = color;
+  toast.innerHTML = `
+    <i class="bi bi-${icon}" style="color:${color}; font-size:1rem;"></i>
+    <span class="toast-message">${msg}</span>
+    ${hasUndo ? `<button type="button" class="toast-action">${options.undoLabel || 'Undo'}</button>` : ''}
+    ${hasUndo ? `<span class="toast-timer" style="animation-duration:${duration}ms;"></span>` : ''}
+  `;
   wrap.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
+
+  const closeToast = (undone = false) => {
+    if (closed) return;
+    closed = true;
+    clearTimeout(timerId);
+    toast.classList.add('toast-leaving');
+    setTimeout(() => toast.remove(), 180);
+
+    if (undone && hasUndo) {
+      options.onUndo();
+      return;
+    }
+
+    if (!undone && typeof options.onExpire === 'function') {
+      options.onExpire();
+    }
+  };
+
+  if (hasUndo) {
+    toast.querySelector('.toast-action').addEventListener('click', event => {
+      event.stopPropagation();
+      closeToast(true);
+    });
+  }
+
+  timerId = setTimeout(() => closeToast(false), duration);
+  return { close: closeToast, element: toast };
 }
  
 /* ══════════════════════════════════════════

@@ -37,8 +37,12 @@ async function saveState() {
   const trip = itineraries.find(t => t._id == currentTripId);
   if (!trip) return;
 
+  return saveTripState(currentTripId, trip);
+}
+
+async function saveTripState(tripId, trip) {
   try {
-    const res = await fetch(`/api/trips/${currentTripId}`, {
+    const res = await fetch(`/api/trips/${tripId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(trip)
@@ -212,16 +216,34 @@ async function loadState() {
   }
 }
 
-async function removeItin(id) {
-  try {
-    await fetch(`/api/trips/${id}`, { method: 'DELETE' });
-    itineraries = itineraries.filter(t => t._id !== id);
-    renderItineraries();
-    syncCO2ToProfile();
-    showToast("Deleted!");
-  } catch (err) {
-    console.error(err);
-  }
+function removeItin(id) {
+  const removedIndex = itineraries.findIndex(t => t._id === id);
+  if (removedIndex === -1) return;
+
+  const [removedTrip] = itineraries.splice(removedIndex, 1);
+  renderItineraries();
+
+  showToast('Trip deleted', 'info', {
+    duration: 6000,
+    undoLabel: 'Undo',
+    onUndo: () => {
+      itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
+      renderItineraries();
+      showToast('Trip restored', 'info');
+    },
+    onExpire: async () => {
+      try {
+        const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Trip delete request failed');
+        syncCO2ToProfile();
+      } catch (err) {
+        console.error(err);
+        itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
+        renderItineraries();
+        showToast('Could not delete trip. Restored it.', 'error');
+      }
+    }
+  });
 }
 
 /*
@@ -541,17 +563,47 @@ function deleteActivity(index, sourceLocation) {
   const trip = itineraries.find(t => t._id == currentTripId);
   if (!trip) return;
 
+  let targetArray = null;
+
   if (sourceLocation === 'ideaBank') {
-    trip.ideaBank.splice(index, 1);
+    targetArray = trip.ideaBank;
   } else {
     const day = trip.days.find(d => d.date === sourceLocation);
-    if (day) {
-      day.stops.splice(index, 1);
-    }
+    if (day) targetArray = day.stops;
   }
+
+  if (!targetArray || !targetArray[index]) return;
+
+  const [removedActivity] = targetArray.splice(index, 1);
   renderBoardItems(trip);
-  saveState();
-  showToast("Activity deleted!");
+
+  showToast('Activity deleted', 'info', {
+    duration: 6000,
+    undoLabel: 'Undo',
+    onUndo: async () => {
+      const latestTrip = itineraries.find(t => t._id == trip._id);
+      if (!latestTrip) return;
+
+      let restoreArray = null;
+      if (sourceLocation === 'ideaBank') {
+        if (!latestTrip.ideaBank) latestTrip.ideaBank = [];
+        restoreArray = latestTrip.ideaBank;
+      } else {
+        const day = latestTrip.days.find(d => d.date === sourceLocation);
+        if (day) restoreArray = day.stops;
+      }
+
+      if (!restoreArray) return;
+      restoreArray.splice(Math.min(index, restoreArray.length), 0, removedActivity);
+      renderBoardItems(latestTrip);
+      await saveTripState(latestTrip._id, latestTrip);
+      showToast('Activity restored', 'info');
+    },
+    onExpire: async () => {
+      const latestTrip = itineraries.find(t => t._id == trip._id);
+      if (latestTrip) await saveTripState(latestTrip._id, latestTrip);
+    }
+  });
 }
 
 function processPendingIdeas(trip) {

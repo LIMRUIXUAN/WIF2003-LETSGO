@@ -98,12 +98,16 @@ document.addEventListener('click', (e) => {
 
 /* ── 3. RECENT SEARCHES (LOCALSTORAGE) ── */
 function updateRecentSearches(cityName) {
-  let searches = JSON.parse(localStorage.getItem('eco_recent_searches') || '[]');
+  // Tie the search history to the currently logged-in user
+  const userEmail = localStorage.getItem('ecoUserEmail') || 'guest';
+  const storageKey = `eco_recent_searches_${userEmail}`;
+
+  let searches = JSON.parse(localStorage.getItem(storageKey) || '[]');
   searches = searches.filter(s => s.toLowerCase() !== cityName.toLowerCase());
   searches.unshift(cityName);
   searches = searches.slice(0, 4); // Keep top 4
   
-  localStorage.setItem('eco_recent_searches', JSON.stringify(searches));
+  localStorage.setItem(storageKey, JSON.stringify(searches));
   renderRecentSearches();
 }
 
@@ -111,7 +115,11 @@ function renderRecentSearches() {
   const container = document.getElementById('recentSearches');
   if (!container) return;
   
-  let searches = JSON.parse(localStorage.getItem('eco_recent_searches') || '[]');
+  // Retrieve the search history for the currently logged-in user
+  const userEmail = localStorage.getItem('ecoUserEmail') || 'guest';
+  const storageKey = `eco_recent_searches_${userEmail}`;
+
+  let searches = JSON.parse(localStorage.getItem(storageKey) || '[]');
   if (searches.length === 0) {
     container.innerHTML = '';
     return;
