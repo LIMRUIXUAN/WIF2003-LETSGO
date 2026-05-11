@@ -466,10 +466,14 @@ function openAddActivityModal() {
     document.getElementById('actName').value = '';
     document.getElementById('actSub').value = '';
     document.getElementById('actTime').value = '';
-    document.getElementById('actIcon').value = '📍';
+    document.getElementById('actIconBtn').innerText = '📍';
     document.getElementById('actCarbon').value = '0';
     
     openModal('addActivityModal');
+}
+
+function selectEmoji(emoji) {
+  document.getElementById('actIconBtn').innerText = emoji;
 }
 
 function editActivity(index, sourceLocation) {
@@ -495,7 +499,7 @@ function editActivity(index, sourceLocation) {
     // 3. Fill the form boxes with the old data!
     document.getElementById('actName').value = stop.name;
     document.getElementById('actTime').value = stop.time === 'Flexible' ? '' : stop.time; 
-    document.getElementById('actIcon').value = stop.icon;
+    document.getElementById('actIconBtn').innerText = stop.icon || '📍';
     document.getElementById('actSub').value = stop.sub;
     document.getElementById('actCarbon').value = stop.carbon;
     document.getElementById('actTargetDay').value = sourceLocation;
@@ -515,7 +519,7 @@ function saveNewActivity() {
     // Grab data from form
     const name = document.getElementById('actName').value || 'New Activity';
     const time = document.getElementById('actTime').value || 'Flexible';
-    const icon = document.getElementById('actIcon').value || '📍';
+    const icon = document.getElementById('actIconBtn').innerText || '📍';
     const sub = document.getElementById('actSub').value || 'Custom';
     const targetId = document.getElementById('actTargetDay').value;
     const carbon = parseFloat(document.getElementById('actCarbon').value) || 0;
