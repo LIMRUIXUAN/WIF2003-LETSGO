@@ -468,6 +468,8 @@ function openAddActivityModal() {
     document.getElementById('actTime').value = '';
     document.getElementById('actIconBtn').innerText = '📍';
     document.getElementById('actCarbon').value = '0';
+    document.getElementById('actLat').value = '';
+    document.getElementById('actLng').value = '';
     
     openModal('addActivityModal');
 }
@@ -503,6 +505,8 @@ function editActivity(index, sourceLocation) {
     document.getElementById('actSub').value = stop.sub;
     document.getElementById('actCarbon').value = stop.carbon;
     document.getElementById('actTargetDay').value = sourceLocation;
+    document.getElementById('actLat').value = stop.location?.lat || '';
+    document.getElementById('actLng').value = stop.location?.lng || '';
 
     // 4. Turn ON Edit Mode so the Save button knows what to do
     isEditing = true;
@@ -523,9 +527,14 @@ function saveNewActivity() {
     const sub = document.getElementById('actSub').value || 'Custom';
     const targetId = document.getElementById('actTargetDay').value;
     const carbon = parseFloat(document.getElementById('actCarbon').value) || 0;
+    const lat = document.getElementById('actLat').value;
+    const lng = document.getElementById('actLng').value;
 
     // Create the new Stop Object
     const newStop = { time, icon, name, sub, carbon };
+    if (lat && lng) {
+        newStop.location = { lat: parseFloat(lat), lng: parseFloat(lng) };
+    }
 
     if (isEditing) {
         if (editItemLocation === 'ideaBank') {
