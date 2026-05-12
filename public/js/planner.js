@@ -664,7 +664,8 @@ window.initMap = function() {
     center: { lat: 4.2105, lng: 101.9758 }, 
     zoom: 6,
     mapTypeControl: false,
-    streetViewControl: false
+    streetViewControl: false,
+    mapId: "DEMO_MAP_ID"
   });
 }
 
@@ -694,12 +695,16 @@ function syncMapWithItinerary(trip) {
             lng: parseFloat(stop.location.lng) 
         };
         
-        const marker = new google.maps.Marker({
+        const pin = new google.maps.marker.PinElement({
+            glyph: stopCounter.toString(),
+            glyphColor: "white",
+        });
+
+        const marker = new google.maps.marker.AdvancedMarkerElement({
             position: position,
             map: map,
             title: stop.name,
-            label: stopCounter.toString(),
-            animation: google.maps.Animation.DROP
+            content: pin.element
         });
 
         mapMarkers.push(marker);
@@ -738,7 +743,7 @@ async function loadGoogleMapsScript() {
         }
 
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places,marker&loading=async`;
         script.async = true;
         script.defer = true;
 
@@ -746,5 +751,104 @@ async function loadGoogleMapsScript() {
 
     } catch (error) {
         console.error("Failed to load Google Maps API key:", error);
+    }
+}
+
+// -------------------------------------------------------------
+// MAP PICKER LOGIC
+// -------------------------------------------------------------
+let pickerMap;
+let pickerMarker;
+
+function openMapPicker() {
+    // 1. Show modal
+    document.getElementById('mapPickerModal').style.display = 'flex';
+    
+    // 2. Initialize picker map if not already done
+    if (!pickerMap && window.google) {
+        const pickerMapElement = document.getElementById('pickerMap');
+        pickerMap = new google.maps.Map(pickerMapElement, {
+            center: { lat: 4.2105, lng: 101.9758 }, // Malaysia default
+            zoom: 6,
+            mapTypeControl: false,
+            streetViewControl: false,
+            mapId: "PICKER_MAP_ID"
+        });
+
+        pickerMap.addListener('click', (e) => {
+            placePickerMarker(e.latLng);
+        });
+    }
+
+    if (!pickerMap) {
+      showToast('Google Maps is still loading, please try again in a moment', 'warn');
+      return;
+    }
+
+    // 3. Resize map to prevent grey box issue when map is initialized inside a hidden div
+    // We use a small timeout to allow the modal to finish displaying
+    setTimeout(() => {
+        google.maps.event.trigger(pickerMap, 'resize');
+        
+        // 4. Try to read current inputs
+        const currentLat = parseFloat(document.getElementById('actLat').value);
+        const currentLng = parseFloat(document.getElementById('actLng').value);
+
+        if (!isNaN(currentLat) && !isNaN(currentLng)) {
+            const pos = { lat: currentLat, lng: currentLng };
+            placePickerMarker(pos);
+            pickerMap.setCenter(pos);
+            pickerMap.setZoom(12);
+        } else {
+            // Clear marker if no lat/lng is set
+            if (pickerMarker) {
+                pickerMarker.map = null;
+                pickerMarker = null; // Reset so placePickerMarker creates a new one cleanly or properly maps it
+            }
+            
+            // Optionally try HTML5 Geolocation to center on user
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        pickerMap.setCenter(pos);
+                        pickerMap.setZoom(10);
+                    },
+                    () => {
+                        // Ignore errors, just use default center
+                    }
+                );
+            }
+        }
+    }, 50);
+}
+
+function placePickerMarker(latLng) {
+    if (!pickerMarker) {
+        pickerMarker = new google.maps.marker.AdvancedMarkerElement({
+            map: pickerMap
+        });
+    }
+    pickerMarker.map = pickerMap; // Ensure it's on the map
+    pickerMarker.position = latLng;
+}
+
+function closeMapPicker() {
+    document.getElementById('mapPickerModal').style.display = 'none';
+}
+
+function confirmMapSelection() {
+    if (pickerMarker && pickerMarker.position) {
+        const pos = pickerMarker.position;
+        // Update the form inputs
+        // toFixed(6) to prevent extremely long decimals
+        document.getElementById('actLat').value = (typeof pos.lat === 'function' ? pos.lat() : pos.lat).toFixed(6);
+        document.getElementById('actLng').value = (typeof pos.lng === 'function' ? pos.lng() : pos.lng).toFixed(6);
+        closeMapPicker();
+    } else {
+        showToast('Please click on the map to select a location first!', 'warn');
     }
 }

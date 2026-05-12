@@ -36,7 +36,8 @@ app.use('/api/favorites', favoritesRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URL, {
-  serverSelectionTimeoutMS: 3000 // stop trying after 3s
+  serverSelectionTimeoutMS: 3000, // stop trying after 3s
+  family: 4 // Force IPv4 to fix mobile network issues
 })
   .then(() => console.log("MongoDB connected"))
   .catch(err => {
