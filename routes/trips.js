@@ -35,9 +35,9 @@ router.put('/:id', async (req, res) => {
 
     // Find the trip by its ID and overwrite it with the new data
     const updatedTrip = await Trip.findByIdAndUpdate(
-      req.params.id, 
+      req.params.id,
       updatedData,
-      { new: true }
+      { new: true, runValidators: true }
     );
     res.json({ success: true, data: updatedTrip });
   } catch (err) {

@@ -5,8 +5,9 @@ const User = require('../models/User');// ini using for standardise the User jso
 // GET endpoint to fetch a user's profile by their email
 router.get('/profile/:email', async (req, res) => {
     try {
+        const email = String(req.params.email || '').trim().toLowerCase();
         // 1. Ask MongoDB to find the user
-        const user = await User.findOne({ email: req.params.email});
+        const user = await User.findOne({ email: email });
         
         // 2. If no user exists, send an error
         if (!user) return res.status(404).json({ success: false, message: 'User not found, there got invalid route 404 yeah bang'})
@@ -23,11 +24,15 @@ router.get('/profile/:email', async (req, res) => {
 router.put('/:email/favorites', async (req, res) =>{
     try{
          // 1. Ask MongoDB to find the user actually copy and paste upper part lah
-        const {destinationId} = req.body;
-        const user = await User.findOne({ email: req.params.email});
+        const destinationId = Number(req.body.destinationId);
+        const email = String(req.params.email || '').trim().toLowerCase();
+        const user = await User.findOne({ email: email });
 
         // 2. If no user exists, send an error
         if(!user) return res.status(404).json({ success:false, message: 'User not found'});
+        if (!Number.isInteger(destinationId) || destinationId < 0) {
+            return res.status(400).json({ success: false, message: 'Valid destinationId is required' });
+        }
 
         // 3. Check jika the destinationId got at least one favorites array
         const isFavorite = user.favorites.includes(destinationId);
@@ -53,13 +58,13 @@ router.put('/:email/favorites', async (req, res) =>{
 
 router.put('/:email', async (req, res) => {
     try {
-        const userEmail = req.params.email;
+        const userEmail = String(req.params.email || '').trim().toLowerCase();
 
         // Map the fields allowed to be updated from the frontend
         const updateData = {
             name:         req.body.name,
             city:         req.body.city,
-            budget:       req.body.budget,
+            budget:       req.body.budget === undefined ? undefined : User.normalizeBudget(req.body.budget),
             avatar:       req.body.avatar,
             interests:    req.body.interests,
             notifTrip:    req.body.notifTrip,
@@ -75,7 +80,7 @@ router.put('/:email', async (req, res) => {
         const updatedUser = await User.findOneAndUpdate(
             { email: userEmail },
             { $set: updateData },
-            { new: true } 
+            { new: true, runValidators: true }
         );
 
         if (!updatedUser) {

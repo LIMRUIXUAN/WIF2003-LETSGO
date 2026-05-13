@@ -12,6 +12,7 @@ async function doLogin() {
     const password = document.getElementById('loginPw').value;
 
     const btn = document.querySelector('.btn-eco');
+    const originalBtnHtml = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
 
@@ -47,6 +48,9 @@ async function doLogin() {
     } catch (error) {
         console.error("Fetch error during login:", error);
         alert("Failed to connect to the server. Is Node.js running?");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
     }
 }
 
