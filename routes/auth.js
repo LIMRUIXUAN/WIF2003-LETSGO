@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const User = require('../models/User');
 const { sendMail } = require('../utils/mailer');
+const { signToken } = require('../middleware/auth');
 
 function hashResetCode(code) {
     return crypto.createHash('sha256').update(String(code)).digest('hex');
@@ -79,12 +80,13 @@ router.post('/login', async (req, res) => {
             await user.save();
         }
 
-        // 3. If successful, send the user data back to the browser
+        // 3. If successful, send the user data and auth token back to the browser
         res.json({ 
             success: true, 
             message: 'Login successful!', 
             email: user.email, 
-            name: user.name 
+            name: user.name,
+            token: signToken(user)
         });
 
     } catch (error) {

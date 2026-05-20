@@ -499,8 +499,12 @@
     }
 
     function logout() {
-      localStorage.removeItem('ecoUserEmail');
-      sessionStorage.clear();
+      if (typeof clearAuthSession === 'function') clearAuthSession();
+      else {
+        localStorage.removeItem('ecoUserEmail');
+        localStorage.removeItem('ecoAuthToken');
+        sessionStorage.clear();
+      }
     }
 
     loadDashboard();

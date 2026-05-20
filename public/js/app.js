@@ -8,6 +8,53 @@
 /* ── SHARED STATE ── */
 let favorites   = new Set();
 
+function getAuthToken() {
+  return localStorage.getItem('ecoAuthToken') || '';
+}
+
+function clearAuthSession() {
+  localStorage.removeItem('ecoAuthToken');
+  localStorage.removeItem('ecoUserEmail');
+  localStorage.removeItem('ecoUserName');
+  localStorage.removeItem('ecoUserInitials');
+  localStorage.removeItem('isLoggedIn');
+  sessionStorage.clear();
+}
+
+function isInternalApiRequest(resource) {
+  const url = typeof resource === 'string' ? resource : resource?.url;
+  if (!url) return false;
+
+  if (url.startsWith('/api/')) return true;
+
+  try {
+    return new URL(url, window.location.origin).origin === window.location.origin
+      && new URL(url, window.location.origin).pathname.startsWith('/api/');
+  } catch (_error) {
+    return false;
+  }
+}
+
+const nativeFetch = window.fetch.bind(window);
+window.fetch = function fetchWithAuth(resource, options = {}) {
+  const token = getAuthToken();
+  const headers = new Headers(options.headers || (resource instanceof Request ? resource.headers : undefined));
+
+  if (token && isInternalApiRequest(resource)) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return nativeFetch(resource, { ...options, headers }).then(response => {
+    if (response.status === 401 && isInternalApiRequest(resource)) {
+      clearAuthSession();
+      if (!window.location.pathname.endsWith('/login.html') && !window.location.pathname.endsWith('/register.html')) {
+        window.location.href = 'login.html';
+      }
+    }
+    return response;
+  });
+};
+
 /* ── SHARED DATA: Eco listings ── */
 const LISTINGS = [
   { id:1, name:'Bamboo Eco Resort',        location:'Cameron Highlands', cat:'hotel',      eco:9.4, price:'RM 280/night', co2:'↓34 kg CO₂',   icon:'🏕',  rating:4.9, desc:'Fully solar-powered mountain retreat with organic gardens.' },

@@ -31,6 +31,7 @@ async function doLogin() {
             // This is what Explore.js and Favorites.js will look for.
             localStorage.setItem('ecoUserEmail', result.email);
             localStorage.setItem('ecoUserName', result.name);
+            localStorage.setItem('ecoAuthToken', result.token);
             localStorage.setItem('isLoggedIn', 'true');
 
             // Show success and redirect to explore.html
