@@ -20,15 +20,18 @@ async function renderFavs() {
     const userEmail = localStorage.getItem('ecoUserEmail'); 
 
     try {
-        // 2. Fetch the user's profile from MongoDB
+        // 2. Ensure destinations are loaded from MongoDB
+        await loadListingsFromAPI();
+
+        // 3. Fetch the user's profile from MongoDB
         const response = await fetch(`/api/users/profile/${userEmail}`);
         const userData = await response.json();
 
         if (userData.success) {
-            // 3. Extract the array of saved IDs directly from the database!
+            // 4. Extract the array of saved IDs directly from the database!
             const dbFavorites = userData.data.favorites; 
             
-            // 4. Match them against your master LISTINGS array
+            // 5. Match them against destinations fetched from MongoDB
             const favList = LISTINGS.filter(l => dbFavorites.includes(l.id));
 
             if (favList.length === 0) {
@@ -37,7 +40,7 @@ async function renderFavs() {
                 return;
             }
 
-            // Render cards (same as before)
+            // Render cards
             empty.style.display = 'none';
             grid.innerHTML = favList.map(l => `
               <div class="col-sm-6 col-lg-4">
@@ -106,7 +109,7 @@ async function removeFav(e, id) {
 
 // Add to Trip from Favorites
 function addToTripFromFav(id) {
-    // 1. Find the destination in the master list yeah I know this is inefficient but it's just a demo okay
+    // 1. Find the destination in the list fetched from MongoDB
     const item = LISTINGS.find(l => l.id === id);
     if (!item) return;
 
