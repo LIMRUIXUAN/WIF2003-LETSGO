@@ -23,9 +23,13 @@ function handleSearchInput(el) {
     if (item.name.toLowerCase().includes(query)) options.add(item.name);
     if (item.cat.toLowerCase().includes(query)) options.add(item.cat);
   });
+
+  function escAttr(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
   
   const html = Array.from(options).slice(0, 5).map(opt => 
-    `<div class="suggestion-item" onclick="selectSuggestion('${opt}')">${opt}</div>`
+    `<div class="suggestion-item" onclick="selectSuggestion('${escAttr(opt)}')">${escAttr(opt)}</div>`
   ).join('');
   
   document.getElementById('searchSuggest').innerHTML = html;
@@ -289,6 +293,8 @@ function handleSearchKeydown(event) {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
+  // Destinations are already loaded by app.js (loadListingsFromAPI).
+  // We just need to render once LISTINGS are ready and load favorites.
   loadDestinations();
   // Close modal when clicking outside
   const modal = document.getElementById('filterModal');
@@ -306,8 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
   fetch(`/api/users/profile/${userEmail}`)
     .then(res => res.json())
     .then(data => {
-      console.log("Loaded favorites:", data.data.favorites);// ini used for tracking if favorites are loaded correctly
-
       if (data.success && data.data.favorites) {
         data.data.favorites.forEach(id => favorites.add(id));
         renderListings();
