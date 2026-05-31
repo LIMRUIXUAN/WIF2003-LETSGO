@@ -80,6 +80,7 @@ async function doRegister() {
     }
 
     const btn = document.querySelector('.btn-eco');
+    const originalBtnHtml = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
 
@@ -107,6 +108,9 @@ async function doRegister() {
     } catch (error) {
         console.error("Registration error:", error);
         alert("Failed to connect to the server.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
     }
 }
 

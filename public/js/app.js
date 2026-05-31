@@ -82,8 +82,13 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 /* ── TOAST NOTIFICATIONS ── */
 function showToast(msg, type = 'success', options = {}) {
-  const wrap  = document.getElementById('toastWrap');
-  if (!wrap) return;
+  let wrap  = document.getElementById('toastWrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'toastWrap';
+    wrap.className = 'toast-wrap';
+    document.body.appendChild(wrap);
+  }
 
   if (typeof type === 'object' && type !== null) {
     options = type;
