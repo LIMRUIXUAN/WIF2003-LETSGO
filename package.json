@@ -2,7 +2,7 @@
   "name": "letsgo",
   "version": "1.0.0",
   "description": "Lets Go is an eco-friendly travel planner that helps users plan sustainable trips by calculating carbon footprints and suggesting green destinations using Node.js and MongoDB.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "dev": "nodemon",
     "test": "node --test tests/*.test.js",
