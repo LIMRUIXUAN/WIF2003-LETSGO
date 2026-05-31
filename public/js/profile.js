@@ -218,6 +218,16 @@ async function saveProfile() {
       const result = await response.json();
       if(result.success){
           currentUserData = result.data;
+          if (result.token) {
+              localStorage.setItem('ecoAuthToken', result.token);
+          }
+          if (result.data.email) {
+              localStorage.setItem('ecoUserEmail', result.data.email);
+          }
+          if (result.data.name) {
+              localStorage.setItem('ecoUserName', result.data.name);
+              localStorage.setItem('ecoUserInitials', getInitials(result.data.name));
+          }
           
           showToast('Profile updated successfully! ✅');
       }else
@@ -231,7 +241,7 @@ async function saveProfile() {
 /* ══════════════════════════════════════════
    CHANGE PASSWORD
    ══════════════════════════════════════════ */
-function changePassword() {
+async function changePassword() {
   const current  = document.getElementById('currentPw').value;
   const newPw    = document.getElementById('newPw').value;
   const confirm  = document.getElementById('confirmPw').value;
@@ -240,10 +250,7 @@ function changePassword() {
   clearHint('hintCurrentPw'); clearHint('hintNewPw'); clearHint('hintConfirmPw');
   ['currentPw','newPw','confirmPw'].forEach(id => document.getElementById(id).classList.remove('error'));
  
-  const user = Store.get('user') || {};
- 
-  // Phase 1: plain-text password check (Phase 2 will use bcrypt via API)
-  if (current !== (user.password || 'password123')) {
+  if (!current) {
     showHint('hintCurrentPw'); document.getElementById('currentPw').classList.add('error');
     valid = false;
   }
@@ -256,17 +263,34 @@ function changePassword() {
     valid = false;
   }
   if (!valid) return;
- 
-  user.password = newPw;
-  Store.set('user', user);
- 
-  document.getElementById('currentPw').value = '';
-  document.getElementById('newPw').value     = '';
-  document.getElementById('confirmPw').value = '';
-  document.getElementById('strengthBar').style.width = '0';
-  document.getElementById('strengthLabel').textContent = '';
- 
-  showToast('Password updated successfully! 🔒');
+
+  try {
+    const userEmail = localStorage.getItem('ecoUserEmail');
+    const response = await fetch(`/api/users/${userEmail}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: current, newPassword: newPw })
+    });
+    const result = await response.json();
+
+    if (!result.success) {
+      showHint('hintCurrentPw');
+      document.getElementById('currentPw').classList.add('error');
+      showToast(result.message || 'Could not update password.', 'error');
+      return;
+    }
+
+    document.getElementById('currentPw').value = '';
+    document.getElementById('newPw').value     = '';
+    document.getElementById('confirmPw').value = '';
+    document.getElementById('strengthBar').style.width = '0';
+    document.getElementById('strengthLabel').textContent = '';
+
+    showToast('Password updated successfully! 🔒');
+  } catch (error) {
+    console.error("Password change failed:", error);
+    showToast('Network error changing password.', 'error');
+  }
 }
  
 /* ══════════════════════════════════════════
@@ -375,12 +399,33 @@ async function removeInterest(interest) {
 /* ══════════════════════════════════════════
    DELETE ACCOUNT
    ══════════════════════════════════════════ */
-function deleteAccount() {
+async function deleteAccount() {
   closeModal('deleteModal');
-  // Phase 2: DELETE /api/users
-  Store.clear();
-  showToast('Account deleted. Goodbye! 💚');
-  setTimeout(() => window.location.href = 'index.html', 1500);
+  const userEmail = localStorage.getItem('ecoUserEmail');
+
+  if (!userEmail) {
+    if (typeof clearAuthSession === 'function') clearAuthSession();
+    window.location.href = 'index.html';
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/users/${userEmail}`, { method: 'DELETE' });
+    const result = await response.json();
+
+    if (!result.success) {
+      showToast(result.message || 'Could not delete account.', 'error');
+      return;
+    }
+
+    if (typeof clearAuthSession === 'function') clearAuthSession();
+    else Store.clear();
+    showToast('Account deleted. Goodbye! 💚');
+    setTimeout(() => window.location.href = 'index.html', 1500);
+  } catch (error) {
+    console.error("Account deletion failed:", error);
+    showToast('Network error deleting account.', 'error');
+  }
 }
  
 /* ══════════════════════════════════════════
@@ -581,11 +626,17 @@ async function autoSaveProfile() {
   // 2. Silently update MongoDB
   try {
       const userEmail = localStorage.getItem('ecoUserEmail');
-      await fetch(`/api/users/${userEmail}`, {
+      const response = await fetch(`/api/users/${userEmail}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentUserData)
       });
+      const result = await response.json();
+      if (result.success) {
+        currentUserData = result.data;
+        if (result.token) localStorage.setItem('ecoAuthToken', result.token);
+        if (result.data.email) localStorage.setItem('ecoUserEmail', result.data.email);
+      }
       // Update the UI elements (initials, name display) instantly
       renderProfile(currentUserData);
       console.log("Autosave successful...");

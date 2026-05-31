@@ -320,20 +320,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ══════════════════════════════════════════
    FETCH DESTINATIONS FROM MONGODB
+   (Uses shared loadListingsFromAPI from app.js)
    ══════════════════════════════════════════ */
 async function loadDestinations() {
     try {
-        const response = await fetch('/api/destinations');
-        const data = await response.json();
-        
-        if (data.success) {
-            LISTINGS = data.data; // Populate global array
-            renderListings();     // Draw the flip cards
-        } else {
-            console.error("Failed to fetch listings:", data.message);
-            if(typeof showToast === 'function') showToast("Could not load destinations", "error");
-        }
+        await loadListingsFromAPI(); // Shared fetch from app.js
+        renderListings();            // Draw the flip cards
     } catch (error) {
         console.error("Database connection error:", error);
+        if(typeof showToast === 'function') showToast("Could not load destinations", "error");
     }
 }

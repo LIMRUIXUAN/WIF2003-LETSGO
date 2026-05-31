@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const User = require('../models/User');
 const { sendMail } = require('../utils/mailer');
+const { signToken } = require('../middleware/auth');
 
 function hashResetCode(code) {
     return crypto.createHash('sha256').update(String(code)).digest('hex');
@@ -19,6 +20,14 @@ router.post('/register', async (req, res) => {
         const email = String(req.body.email || '').trim().toLowerCase();
         const password = String(req.body.password || '');
 
+        if (!name || !email || !password) {
+            return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+        }
+
         // 1. Check if the email is already in the database
         const existingUser = await User.findOne({ email: email });
         if (existingUser) {
@@ -29,7 +38,7 @@ router.post('/register', async (req, res) => {
         const newUser = new User({
             name: name,
             email: email,
-            password: password // Phase 2 upgrade: We will use bcrypt to encrypt this later
+            password: password
         });
 
         // 3. Save to MongoDB
@@ -39,7 +48,13 @@ router.post('/register', async (req, res) => {
 
     } catch (error) {
         console.error("Registration Error:", error);
-        res.status(500).json({ success: false, message: 'Server error during registration.' });
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ success: false, message: error.message });
+        }
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'Email already registered.' });
+        }
+        return res.status(500).json({ success: false, message: 'Server error during registration.' });
     }
 });
 
@@ -51,20 +66,27 @@ router.post('/login', async (req, res) => {
         const password = String(req.body.password || '');
 
         // 1. Find the user in the database
-        const user = await User.findOne({ email: email });
+        const user = await User.findOne({ email: email }).select('+password');
 
         // 2. Check if user exists AND password matches
-        // (Note: In a real app, we would use bcrypt.compare here)
-        if (!user || user.password !== password) {
+        const passwordMatches = user ? await user.comparePassword(password) : false;
+        if (!user || !passwordMatches) {
             return res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
 
-        // 3. If successful, send the user data back to the browser
+        if (!user.isPasswordHashed()) {
+            user.password = password;
+            user.markModified('password');
+            await user.save();
+        }
+
+        // 3. If successful, send the user data and auth token back to the browser
         res.json({ 
             success: true, 
             message: 'Login successful!', 
             email: user.email, 
-            name: user.name 
+            name: user.name,
+            token: signToken(user)
         });
 
     } catch (error) {
@@ -82,7 +104,7 @@ router.post('/password-reset/request', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email is required.' });
         }
 
-        const user = await User.findOne({ email: email });
+        const user = await User.findOne({ email: email }).select('+password +resetCodeHash +resetCodeExpiresAt');
         if (!user) {
             return res.status(404).json({ success: false, message: "You haven't created an account yet." });
         }
@@ -143,7 +165,7 @@ router.post('/password-reset/confirm', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
         }
 
-        const user = await User.findOne({ email: email });
+        const user = await User.findOne({ email: email }).select('+password +resetCodeHash +resetCodeExpiresAt');
         if (!user || !user.resetCodeHash || !user.resetCodeExpiresAt) {
             return res.status(400).json({ success: false, message: 'Please request a new verification code.' });
         }

@@ -7,6 +7,9 @@
       const email = localStorage.getItem('ecoUserEmail');
       if (!email) { window.location.href = 'login.html'; return; }
 
+      // Ensure LISTINGS are loaded from MongoDB before rendering
+      await loadListingsFromAPI();
+
       let user = null, trips = [];
       try {
         const [uRes, tRes] = await Promise.all([
@@ -499,8 +502,12 @@
     }
 
     function logout() {
-      localStorage.removeItem('ecoUserEmail');
-      sessionStorage.clear();
+      if (typeof clearAuthSession === 'function') clearAuthSession();
+      else {
+        localStorage.removeItem('ecoUserEmail');
+        localStorage.removeItem('ecoAuthToken');
+        sessionStorage.clear();
+      }
     }
 
     loadDashboard();

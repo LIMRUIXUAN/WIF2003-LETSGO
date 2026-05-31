@@ -11,25 +11,7 @@ let currentTripId = null;
 let isEditing = false;
 let editItemIndex = null;
 let editItemLocation = null;
-//below hardcoded sample lah, later we will fetch real itineraries from MongoDB based on logged in user
-const ITINERARY_SAMPLE = [
-  {
-    id: 1, name: 'Langkawi Green Escape', city: 'Langkawi', style: 'Mid-range',
-    start: '2025-07-15', end: '2025-07-20',
-    ideaBank: [
-      { time: 'Flexible', icon: '🛶', name: 'Mangrove Kayaking', sub: 'Nature', carbon: 2}, //carbon is integer value in kg
-      { time: 'Flexible', icon: '🥗', name: 'Vegan Cafe', sub: 'Food', carbon: 1 }
-    ],
-    days: [
-      { date: '2025-07-15', stops: [
-        { time: '09:00', icon: '🏨', name: 'Check in — EcoBeach Resort', sub: 'Sustainable beachfront hotel', carbon: 5 }
-      ]},
-      { date: '2025-07-16', stops: [
-        { time: '08:00', icon: '🚣', name: 'Mangrove Kayak Tour', sub: 'Morning paddle through wetlands', carbon: 3 }
-      ]}
-    ]
-  }
-];
+
 
 async function saveState() {
   if (!currentTripId) return;
