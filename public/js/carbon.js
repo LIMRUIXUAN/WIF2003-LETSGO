@@ -336,12 +336,16 @@ function selectLocation(inputId, suggestionId, name, country, lat, lon) {
 }
 
 // Scripts load after DOM when placed at bottom of <body> — attach directly
-document.getElementById('calcFrom').addEventListener('input', () => fetchLocationHints('calcFrom', 'fromSuggestions'));
-document.getElementById('calcTo').addEventListener('input', () => fetchLocationHints('calcTo', 'toSuggestions'));
+const calcFromEl = document.getElementById('calcFrom');
+const calcToEl = document.getElementById('calcTo');
+if (calcFromEl) calcFromEl.addEventListener('input', () => fetchLocationHints('calcFrom', 'fromSuggestions'));
+if (calcToEl) calcToEl.addEventListener('input', () => fetchLocationHints('calcTo', 'toSuggestions'));
 
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.position-relative')) {
-        document.getElementById('fromSuggestions').style.display = 'none';
-        document.getElementById('toSuggestions').style.display = 'none';
+        const fromSug = document.getElementById('fromSuggestions');
+        const toSug = document.getElementById('toSuggestions');
+        if (fromSug) fromSug.style.display = 'none';
+        if (toSug) toSug.style.display = 'none';
     }
 });
