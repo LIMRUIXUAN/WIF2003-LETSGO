@@ -48,7 +48,7 @@
     <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
     <div class="section-label">Account</div>
     <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-    <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    <a class="sidebar-link sidebar-link-logout" href="index.html"><i class="bi bi-box-arrow-right"></i>Logout</a>
   </div>
 
   <!-- Main Content -->
@@ -62,16 +62,16 @@
       <!-- Search bar with autocomplete -->
       <div class="position-relative mb-3">
         <div class="search-bar-wrap">
-          <i class="bi bi-search" style="color:#9ab3a0;"></i>
+          <i class="bi bi-search search-icon-color"></i>
           <input type="text" placeholder="Search city, eco hotel, activity..."
                  id="exploreSearch" oninput="handleSearchInput(this)"
                  onkeydown="handleSearchKeydown(event)">
-          <button class="btn-eco" style="padding:8px 18px; font-size:.85rem;" onclick="openFilterModal()">
+          <button class="btn-eco btn-eco-filter" onclick="openFilterModal()">
             <i class="bi bi-sliders"></i> Filter
           </button>
         </div>
         <!-- Autocomplete dropdown -->
-        <div class="suggestion-dropdown" id="searchSuggest" style="display:none;">
+        <div class="suggestion-dropdown d-none" id="searchSuggest">
           <div id="suggestionsList"></div>
         </div>
       </div>
@@ -93,9 +93,9 @@
     <!-- Listings grid (populated by explore.js) -->
     <div class="row g-3" id="listingsGrid">
     </div><!-- /listingsGrid -->
-    <footer class="text-center py-4 mt-5" style="border-top: 1px solid rgba(0,0,0,0.05);">
+    <footer class="text-center py-4 mt-5 footer-explore">
       <div class="container">
-        <p class="mb-0" style="color: #9ab3a0; font-size: 0.9rem;">
+        <p class="mb-0 footer-text">
           &copy; 2026 EcoPlanner.<br>
           Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE QINGLAN.
         </p>
@@ -123,7 +123,7 @@
           <input type="number" id="budgetMin" placeholder="Min" class="filter-input-small">
           <span>–</span>
           <input type="number" id="budgetMax" placeholder="Max" class="filter-input-small">
-          <span style="font-size:.85rem; color:#7f8c8d;">RM</span>
+          <span class="currency-label">RM</span>
         </div>
       </div>
 
@@ -151,8 +151,8 @@
         <label class="filter-label">Eco-Rating (Minimum)</label>
         <div class="eco-rating-slider">
           <input type="range" id="ecoSlider" min="0" max="10" value="0" 
-                 style="width:100%;" onchange="updateAdvancedFilters()">
-          <div style="display:flex; justify-content:space-between; font-size:.8rem; color:#7f8c8d; margin-top:.5rem;">
+                 class="eco-slider-input" onchange="updateAdvancedFilters()" title="Eco-Rating Slider">
+          <div class="eco-slider-labels">
             <span>0</span>
             <span id="ecoSliderValue">0</span>
             <span>10</span>

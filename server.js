@@ -88,7 +88,9 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.get('/api/config/maps', (_req, res) => {
+const { requireAuth } = require('./middleware/auth');
+
+app.get('/api/config/maps', requireAuth, (_req, res) => {
   res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 

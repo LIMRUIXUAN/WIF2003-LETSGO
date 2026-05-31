@@ -508,6 +508,7 @@
         localStorage.removeItem('ecoAuthToken');
         sessionStorage.clear();
       }
+      window.location.href = 'index.html';
     }
 
     loadDashboard();

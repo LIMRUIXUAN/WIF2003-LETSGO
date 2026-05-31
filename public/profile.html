@@ -17,11 +17,11 @@
 
 <!-- Delete Account Confirmation Modal -->
 <!-- ══════════════════════ DELETE MODAL ══════════════════════ -->
-<div id="deleteModal" class="eco-modal-backdrop" style="display:none;">
-  <div class="eco-modal" style="text-align:center;">
-    <div style="font-size:3rem; margin-bottom:1rem;">⚠️</div>
-    <h5 style="font-weight:700; margin-bottom:.5rem;">Delete Account?</h5>
-    <p style="color:#6b7c6e; font-size:.9rem; margin-bottom:1.5rem;">
+<div id="deleteModal" class="eco-modal-backdrop d-none">
+  <div class="eco-modal style-539b04">
+    <div class="style-9d9b5c">⚠️</div>
+    <h5 class="style-460d85">Delete Account?</h5>
+    <p class="style-054d07">
       This action cannot be undone. All your data will be permanently removed.
     </p>
     <div class="d-flex gap-3">
@@ -32,10 +32,10 @@
 </div>
  
 <!-- ══════════════════════ INTERESTS MODAL ══════════════════════ -->
-<div id="interestModal" class="eco-modal-backdrop" style="display:none;">
+<div id="interestModal" class="eco-modal-backdrop d-none">
   <div class="eco-modal">
-    <h5 style="font-weight:700; margin-bottom:.4rem;">Travel Interests</h5>
-    <p style="font-size:.85rem; color:var(--text-muted); margin-bottom:1rem;">Select all that apply to you.</p>
+    <h5 class="style-40f2b6">Travel Interests</h5>
+    <p class="style-f18593">Select all that apply to you.</p>
     <div id="interestChips"></div>
     <div class="d-flex gap-3 mt-3">
       <button class="btn-eco-outline flex-fill" onclick="closeModal('interestModal')">Cancel</button>
@@ -76,7 +76,7 @@
     <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i> Favorites</a>
     <div class="section-label">Account</div>
     <a class="sidebar-link active" href="profile.html"><i class="bi bi-person-fill"></i> Profile</a>
-    <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    <a class="sidebar-link" href="index.html" class="sidebar-link-logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </div>
  
   <!-- Main Content -->
@@ -91,39 +91,39 @@
       <!-- ── Profile Summary Card ── -->
       <div class="col-lg-4">
         <div class="stat-card text-center">
-          <input type="file" id="avatarInput" accept="image/*" style="display: none;">
-          <div class="profile-avatar" id="profileAvatar" style="cursor: pointer; position: relative; overflow: hidden;" title="Click to upload image">LR</div>
-          <div style="font-weight:700; font-size:1.1rem;" id="profileName">Lim</div>
-          <div style="color:#9ab3a0; font-size:.85rem; margin-bottom:1rem;" id="profileEmail">ruixuan0805@gmail.com</div>
+          <input type="file" id="avatarInput" accept="image/*" class="d-none">
+          <div class="profile-avatar" id="profileAvatar" class="style-36ef6a" title="Click to upload image">LR</div>
+          <div class="style-ff3333" id="profileName">Lim</div>
+          <div class="style-a89e62" id="profileEmail">ruixuan0805@gmail.com</div>
           <div class="eco-badge mx-auto"><i class="bi bi-leaf"></i> <span id="profileBadge">Green Traveler</span></div>
           <hr class="divider-line">
-          <div style="font-size:.8rem; color:#9ab3a0;" id="memberSince">Member since Jan 2025</div>
-          <div style="font-size:.8rem; color:#9ab3a0; margin-top:3px;" id="tripCount">0 trips completed</div>
+          <div class="style-e2ea4d" id="memberSince">Member since Jan 2025</div>
+          <div class="style-98e97d" id="tripCount">0 trips completed</div>
  
           <!-- Stats row -->
           <div class="d-flex justify-content-around mt-3">
             <!-- display how many favorites the user has jadi later phrase 2 kena update-->
             <div>
-              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statFavs">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">Favorites</div>
+              <div class="style-0a39aa" id="statFavs">0</div>
+              <div class="style-376ab9">Favorites</div>
             </div>
             <!-- display how many trips the user has taken -->
             <div>
-              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statTrips">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">Trips</div>
+              <div class="style-0a39aa" id="statTrips">0</div>
+              <div class="style-376ab9">Trips</div>
             </div>
             <!-- display how many days the user has traveled later phrase 2 kena link with server for fetch() data-->
             <div>
-              <div style="font-weight:700; font-size:1.1rem; color:var(--green-mid);" id="statDays">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">Days</div>
+              <div class="style-0a39aa" id="statDays">0</div>
+              <div class="style-376ab9">Days</div>
             </div>
             <div>
-              <div style="font-weight:700; font-size:1.1rem; color:var(--eco-green);" id="statCO2">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Saved ✅</div>
+              <div class="style-6c623b" id="statCO2">0</div>
+              <div class="style-376ab9">kg CO₂ Saved ✅</div>
             </div>
             <div>
-              <div style="font-weight:700; font-size:1.1rem; color:var(--eco-amber);" id="statFootprint">0</div>
-              <div style="font-size:.72rem; color:var(--text-faint);">kg CO₂ Produced ⚠️</div>
+              <div class="style-799df4" id="statFootprint">0</div>
+              <div class="style-376ab9">kg CO₂ Produced ⚠️</div>
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@
  
         <!-- Edit Profile -->
         <div class="stat-card mb-3">
-          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">Edit Profile</strong>
+          <strong class="style-55140d">Edit Profile</strong>
  
           <!-- read user name -->
           <div class="form-group">
@@ -167,7 +167,7 @@
           <!-- read user budget preference maybe we can use this for trip recommendations or adding the customize the top to bottom range-->
           <div class="form-group">
             <label class="form-label">Budget Preference</label>
-            <select class="form-control-eco" id="editBudget">
+            <select class="form-control-eco" id="editBudget" title="Budget Preference">
               <option value="budget">Budget (&lt; RM 100/day)</option>
               <option value="mid">Mid-range (RM 100–300/day)</option>
               <option value="luxury">Luxury (RM 300+/day)</option>
@@ -177,22 +177,22 @@
  
         <!-- Change Password -->
         <div class="stat-card mb-3">
-          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">Change Password</strong>
+          <strong class="style-55140d">Change Password</strong>
  
           <div class="form-group">
             <label class="form-label">Current Password</label>
-            <div style="position:relative;">
-              <input type="password" class="form-control-eco" id="currentPw" placeholder="Enter current password" style="padding-right:2.5rem;">
-              <i class="bi bi-eye toggle-pw" onclick="togglePw('currentPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            <div class="style-4cb8ce">
+              <input type="password" class="form-control-eco" id="currentPw" placeholder="Enter current password" class="style-000507">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('currentPw',this)" class="style-e3f177"></i>
             </div>
             <div class="field-hint" id="hintCurrentPw">Incorrect current password.</div>
           </div>
  
           <div class="form-group">
             <label class="form-label">New Password</label>
-            <div style="position:relative;">
-              <input type="password" class="form-control-eco" id="newPw" placeholder="Min. 8 characters" style="padding-right:2.5rem;" oninput="checkStrength(this.value)">
-              <i class="bi bi-eye toggle-pw" onclick="togglePw('newPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            <div class="style-4cb8ce">
+              <input type="password" class="form-control-eco" id="newPw" placeholder="Min. 8 characters" class="style-000507" oninput="checkStrength(this.value)">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('newPw',this)" class="style-e3f177"></i>
             </div>
             <div class="strength-bar" id="strengthBar"></div>
             <div class="strength-label" id="strengthLabel"></div>
@@ -201,9 +201,9 @@
  
           <div class="form-group">
             <label class="form-label">Confirm New Password</label>
-            <div style="position:relative;">
-              <input type="password" class="form-control-eco" id="confirmPw" placeholder="Repeat new password" style="padding-right:2.5rem;">
-              <i class="bi bi-eye toggle-pw" onclick="togglePw('confirmPw',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);"></i>
+            <div class="style-4cb8ce">
+              <input type="password" class="form-control-eco" id="confirmPw" placeholder="Repeat new password" class="style-000507">
+              <i class="bi bi-eye toggle-pw" onclick="togglePw('confirmPw',this)" class="style-e3f177"></i>
             </div>
             <div class="field-hint" id="hintConfirmPw">Passwords do not match.</div>
           </div>
@@ -214,33 +214,33 @@
         </div>
  
           <div class="stat-card mb-3">
-          <strong style="font-size:.95rem; display:block; margin-bottom:1rem;">App Preferences</strong>
+          <strong class="style-55140d">App Preferences</strong>
           
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <div style="font-size:0.9rem; font-weight:500;">Trip Reminders</div>
-              <div style="font-size:0.75rem; color:#9ab3a0;">Get notified 3 days before a trip</div>
+              <div class="style-0bc997">Trip Reminders</div>
+              <div class="style-53e24d">Get notified 3 days before a trip</div>
             </div>
             <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="notifTrip" checked onchange="saveToggles()">
+              <input class="form-check-input" type="checkbox" id="notifTrip" title="Trip Reminders" checked onchange="saveToggles()">
             </div>
           </div>
 
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <div style="font-size:0.9rem; font-weight:500;">Carbon Offset Tips</div>
-              <div style="font-size:0.75rem; color:#9ab3a0;">Weekly eco-travel suggestions</div>
+              <div class="style-0bc997">Carbon Offset Tips</div>
+              <div class="style-53e24d">Weekly eco-travel suggestions</div>
             </div>
             <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="notifEco" onchange="saveToggles()">
+              <input class="form-check-input" type="checkbox" id="notifEco" title="Carbon Offset Tips" onchange="saveToggles()">
             </div>
           </div>
         </div>
 
         <!-- Danger Zone -->
-        <div class="stat-card" style="border-color:#fdecea;">
-          <strong style="font-size:.95rem; display:block; margin-bottom:.5rem; color:#c0392b;">Danger Zone</strong>
-          <p style="font-size:.85rem; color:#9ab3a0; margin-bottom:1rem;">
+        <div class="stat-card style-d5db66">
+          <strong class="style-8df1d1">Danger Zone</strong>
+          <p class="style-274097">
             Permanently delete your account and all associated data.
           </p>
           <button onclick="openModal('deleteModal')" class="btn-delete-account">
@@ -250,9 +250,9 @@
  
       </div>
     </div>
-      <footer class="text-center py-4 mt-5" style="border-top: 1px solid rgba(0,0,0,0.05);">
+      <footer class="text-center py-4 mt-5 style-66e4ab">
         <div class="container">
-          <p class="mb-0" style="color: #9ab3a0; font-size: 0.9rem;">
+          <p class="mb-0 style-b20963">
             &copy; 2026 EcoPlanner.<br>
             Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE QINGLAN.
           </p>

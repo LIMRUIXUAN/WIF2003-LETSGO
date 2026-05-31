@@ -5,7 +5,7 @@ const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail } = require('../middleware/auth');
 
 // ────────────────────────────────────────────────────────────────
-// 1. DESTINATIONS (For Explore Flip Cards)
+// TRIP CRUD (Create, Read, Update, Delete)
 // ────────────────────────────────────────────────────────────────
 
 // POST - Create a new trip

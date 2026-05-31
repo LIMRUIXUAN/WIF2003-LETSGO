@@ -12,7 +12,7 @@ router.get('/profile/:email', requireAuth, requireSelfEmail, async (req, res) =>
         const user = await User.findOne({ email: email });
         
         // 2. If no user exists, send an error
-        if (!user) return res.status(404).json({ success: false, message: 'User not found, there got invalid route 404 yeah bang'})
+        if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
         
         // 3. If found, send the data back as JSON
         res.json({ success: true, data: user});
@@ -32,7 +32,7 @@ router.put('/:email/favorites', requireAuth, requireSelfEmail, async (req, res) 
 
         // 2. If no user exists, send an error
         if(!user) return res.status(404).json({ success:false, message: 'User not found'});
-        if (!Number.isInteger(destinationId) || destinationId < 0) {
+        if (!Number.isInteger(destinationId) || destinationId <= 0) {
             return res.status(400).json({ success: false, message: 'Valid destinationId is required' });
         }
 

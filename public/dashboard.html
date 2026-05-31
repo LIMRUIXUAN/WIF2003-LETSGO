@@ -55,7 +55,7 @@
       <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i> Favorites</a>
       <div class="section-label">Account</div>
       <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i> Profile</a>
-      <a class="sidebar-link" href="index.html" onclick="logout()" style="color:#c0392b;"><i
+      <a class="sidebar-link" href="index.html" onclick="logout()" class="sidebar-link-logout"><i
           class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
 
@@ -67,7 +67,7 @@
         <h2 id="welcomeMsg">Welcome back! 👋</h2>
         <p id="welcomeSub">Loading your eco travel summary…</p>
         <div id="countdownBanner"
-          style="display:none; margin-top:1rem; background:rgba(255,255,255,.15); border-radius:10px; padding:.65rem 1rem; font-size:.88rem; display:none; align-items:center; gap:.6rem;">
+          class="style-f3fe99">
           <i class="bi bi-calendar-event-fill"></i>
           <span id="countdownText"></span>
         </div>
@@ -75,13 +75,13 @@
 
       <!-- Eco Streak Banner -->
       <div id="streakBanner"
-        style="display:none; background:#fff; border:1.5px solid #b7e4c7; border-radius:14px; padding:1rem 1.5rem; margin-bottom:1.5rem; align-items:center; gap:1rem; flex-wrap:wrap;">
-        <div style="font-size:2rem;" id="streakFlame">🔥</div>
-        <div style="flex:1;">
-          <div style="font-weight:700; font-size:1rem;" id="streakTitle">Loading streak…</div>
-          <div style="font-size:.8rem; color:#6b7c6e;" id="streakSub"></div>
+        class="style-965f24">
+        <div class="style-ba2c5c" id="streakFlame">🔥</div>
+        <div class="style-d5e8c5">
+          <div class="style-1c0fd5" id="streakTitle">Loading streak…</div>
+          <div class="style-dc6b31" id="streakSub"></div>
         </div>
-        <div id="streakDots" style="display:flex; gap:6px;"></div>
+        <div id="streakDots" class="style-f8a59a"></div>
       </div>
 
       <!-- Stats Row -->
@@ -113,7 +113,7 @@
             </div>
           </div>
         </div>
-        <div class="col-6 col-lg" id="statFootprintCard" style="display:none;">
+        <div class="col-6 col-lg" id="statFootprintCard" class="d-none">
           <div class="dash-stat">
             <div class="ds-icon ds-orange"><i class="bi bi-fire"></i></div>
             <div>
@@ -140,9 +140,8 @@
         <div class="col-lg-6">
           <div class="section-card">
             <h6>
-              <i class="bi bi-map-fill" style="color:#2d6a4f;"></i> Recent Trips
-              <a href="planner.html" class="ms-auto text-decoration-none"
-                style="font-size:.8rem; font-weight:400; color:#40916c;">View all →</a>
+              <i class="bi bi-map-fill style-6fc04b"></i> Recent Trips
+              <a href="planner.html" class="ms-auto text-decoration-none style-d465f9">View all →</a>
             </h6>
             <div id="tripsList">
               <div class="empty-state"><i class="bi bi-map"></i>Loading trips…</div>
@@ -154,9 +153,8 @@
         <div class="col-lg-6">
           <div class="section-card">
             <h6>
-              <i class="bi bi-heart-fill" style="color:#e74c3c;"></i> Saved Favourites
-              <a href="favorites.html" class="ms-auto text-decoration-none"
-                style="font-size:.8rem; font-weight:400; color:#40916c;">View all →</a>
+              <i class="bi bi-heart-fill style-78cb6a"></i> Saved Favourites
+              <a href="favorites.html" class="ms-auto text-decoration-none style-d465f9">View all →</a>
             </h6>
             <div id="favsList">
               <div class="empty-state"><i class="bi bi-heart"></i>Loading favourites…</div>
@@ -167,39 +165,38 @@
         <!-- CO2 Chart -->
         <div class="col-12">
           <div class="section-card">
-            <h6><i class="bi bi-graph-up-arrow" style="color:#2d6a4f;"></i> Activity Overview
-              <span id="chartSubtitle" style="font-size:.78rem; font-weight:400; color:#6b7c6e; margin-left:.5rem;">Last
+            <h6><i class="bi bi-graph-up-arrow style-6fc04b"></i> Activity Overview
+              <span id="chartSubtitle" class="style-7e9f7f">Last
                 6 months</span>
             </h6>
             <div class="row g-3 mb-3">
               <div class="col-6 col-md-3">
-                <div style="background:#f0faf3; border-radius:10px; padding:.8rem 1rem;">
-                  <div style="font-size:.75rem; color:#6b7c6e;">Total CO₂ Saved</div>
-                  <div style="font-size:1.3rem; font-weight:700; color:#1b4332;" id="co2Total">– kg</div>
+                <div class="style-b04d42">
+                  <div class="style-ce5cc3">Total CO₂ Saved</div>
+                  <div class="style-02b5e5" id="co2Total">– kg</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
-                <div style="background:#f0faf3; border-radius:10px; padding:.8rem 1rem;">
-                  <div style="font-size:.75rem; color:#6b7c6e;">Goal Progress</div>
-                  <div style="font-size:1.3rem; font-weight:700; color:#1b4332;" id="co2Pct">0%</div>
+                <div class="style-b04d42">
+                  <div class="style-ce5cc3">Goal Progress</div>
+                  <div class="style-02b5e5" id="co2Pct">0%</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
-                <div style="background:#e3f0fb; border-radius:10px; padding:.8rem 1rem;">
-                  <div style="font-size:.75rem; color:#6b7c6e;">Trips This Month</div>
-                  <div style="font-size:1.3rem; font-weight:700; color:#0c447c;" id="tripsThisMonth">–</div>
+                <div class="style-dd504a">
+                  <div class="style-ce5cc3">Trips This Month</div>
+                  <div class="style-40498b" id="tripsThisMonth">–</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
-                <div style="background:#fff3cd; border-radius:10px; padding:.8rem 1rem; cursor:pointer;"
+                <div class="style-771682"
                   onclick="openGoalEditor()" title="Click to change your goal">
-                  <div style="font-size:.75rem; color:#6b7c6e;">My CO₂ Goal <i class="bi bi-pencil-fill"
-                      style="font-size:.65rem;"></i></div>
-                  <div style="font-size:1.3rem; font-weight:700; color:#7d4e00;" id="co2GoalLabel">500 kg</div>
+                  <div class="style-ce5cc3">My CO₂ Goal <i class="bi bi-pencil-fill style-df0f94"></i></div>
+                  <div class="style-a6c7f3" id="co2GoalLabel">500 kg</div>
                 </div>
               </div>
             </div>
-            <div style="position:relative; height:220px;">
+            <div class="style-5f820e">
               <canvas id="co2Chart"></canvas>
             </div>
           </div>
@@ -209,9 +206,8 @@
         <div class="col-lg-6">
           <div class="section-card">
             <h6>
-              <i class="bi bi-cloud-sun-fill" style="color:#0c447c;"></i> Weather at Home Base
-              <a href="weather.html" class="ms-auto text-decoration-none"
-                style="font-size:.8rem; font-weight:400; color:#40916c;">Full forecast →</a>
+              <i class="bi bi-cloud-sun-fill style-0a5667"></i> Weather at Home Base
+              <a href="weather.html" class="ms-auto text-decoration-none style-d465f9">Full forecast →</a>
             </h6>
             <div id="weatherWidget">
               <div class="empty-state"><i class="bi bi-cloud-sun"></i>Loading weather…</div>
@@ -223,9 +219,8 @@
         <div class="col-lg-6">
           <div class="section-card">
             <h6>
-              <i class="bi bi-person-circle" style="color:#2d6a4f;"></i> Your Travel Profile
-              <a href="profile.html" class="ms-auto text-decoration-none"
-                style="font-size:.8rem; font-weight:400; color:#40916c;">Edit →</a>
+              <i class="bi bi-person-circle style-6fc04b"></i> Your Travel Profile
+              <a href="profile.html" class="ms-auto text-decoration-none style-d465f9">Edit →</a>
             </h6>
             <div id="profileSummary">
               <div class="empty-state"><i class="bi bi-person"></i>Loading profile…</div>
@@ -236,7 +231,7 @@
         <!-- Activity Feed -->
         <div class="col-12">
           <div class="section-card">
-            <h6><i class="bi bi-clock-history" style="color:#2d6a4f;"></i> Recent Activity</h6>
+            <h6><i class="bi bi-clock-history style-6fc04b"></i> Recent Activity</h6>
             <div id="activityFeed">
               <div class="empty-state"><i class="bi bi-clock"></i>Loading activity…</div>
             </div>
@@ -244,9 +239,9 @@
         </div>
 
       </div>
-      <footer class="text-center py-4 mt-5" style="border-top: 1px solid rgba(0,0,0,0.05);">
+      <footer class="text-center py-4 mt-5 style-66e4ab">
         <div class="container">
-          <p class="mb-0" style="color: #9ab3a0; font-size: 0.9rem;">
+          <p class="mb-0 style-b20963">
             &copy; 2026 EcoPlanner.<br>
             Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE
             QINGLAN.
@@ -257,21 +252,21 @@
   </div>
 
   <!-- CO2 Goal Modal -->
-  <div id="goalModal" class="eco-modal-backdrop" style="display:none;">
-    <div class="eco-modal" style="max-width:360px;">
-      <h5 style="font-weight:700; margin-bottom:.4rem;">🎯 Set Your CO₂ Goal</h5>
-      <p style="font-size:.85rem; color:#6b7c6e; margin-bottom:1.2rem;">How many kg of CO₂ do you want to save through
+  <div id="goalModal" class="eco-modal-backdrop d-none">
+    <div class="eco-modal style-13b20b">
+      <h5 class="style-40f2b6">🎯 Set Your CO₂ Goal</h5>
+      <p class="style-d25cb2">How many kg of CO₂ do you want to save through
         eco travel?</p>
-      <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+      <div class="style-a10565">
         <button class="goal-preset" onclick="setGoalPreset(100)">100 kg</button>
         <button class="goal-preset" onclick="setGoalPreset(250)">250 kg</button>
         <button class="goal-preset" onclick="setGoalPreset(500)">500 kg</button>
         <button class="goal-preset" onclick="setGoalPreset(1000)">1000 kg</button>
       </div>
-      <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:1.2rem;">
+      <div class="style-c4827e">
         <input id="goalInput" type="number" min="10" max="9999" placeholder="Custom kg…"
-          style="flex:1; border:1.5px solid #c8ddd0; border-radius:8px; padding:.5rem .75rem; font-size:.95rem; outline:none;">
-        <span style="font-size:.9rem; color:#6b7c6e;">kg</span>
+          class="style-d3e1a1">
+        <span class="style-ff9aa0">kg</span>
       </div>
       <div class="d-flex gap-3">
         <button class="btn-eco-outline flex-fill" onclick="closeModal('goalModal')">Cancel</button>
@@ -280,6 +275,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
 
