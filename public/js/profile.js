@@ -206,7 +206,7 @@ async function saveProfile() {
   currentUserData.city   = document.getElementById('editCity').value.trim() || 'Kuala Lumpur';
   currentUserData.budget = document.getElementById('editBudget').value;
  
-  renderProfile();
+  renderProfile(currentUserData);
   try {
       const userEmail = localStorage.getItem('ecoUserEmail');
       const response = await fetch(`/api/users/${userEmail}`, {
@@ -471,8 +471,7 @@ function togglePw(inputId, iconEl) {
 /* ══════════════════════════════════════════
    MODAL HELPERS
    ══════════════════════════════════════════ */
-function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+// openModal and closeModal are provided by app.js
  
 // Close modal on backdrop click
 document.querySelectorAll('.eco-modal-backdrop').forEach(backdrop => {
@@ -484,72 +483,7 @@ document.querySelectorAll('.eco-modal-backdrop').forEach(backdrop => {
 /* ══════════════════════════════════════════
    TOAST
    ══════════════════════════════════════════ */
-function showToast(msg, type = 'success', options = {}) {
-  const wrap  = document.getElementById('toastWrap');
-  if (!wrap) return;
-
-  if (typeof type === 'object' && type !== null) {
-    options = type;
-    type = options.type || 'success';
-  }
-
-  const toast = document.createElement('div');
-  const color = type === 'warn'
-    ? '#f39c12'
-    : type === 'info'
-      ? '#3498db'
-      : type === 'error'
-        ? '#e74c3c'
-        : 'var(--eco-green)';
-  const icon = type === 'warn'
-    ? 'exclamation-triangle'
-    : type === 'info'
-      ? 'info-circle'
-      : type === 'error'
-        ? 'x-circle-fill'
-        : 'check-circle-fill';
-  const duration = options.duration || 3500;
-  const hasUndo = typeof options.onUndo === 'function';
-  let closed = false;
-  let timerId = null;
-
-  toast.className = `toast-notif${hasUndo ? ' toast-undo' : ''}`;
-  toast.style.borderLeftColor = color;
-  toast.innerHTML = `
-    <i class="bi bi-${icon}" style="color:${color}; font-size:1rem;"></i>
-    <span class="toast-message">${msg}</span>
-    ${hasUndo ? `<button type="button" class="toast-action">${options.undoLabel || 'Undo'}</button>` : ''}
-    ${hasUndo ? `<span class="toast-timer" style="animation-duration:${duration}ms;"></span>` : ''}
-  `;
-  wrap.appendChild(toast);
-
-  const closeToast = (undone = false) => {
-    if (closed) return;
-    closed = true;
-    clearTimeout(timerId);
-    toast.classList.add('toast-leaving');
-    setTimeout(() => toast.remove(), 180);
-
-    if (undone && hasUndo) {
-      options.onUndo();
-      return;
-    }
-
-    if (!undone && typeof options.onExpire === 'function') {
-      options.onExpire();
-    }
-  };
-
-  if (hasUndo) {
-    toast.querySelector('.toast-action').addEventListener('click', event => {
-      event.stopPropagation();
-      closeToast(true);
-    });
-  }
-
-  timerId = setTimeout(() => closeToast(false), duration);
-  return { close: closeToast, element: toast };
-}
+// showToast is provided by app.js — removed duplicate to avoid shadowing
  
 /* ══════════════════════════════════════════
    VALIDATION HELPERS
@@ -571,13 +505,7 @@ function clearHint(id){
     el.style.display = 'none';// force the hint disappear
 }
 
-function saveToggles() {
-  const user = Store.get('user') || {};
-  user.notifTrip = document.getElementById('notifTrip').checked;
-  user.notifEco = document.getElementById('notifEco').checked;
-  Store.set('user', user);
-  showToast('Preferences saved! ⚙️');
-}
+// saveToggles removed — toggles are auto-saved to MongoDB via autoSaveProfile()
 
 /* ══════════════════════════════════════════
    AVATAR UPLOAD
@@ -595,11 +523,24 @@ function handleAvatarUpload(event) {
   const reader = new FileReader();
   
   // Convert image to Base64 string to store in sessionStorage
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     const base64Image = e.target.result;
     currentUserData.avatar = base64Image;
-    renderProfile(currentUserData); // Re-render profile to show new avatar
-    showToast('Profile picture updated! 📸');
+    renderProfile(currentUserData);
+
+    // Persist avatar to MongoDB
+    try {
+      const userEmail = localStorage.getItem('ecoUserEmail');
+      await fetch(`/api/users/${userEmail}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: base64Image })
+      });
+      showToast('Profile picture updated! 📸');
+    } catch (err) {
+      console.error('Failed to save avatar:', err);
+      showToast('Profile picture updated locally but failed to save.', 'warn');
+    }
   };
   
   reader.readAsDataURL(file);
