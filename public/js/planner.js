@@ -238,6 +238,17 @@ function switchView(view, tripId = null) {
     if (view === 'list') {
         listView.style.display = 'block';
         boardView.style.display = 'none';
+
+        // Clear route line and stop animation when leaving board view
+        if (mapRouteLine) {
+            mapRouteLine.setMap(null);
+            mapRouteLine = null;
+        }
+        if (mapRouteAnimationInterval) {
+            clearInterval(mapRouteAnimationInterval);
+            mapRouteAnimationInterval = null;
+        }
+
         renderItineraries();
     } else {
         listView.style.display = 'none';
@@ -636,6 +647,8 @@ NEW MAP LOGIC!!!
 */
 let map;
 let mapMarkers = [];
+let mapRouteLine;
+let mapRouteAnimationInterval;
 
 window.initMap = function() {
   const mapElement = document.getElementById('map');
@@ -662,10 +675,21 @@ function syncMapWithItinerary(trip) {
   mapMarkers.forEach(marker => marker.setMap(null));
   mapMarkers = [];
 
+  // Clear old route line and stop animation
+  if (mapRouteLine) {
+    mapRouteLine.setMap(null);
+    mapRouteLine = null;
+  }
+  if (mapRouteAnimationInterval) {
+    clearInterval(mapRouteAnimationInterval);
+    mapRouteAnimationInterval = null;
+  }
+
   // set bounds to auto zooom
   const bounds = new google.maps.LatLngBounds();
   let hasLocations = false;
   let stopCounter = 1; //number pins
+  const pathCoordinates = [];
 
   // Loop through days and draw pins for scheduled activities
   (trip.days || []).forEach(day => {
@@ -677,6 +701,8 @@ function syncMapWithItinerary(trip) {
             lng: parseFloat(stop.location.lng) 
         };
         
+        pathCoordinates.push(position);
+
         const pin = new google.maps.marker.PinElement({
             glyph: stopCounter.toString(),
             glyphColor: "white",
@@ -696,6 +722,42 @@ function syncMapWithItinerary(trip) {
       }
     });
   });
+
+  // Draw dotted route line connecting pins
+  if (pathCoordinates.length >= 2) {
+    const lineSymbol = {
+      path: "M 0,-1 0,1",
+      strokeOpacity: 1,
+      scale: 3,
+      strokeColor: "#2d6a4f", // Eco green theme color
+      strokeWeight: 2
+    };
+
+    mapRouteLine = new google.maps.Polyline({
+      path: pathCoordinates,
+      strokeOpacity: 0,
+      icons: [
+        {
+          icon: lineSymbol,
+          offset: "0px",
+          repeat: "15px",
+        },
+      ],
+      map: map,
+    });
+
+    let count = 0;
+    mapRouteAnimationInterval = setInterval(() => {
+      count = (count + 1) % 15;
+      if (mapRouteLine && window.google) {
+        const icons = mapRouteLine.get("icons");
+        if (icons && icons[0]) {
+          icons[0].offset = count + "px";
+          mapRouteLine.set("icons", icons);
+        }
+      }
+    }, 60);
+  }
 
   //adjust camera
   if (hasLocations) {
