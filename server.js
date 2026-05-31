@@ -131,10 +131,7 @@ async function connectToDatabase() {
   }
 
   mongoose.set('strictQuery', true);
-  await mongoose.connect(mongoUri, { 
-    serverSelectionTimeoutMS: 5000,
-    family: 4 // Force IPv4 to fix mobile network issues
-  });
+  await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
   console.log('MongoDB connected');
   return mongoose.connection;
 }
