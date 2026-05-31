@@ -21,10 +21,10 @@
      ═══════════════════════════════════════════════════════════ -->
 
   <!-- Create Itinerary Modal -->
-  <div id="createItinModal" class="eco-modal-backdrop" style="display:none;">
+  <div id="createItinModal" class="eco-modal-backdrop d-none">
     <div class="eco-modal">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="section-title mb-0" style="font-size:1.2rem;">New Itinerary</h5>
+        <h5 class="section-title mb-0 style-ebc214">New Itinerary</h5>
         <button onclick="closeModal('createItinModal')" class="btn-close"></button>
       </div>
       <div class="form-group">
@@ -62,17 +62,17 @@
           <button class="filter-chip" onclick="toggleChip(this)">Adventure</button>
         </div>
       </div>
-      <button class="btn-eco w-100 mt-3" style="justify-content:center;" onclick="createItinerary()">
+      <button class="btn-eco w-100 mt-3 style-c157e3" onclick="createItinerary()">
         <i class="bi bi-plus-circle"></i> Create Itinerary
       </button>
     </div>
   </div>
 
   <!-- Add Activity Modal -->
-  <div id="addActivityModal" class="eco-modal-backdrop" style="display:none;">
+  <div id="addActivityModal" class="eco-modal-backdrop d-none">
     <div class="eco-modal">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="section-title mb-0" style="font-size:1.2rem;">New Activity</h5>
+        <h5 class="section-title mb-0 style-ebc214">New Activity</h5>
         <button onclick="closeModal('addActivityModal')" class="btn-close"></button>
       </div>
 
@@ -80,21 +80,21 @@
         <label class="form-label">Activity Name</label>
         <div class="input-group">
           <!-- The Emoji Dropdown Button -->
-          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="actIconBtn" style="background-color: #fff; border-color: #dee2e6;">📍</button>
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="actIconBtn" class="style-e9fa48">📍</button>
           
           <!-- The Mini Emoji Palette -->
-          <div class="dropdown-menu p-2 shadow-sm" style="min-width: 220px;">
+          <div class="dropdown-menu p-2 shadow-sm style-ad9e48">
             <div class="d-flex flex-wrap gap-2 justify-content-center" id="emojiGrid">
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('📍')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📍</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🏨')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🏨</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🥗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🥗</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🚶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚶</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🚗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚗</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('✈️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">✈️</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🌳')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🌳</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🛶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛶</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('📸')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📸</span>
-              <span style="cursor:pointer; font-size:1.3rem; transition: transform 0.1s;" onclick="selectEmoji('🛍️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛍️</span>
+              <span class="style-08e411" onclick="selectEmoji('📍')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📍</span>
+              <span class="style-08e411" onclick="selectEmoji('🏨')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🏨</span>
+              <span class="style-08e411" onclick="selectEmoji('🥗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🥗</span>
+              <span class="style-08e411" onclick="selectEmoji('🚶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚶</span>
+              <span class="style-08e411" onclick="selectEmoji('🚗')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚗</span>
+              <span class="style-08e411" onclick="selectEmoji('✈️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">✈️</span>
+              <span class="style-08e411" onclick="selectEmoji('🌳')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🌳</span>
+              <span class="style-08e411" onclick="selectEmoji('🛶')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛶</span>
+              <span class="style-08e411" onclick="selectEmoji('📸')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">📸</span>
+              <span class="style-08e411" onclick="selectEmoji('🛍️')" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🛍️</span>
             </div>
           </div>
           
@@ -143,26 +143,26 @@
         </select>
       </div>
 
-      <button class="btn-eco w-100 mt-4" style="justify-content:center;" onclick="saveNewActivity()">
+      <button class="btn-eco w-100 mt-4 style-c157e3" onclick="saveNewActivity()">
         <i class="bi bi-plus-circle"></i> Save Activity
       </button>
     </div>
   </div>
 
   <!-- Map Picker Modal -->
-  <div id="mapPickerModal" class="eco-modal-backdrop" style="display:none; z-index: 2050;">
-    <div class="eco-modal" style="max-width: 600px; width: 90%;">
+  <div id="mapPickerModal" class="eco-modal-backdrop style-6a956a">
+    <div class="eco-modal style-983ab1">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="section-title mb-0" style="font-size:1.2rem;">Select Location</h5>
+        <h5 class="section-title mb-0 style-ebc214">Select Location</h5>
         <button type="button" onclick="closeMapPicker()" class="btn-close"></button>
       </div>
-      <div id="pickerMapContainer" style="height: 400px; width: 100%; border-radius: 8px; overflow: hidden; background: #eee;">
-        <div id="pickerMap" style="height: 100%; width: 100%;"></div>
+      <div id="pickerMapContainer" class="style-d91ff8">
+        <div id="pickerMap" class="style-23b83a"></div>
       </div>
-      <div class="mt-3 text-muted" style="font-size: 0.85rem;">
+      <div class="mt-3 text-muted style-e7992d">
         <i class="bi bi-info-circle"></i> Click anywhere on the map to drop a pin.
       </div>
-      <button type="button" class="btn-eco w-100 mt-3" style="justify-content:center;" onclick="confirmMapSelection()">
+      <button type="button" class="btn-eco w-100 mt-3 style-c157e3" onclick="confirmMapSelection()">
         Confirm Location
       </button>
     </div>
@@ -200,7 +200,7 @@
       <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
       <div class="section-label">Account</div>
       <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-      <a class="sidebar-link" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
+      <a class="sidebar-link" href="index.html" class="sidebar-link-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
     </div>
 
     <!-- Main Content -->
@@ -221,7 +221,7 @@
         <div id="itineraryList"></div>
       </div>
 
-      <div id="boardView" style="display: none;">
+      <div id="boardView" class="d-none">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div class="d-flex align-items-center gap-3">
@@ -236,14 +236,12 @@
           </button>
         </div>
 
-        <div id="mapContainer" class="mb-4 shadow-sm"
-          style="height: 350px; width: 100%; border-radius: 12px; overflow: hidden; display: none;">
-          <div id="map" style="height: 100%; width: 100%;"></div>
+        <div id="mapContainer" class="mb-4 shadow-sm style-0da3c9">
+          <div id="map" class="style-23b83a"></div>
         </div>
 
-        <div class="kanban-arena d-flex gap-4 overflow-x-auto pb-4 mt-4"
-          style="min-height: 65vh; align-items: flex-start">
-          <div class="kanban-column bg-light rounded-3 p-3" style="min-width: 320px;" ondragover="allowDrop(event)"
+        <div class="kanban-arena d-flex gap-4 overflow-x-auto pb-4 mt-4 style-b3b582">
+          <div class="kanban-column bg-light rounded-3 p-3 style-374c4e" ondragover="allowDrop(event)"
             ondrop="handleDrop(event, 'ideaBank')">
 
             <h6 class="text-muted mb-3"><i class="bi bi-lightbulb"></i> Activities Idea</h6>
@@ -253,7 +251,7 @@
               <div class="card border-0 shadow-sm p-2 cursor-grab" draggable="true"
                 ondragstart="handleDragStart(event, 'act_1', 'ideaBank')" id="card_act_1">
                 <div class="d-flex justify-content-between">
-                  <strong style="font-size: 0.9rem;">Mangrove Kayaking</strong>
+                  <strong class="style-33dd45">Mangrove Kayaking</strong>
                   <span class="badge bg-success" title="Low Carbon"><i class="bi bi-leaf"></i></span>
                 </div>
                 <small class="text-muted mt-1">2 Hours • Nature</small>
@@ -266,9 +264,9 @@
           </div>
         </div>
       </div><!-- /dash-main -->
-      <footer class="text-center py-4 mt-5" style="border-top: 1px solid rgba(0,0,0,0.05);">
+      <footer class="text-center py-4 mt-5 style-66e4ab">
         <div class="container">
-          <p class="mb-0" style="color: #9ab3a0; font-size: 0.9rem;">
+          <p class="mb-0 style-b20963">
             &copy; 2026 EcoPlanner.<br>
             Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE
             QINGLAN.
