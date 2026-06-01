@@ -77,8 +77,20 @@ async function loadListingsFromAPI() {
 }
 
 /* ── MODAL ── */
-function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove('d-none');
+    el.style.display = 'flex';
+  }
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('d-none');
+    el.style.display = 'none';
+  }
+}
 
 /* ── TOAST NOTIFICATIONS ── */
 function showToast(msg, type = 'success', options = {}) {

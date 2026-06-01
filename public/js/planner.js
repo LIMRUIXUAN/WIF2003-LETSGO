@@ -236,6 +236,8 @@ function switchView(view, tripId = null) {
     const boardView = document.getElementById('boardView');
 
     if (view === 'list') {
+        listView.classList.remove('d-none');
+        boardView.classList.add('d-none');
         listView.style.display = 'block';
         boardView.style.display = 'none';
 
@@ -251,6 +253,8 @@ function switchView(view, tripId = null) {
 
         renderItineraries();
     } else {
+        listView.classList.add('d-none');
+        boardView.classList.remove('d-none');
         listView.style.display = 'none';
         boardView.style.display = 'block';
         

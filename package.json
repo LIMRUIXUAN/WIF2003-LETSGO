@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "test": "node --test tests/*.test.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node seed.js"
   },
   "repository": {
     "type": "git",

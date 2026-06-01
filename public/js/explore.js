@@ -83,8 +83,7 @@ function renderListings(list = LISTINGS) {
           <!-- FRONT -->
           <div class="flip-card-front">
             <div class="listing-card">
-              <div class="card-img">
-                <span style="font-size:3.5rem;">${item.icon}</span>
+              <div class="card-img" style="background-image: url('${item.image || item.imageUrl}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
                 <button class="fav-btn ${favorites.has(item.id) ? 'saved' : ''}" 
                         onclick="toggleFav(event, ${item.id}, '${item.name}')">
                   <i class="bi bi-heart${favorites.has(item.id) ? '-fill' : ''}"></i>

@@ -45,8 +45,7 @@ async function renderFavs() {
             grid.innerHTML = favList.map(l => `
               <div class="col-sm-6 col-lg-4">
                 <div class="listing-card">
-                  <div class="card-img">
-                    <span style="font-size:3.5rem;">${l.icon}</span>
+                  <div class="card-img" style="background-image: url('${l.image || l.imageUrl}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
                     <button class="fav-btn saved" onclick="removeFav(event, ${l.id})">
                       <i class="bi bi-heart-fill" style="color: #e74c3c;"></i>
                     </button>
