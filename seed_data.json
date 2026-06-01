@@ -78,7 +78,7 @@
     "description": "Award-winning vegan hawker stalls using local ingredients."
   },
   {
-    "id":7,
+    "id": 7,
     "name": "Solar Ferry KL–Putrajaya",
     "location": "Kuala Lumpur",
     "category": "transport",
@@ -102,5 +102,83 @@
     "icon": "🐠",
     "rating": 4.8,
     "description": "Marine biologist-guided snorkeling with reef conservation pledge."
+  },
+  {
+    "id": 9,
+    "name": "Kinabalu Canopy Walkway",
+    "location": "Ranau, Sabah",
+    "category": "activity",
+    "ecoScore": 9.5,
+    "imageUrl": "https://images.unsplash.com/photo-1596422846543-75c6fc18a52b",
+    "priceLabel": "RM 15/pax",
+    "co2ImpactLabel": "Minimal",
+    "icon": "🌳",
+    "rating": 4.8,
+    "description": "Suspended canopy walk offering breathtaking views of Sabah's jungle."
+  },
+  {
+    "id": 10,
+    "name": "Bako National Park Trails",
+    "location": "Kuching, Sarawak",
+    "category": "activity",
+    "ecoScore": 9.6,
+    "imageUrl": "https://images.unsplash.com/photo-1473448912268-2022ce9509d8",
+    "priceLabel": "RM 20/pax",
+    "co2ImpactLabel": "Minimal",
+    "icon": "🚶",
+    "rating": 4.7,
+    "description": "Explore Sarawak's oldest park, home to sandstone cliffs and rare wildlife."
+  },
+  {
+    "id": 11,
+    "name": "The Farm Foodcraft",
+    "location": "Kuala Lumpur",
+    "category": "restaurant",
+    "ecoScore": 8.9,
+    "imageUrl": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0",
+    "priceLabel": "RM 30–70",
+    "co2ImpactLabel": "↓10 kg CO₂",
+    "icon": "🥗",
+    "rating": 4.7,
+    "description": "Farm-to-table restaurant featuring fresh organic produce grown in-house."
+  },
+  {
+    "id": 12,
+    "name": "Johor Rainforest Treehouse",
+    "location": "Kulai, Johor",
+    "category": "hotel",
+    "ecoScore": 9.5,
+    "imageUrl": "https://images.unsplash.com/photo-1488462237308-ecaa28b729d7",
+    "priceLabel": "RM 180/night",
+    "co2ImpactLabel": "↓42 kg CO₂",
+    "icon": "🌲",
+    "rating": 4.8,
+    "description": "Experience nature in cozy wooden treehouses built entirely from organic materials."
+  },
+  {
+    "id": 13,
+    "name": "Perhentian Coral Restoration",
+    "location": "Perhentian Islands",
+    "category": "activity",
+    "ecoScore": 9.3,
+    "imageUrl": "https://images.unsplash.com/photo-1502791451862-7bd8c2940c2d",
+    "priceLabel": "RM 90/pax",
+    "co2ImpactLabel": "↓15 kg CO₂",
+    "icon": "🐠",
+    "rating": 4.9,
+    "description": "Help marine biologists plant and transplant coral reefs in crystal clear waters."
+  },
+  {
+    "id": 14,
+    "name": "Electric Bike Rentals Langkawi",
+    "location": "Langkawi",
+    "category": "transport",
+    "ecoScore": 9.8,
+    "imageUrl": "https://images.unsplash.com/photo-1601050690597-df056fb4ce78",
+    "priceLabel": "RM 45/day",
+    "co2ImpactLabel": "Zero Emission",
+    "icon": "🛵",
+    "rating": 4.6,
+    "description": "Eco-friendly electric mobility to explore islands and beaches cleanly."
   }
 ]
