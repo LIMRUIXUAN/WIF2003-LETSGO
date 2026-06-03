@@ -87,6 +87,77 @@ async function createServer() {
 const dummyUser = { email: 'test@example.com', name: 'Test User', id: '123' };
 const validToken = signToken(dummyUser);
 
+test('POST /api/trips/calculate-carbon calculates distance, footprint, and savings', async () => {
+  const server = await createServer();
+  try {
+    const response = await fetch(`${server.baseUrl}/api/trips/calculate-carbon`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        transportMode: 'bus',
+        stops: [
+          { location: { lat: 0, lng: 0 } },
+          { location: { lat: 0, lng: 1 } }
+        ]
+      })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.success, true);
+    assert.equal(payload.distanceKm, 133.4);
+    assert.equal(payload.carbonFootprintKg, 14);
+    assert.equal(payload.carbonSavedKg, 4.7);
+  } finally {
+    await server.close();
+  }
+});
+
+test('POST /api/trips/calculate-carbon rejects missing route stops', async () => {
+  const server = await createServer();
+  try {
+    const response = await fetch(`${server.baseUrl}/api/trips/calculate-carbon`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({ transportMode: 'walking', stops: [{ location: { lat: 3.1, lng: 101.7 } }] })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 400);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'At least two stops are required for route calculations.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('POST /api/trips/calculate-carbon requires authentication', async () => {
+  const server = await createServer();
+  try {
+    const response = await fetch(`${server.baseUrl}/api/trips/calculate-carbon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transportMode: 'walking',
+        stops: [
+          { location: { lat: 3.1, lng: 101.7 } },
+          { location: { lat: 3.2, lng: 101.8 } }
+        ]
+      })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 401);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'Please sign in again.');
+  } finally {
+    await server.close();
+  }
+});
+
 test('GET /api/trips/:email returns trips for user', async () => {
   const sampleTrips = [
     { _id: '1', name: 'Trip 1', userEmail: 'test@example.com' },

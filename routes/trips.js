@@ -4,6 +4,47 @@ const Destination = require('../models/Destination');
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail } = require('../middleware/auth');
 
+const EMISSION_FACTORS = {
+  car_petrol: 0.1405,
+  car_diesel: 0.1418,
+  car_ev: 0.0449,
+  car_hybrid: 0.10,
+  motorcycle: 0.103,
+  bus: 0.105,
+  train_electric: 0.0275,
+  klia_ekspres: 0.044,
+  flight_short: 0.13,
+  flight_long: 0.11,
+  ferry: 0.1523,
+  bicycle: 0.0,
+  walking: 0.0
+};
+
+const BASELINE_FACTOR = EMISSION_FACTORS.car_petrol;
+
+function calculateHaversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+    * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c * 1.2;
+}
+
+function hasValidCoordinates(location) {
+  if (!location) return false;
+  const lat = Number(location.lat);
+  const lng = Number(location.lng);
+  return Number.isFinite(lat)
+    && Number.isFinite(lng)
+    && lat >= -90
+    && lat <= 90
+    && lng >= -180
+    && lng <= 180;
+}
+
 // ────────────────────────────────────────────────────────────────
 // TRIP CRUD (Create, Read, Update, Delete)
 // ────────────────────────────────────────────────────────────────
@@ -84,4 +125,52 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// POST - Calculate dynamic carbon footprint between points
+router.post('/calculate-carbon', requireAuth, (req, res) => {
+  try {
+    const { stops, transportMode } = req.body;
+    if (!Array.isArray(stops) || stops.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least two stops are required for route calculations.'
+      });
+    }
+
+    const factor = EMISSION_FACTORS[transportMode] !== undefined
+      ? EMISSION_FACTORS[transportMode]
+      : BASELINE_FACTOR;
+    let totalDistance = 0;
+
+    for (let i = 0; i < stops.length - 1; i++) {
+      const current = stops[i].location;
+      const next = stops[i + 1].location;
+      if (hasValidCoordinates(current) && hasValidCoordinates(next)) {
+        totalDistance += calculateHaversineDistance(
+          Number(current.lat),
+          Number(current.lng),
+          Number(next.lat),
+          Number(next.lng)
+        );
+      }
+    }
+
+    const footprint = totalDistance * factor;
+    const baseline = totalDistance * BASELINE_FACTOR;
+    const savings = baseline - footprint;
+
+    return res.json({
+      success: true,
+      distanceKm: Math.round(totalDistance * 10) / 10,
+      carbonFootprintKg: Math.round(footprint * 10) / 10,
+      carbonSavedKg: Math.round(savings * 10) / 10
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+});
+
 module.exports = router;
+module.exports.helpers = {
+  calculateHaversineDistance,
+  EMISSION_FACTORS
+};

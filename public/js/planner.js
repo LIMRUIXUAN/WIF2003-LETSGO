@@ -30,7 +30,71 @@ let currentTripId = null;
 let isEditing = false;
 let editItemIndex = null;
 let editItemLocation = null;
+let weatherWarningsByTripId = {};
 
+function getTripTotalCO2(trip) {
+  return (trip?.days || []).reduce((sum, day) => {
+    return sum + (day.stops || []).reduce((stopSum, stop) => {
+      return stopSum + (parseFloat(stop.carbon) || 0);
+    }, 0);
+  }, 0);
+}
+
+function getStopCarbonAverage(stops) {
+  if (!stops.length) return 0;
+  return stops.reduce((sum, stop) => sum + (parseFloat(stop.carbon) || 0), 0) / stops.length;
+}
+
+function hasStopLocation(stop) {
+  const lat = Number(stop?.location?.lat);
+  const lng = Number(stop?.location?.lng);
+  return Number.isFinite(lat)
+    && Number.isFinite(lng)
+    && lat >= -90
+    && lat <= 90
+    && lng >= -180
+    && lng <= 180;
+}
+
+function isRainWeatherCode(code) {
+  const numericCode = Number(code);
+  return Number.isFinite(numericCode) && numericCode >= 51 && numericCode <= 99;
+}
+
+async function fetchWeatherWarningsForTrip(trip) {
+  const city = String(trip?.city || '').trim();
+  if (!city) return {};
+
+  try {
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+    const geoData = await geoRes.json();
+    const match = geoData.results?.[0];
+    if (!match) return {};
+
+    const forecastRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${match.latitude}&longitude=${match.longitude}&daily=weather_code&timezone=auto&forecast_days=5`);
+    const forecastData = await forecastRes.json();
+    const dates = forecastData.daily?.time || [];
+    const codes = forecastData.daily?.weather_code || [];
+
+    return dates.reduce((warnings, date, index) => {
+      if (isRainWeatherCode(codes[index])) {
+        warnings[date] = true;
+      }
+      return warnings;
+    }, {});
+  } catch (err) {
+    console.warn('Weather warning lookup failed:', err);
+    return {};
+  }
+}
+
+async function refreshWeatherWarnings() {
+  const pairs = await Promise.all((itineraries || []).map(async (trip) => [
+    trip._id,
+    await fetchWeatherWarningsForTrip(trip)
+  ]));
+  weatherWarningsByTripId = Object.fromEntries(pairs.filter(([id]) => id));
+}
 
 async function saveState() {
   if (!currentTripId) return;
@@ -131,9 +195,13 @@ function renderItineraries() {
         </div>
       </div>
 
-      ${itin.days.map(day => `
+      ${itin.days.map(day => {
+        const rainWarning = weatherWarningsByTripId[itin._id]?.[day.date]
+          ? `<span class="badge bg-warning text-dark ms-2" title="Rain forecast: outdoor activities might be affected"><i class="bi bi-cloud-lightning-rain"></i> Weather Alert</span>`
+          : '';
+        return `
         <div class="itinerary-day">
-          <div class="day-header"><i class="bi bi-calendar-day"></i> ${esc(day.date)}</div>
+          <div class="day-header"><i class="bi bi-calendar-day"></i> ${esc(day.date)}${rainWarning}</div>
           ${day.stops.map(stop => `
             <div class="itinerary-stop">
               <div class="stop-time">${esc(stop.time)}</div>
@@ -145,7 +213,7 @@ function renderItineraries() {
             </div>
           `).join('')}
         </div>
-      `).join('')}
+      `}).join('')}
 
       <div class="d-flex gap-2 mt-2">
         <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
@@ -167,6 +235,7 @@ async function createItinerary() {
   const today = new Date().toISOString().split('T')[0];
   const start = document.getElementById('itinStart').value || today;
   const end   = document.getElementById('itinEnd').value || today;
+  const style = document.getElementById('itinStyle')?.value || '';
 
   // Grab the user's email from when they logged in!
   const userEmail = localStorage.getItem('ecoUserEmail');
@@ -181,6 +250,7 @@ async function createItinerary() {
         city: city,
         start: start,
         end: end,
+        style: style,
         days: generateDays(start, end),
         ideaBank: [] // Initialize empty idea bank for new trip
       })
@@ -194,6 +264,7 @@ async function createItinerary() {
     }
 
     itineraries.unshift(data.data);
+    weatherWarningsByTripId[data.data._id] = await fetchWeatherWarningsForTrip(data.data);
     renderItineraries();
 
     showToast("Trip created!");
@@ -216,6 +287,7 @@ async function loadState() {
     const res = await fetch(`/api/trips/${userEmail}`);
     const data = await res.json();
     itineraries = data.data || [];
+    await refreshWeatherWarnings();
     renderItineraries();
   } catch (err) {
     console.error("Failed to load trips:", err);
@@ -285,6 +357,7 @@ function switchView(view, tripId = null) {
         
         // Sync current trip ID to board view
         currentTripId = tripId;
+        switchPlannerTab('ideas');
 
         // Find the trip data
         const trip = itineraries.find(t => t._id == tripId);
@@ -295,6 +368,30 @@ function switchView(view, tripId = null) {
           renderBoardItems(trip); // Put real data in column based on current trip
         }
     }
+}
+
+function switchPlannerTab(tab) {
+  const boardView = document.getElementById('boardView');
+  if (!boardView) return;
+
+  boardView.dataset.activeTab = tab;
+  document.querySelectorAll('.nav-tabs-eco .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${tab}'`));
+  });
+
+  if (tab === 'map' && map && window.google) {
+    setTimeout(() => {
+      google.maps.event.trigger(map, 'resize');
+      const trip = itineraries.find(t => t._id == currentTripId);
+      if (trip) syncMapWithItinerary(trip);
+    }, 60);
+  }
+}
+
+function updateTripCarbonSummary(trip) {
+  const summary = document.getElementById('tripCarbonSummary');
+  if (!summary) return;
+  summary.textContent = `${getTripTotalCO2(trip).toFixed(1)} kg`;
 }
 
 function generateDays(start, end) {
@@ -344,6 +441,8 @@ function generateTimelineColumns(startStr, endStr) {
 }
 
 function renderBoardItems(trip) {
+  updateTripCarbonSummary(trip);
+
   const ideaContainer = document.getElementById('ideaBankContainer');
   if (ideaContainer) {
       ideaContainer.innerHTML = '';
@@ -715,6 +814,75 @@ function exportTripAsPDF(tripId) {
   setTimeout(() => win.print(), 500);
 }
 
+function openOffsetModal() {
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!trip) {
+    showToast('Open a trip before offsetting.', 'warn');
+    return;
+  }
+
+  const totalCO2 = getTripTotalCO2(trip);
+  const treeCount = Math.max(1, Math.ceil(totalCO2 / 20));
+  const offsetCost = treeCount * 10;
+  const body = document.getElementById('offsetModalBody');
+  if (!body) return;
+
+  body.innerHTML = `
+    <div class="offset-summary">
+      <div>
+        <span>Total Trip CO₂</span>
+        <strong>${totalCO2.toFixed(1)} kg</strong>
+      </div>
+      <div>
+        <span>Tree Equivalent</span>
+        <strong>${treeCount} seedling${treeCount === 1 ? '' : 's'}</strong>
+      </div>
+      <div>
+        <span>Estimated Offset</span>
+        <strong>RM ${offsetCost}</strong>
+      </div>
+    </div>
+    <div class="offset-projects">
+      <label class="offset-project active">
+        <input type="radio" name="offsetProject" value="Langkawi Mangrove Planting Center" checked>
+        <span>
+          <strong>Langkawi Mangrove Planting Center</strong>
+          <small>Mangrove seedlings and coastal habitat restoration.</small>
+        </span>
+      </label>
+      <label class="offset-project">
+        <input type="radio" name="offsetProject" value="Borneo Reforestation Trust">
+        <span>
+          <strong>Borneo Reforestation Trust</strong>
+          <small>Native rainforest restoration and community nurseries.</small>
+        </span>
+      </label>
+      <label class="offset-project">
+        <input type="radio" name="offsetProject" value="Cameron Highlands Tree Nursery">
+        <span>
+          <strong>Cameron Highlands Tree Nursery</strong>
+          <small>Highland slope replanting and watershed protection.</small>
+        </span>
+      </label>
+    </div>
+  `;
+
+  body.querySelectorAll('.offset-project').forEach(label => {
+    label.addEventListener('click', () => {
+      body.querySelectorAll('.offset-project').forEach(item => item.classList.remove('active'));
+      label.classList.add('active');
+    });
+  });
+
+  openModal('offsetModal');
+}
+
+function confirmOffsetContribution() {
+  const selectedProject = document.querySelector('input[name="offsetProject"]:checked')?.value || 'local offset project';
+  closeModal('offsetModal');
+  showToast(`Thank you for planning green! Offset pledged with ${selectedProject}.`);
+}
+
 /* Load sample data and render on page load */
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
@@ -770,18 +938,20 @@ function syncMapWithItinerary(trip) {
   let hasLocations = false;
   let stopCounter = 1; //number pins
   const pathCoordinates = [];
+  const routeStops = [];
 
   // Loop through days and draw pins for scheduled activities
   (trip.days || []).forEach(day => {
     (day.stops || []).forEach(stop => {
       // Only draw a pin if the stop has latitude and longitude
-      if (stop.location && stop.location.lat && stop.location.lng) {
+      if (hasStopLocation(stop)) {
         const position = { 
             lat: parseFloat(stop.location.lat), 
             lng: parseFloat(stop.location.lng) 
         };
         
         pathCoordinates.push(position);
+        routeStops.push(stop);
 
         const pin = new google.maps.marker.PinElement({
             glyph: stopCounter.toString(),
@@ -805,11 +975,20 @@ function syncMapWithItinerary(trip) {
 
   // Draw dotted route line connecting pins
   if (pathCoordinates.length >= 2) {
+    const style = String(trip.style || '');
+    const averageCarbon = getStopCarbonAverage(routeStops);
+    let routeColor = "#2d6a4f";
+    if (style.includes("Baseline") || style.includes("Luxury") || averageCarbon > 20) {
+      routeColor = "#c0392b";
+    } else if (style.includes("Mid-range") || averageCarbon > 10) {
+      routeColor = "#e67e22";
+    }
+
     const lineSymbol = {
       path: "M 0,-1 0,1",
       strokeOpacity: 1,
       scale: 3,
-      strokeColor: "#2d6a4f", // Eco green theme color
+      strokeColor: routeColor,
       strokeWeight: 2
     };
 

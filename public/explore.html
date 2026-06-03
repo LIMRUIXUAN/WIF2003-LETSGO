@@ -119,11 +119,13 @@
       <!-- Budget Filter -->
       <div class="filter-section">
         <label class="filter-label">Budget Range</label>
-        <div class="budget-inputs">
-          <input type="number" id="budgetMin" placeholder="Min" class="filter-input-small">
-          <span>–</span>
-          <input type="number" id="budgetMax" placeholder="Max" class="filter-input-small">
-          <span class="currency-label">RM</span>
+        <div class="budget-slider-wrap">
+          <input type="range" id="budgetRange" min="0" max="600" value="300" class="form-range" oninput="updateBudgetLabel(this.value)">
+          <div class="d-flex justify-content-between text-muted small mt-1">
+            <span>RM 0</span>
+            <span>Max Budget: <strong id="budgetValLabel">RM 300</strong></span>
+            <span>RM 600+</span>
+          </div>
         </div>
       </div>
 
