@@ -6,6 +6,25 @@
 
 'use strict';
 
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) {
+    window.location.href = 'login.html';
+  }
+})();
+
+// XSS-safe HTML escaping - use esc() on user-supplied values in innerHTML templates.
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let itineraries = [];
 let currentTripId = null;
 let isEditing = false;
@@ -34,9 +53,8 @@ async function saveTripState(tripId, trip) {
 
     if (!res.ok) {
         console.error("Backend refused to save:", data.message);
-        alert("Database Save Error: " + data.message);
+        showToast("Could not save trip. Please try again.", "error");
     } else {
-        console.log("Trip successfully synced to MongoDB!");
         syncCO2ToProfile();
     }
   } catch (err) {
@@ -88,14 +106,23 @@ function renderItineraries() {
     <div class="stat-card mb-3">
       <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
         <div>
-          <div style="font-size:1.05rem; font-weight:700;">${itin.name}</div>
+          <div style="font-size:1.05rem; font-weight:700;">${esc(itin.name)}</div>
           <div style="font-size:.82rem; color:#9ab3a0;">
-            <i class="bi bi-geo-alt"></i> ${itin.city} &nbsp;·&nbsp;
-            <i class="bi bi-calendar3"></i> ${itin.start} – ${itin.end}
+            <i class="bi bi-geo-alt"></i> ${esc(itin.city)} &nbsp;·&nbsp;
+            <i class="bi bi-calendar3"></i> ${esc(itin.start)} – ${esc(itin.end)}
           </div>
         </div>
         <div class="d-flex gap-2">
           <span class="eco-badge"><i class="bi bi-leaf"></i> Eco Trip</span>
+          ${(()=>{
+            const today = new Date(); today.setHours(0,0,0,0);
+            const s = itin.start ? new Date(itin.start) : null;
+            const e = itin.end   ? new Date(itin.end)   : null;
+            let label = 'Planned'; let color = '#6c757d';
+            if (e && e < today)                         { label = 'Completed'; color = '#2d6a4f'; }
+            else if (s && s <= today && (!e || e >= today)) { label = 'Active';    color = '#e67e22'; }
+            return `<span style="background:${color};color:#fff;border-radius:8px;padding:3px 10px;font-size:.75rem;font-weight:600;">${label}</span>`;
+          })()}
           <button onclick="removeItin('${itin._id}')"
                   style="background:#fdecea; border:none; border-radius:8px; padding:4px 10px;
                          color:#c0392b; cursor:pointer; font-size:.8rem;">
@@ -106,14 +133,14 @@ function renderItineraries() {
 
       ${itin.days.map(day => `
         <div class="itinerary-day">
-          <div class="day-header"><i class="bi bi-calendar-day"></i> ${day.date}</div>
+          <div class="day-header"><i class="bi bi-calendar-day"></i> ${esc(day.date)}</div>
           ${day.stops.map(stop => `
             <div class="itinerary-stop">
-              <div class="stop-time">${stop.time}</div>
-              <div class="stop-icon">${stop.icon}</div>
+              <div class="stop-time">${esc(stop.time)}</div>
+              <div class="stop-icon">${esc(stop.icon)}</div>
               <div class="stop-info">
-                <div class="stop-name">${stop.name}</div>
-                <div class="stop-sub">${stop.sub}</div>
+                <div class="stop-name">${esc(stop.name)}</div>
+                <div class="stop-sub">${esc(stop.sub)}</div>
               </div>
             </div>
           `).join('')}
@@ -126,7 +153,7 @@ function renderItineraries() {
           <i class="bi bi-pencil"></i> Edit
         </button>
         <button class="btn-eco" style="font-size:.82rem; padding:7px 16px; justify-content:center;"
-                onclick="showToast('Itinerary exported! 📄')">
+                onclick="exportTripAsPDF('${itin._id}')">
           <i class="bi bi-download"></i> Export
         </button>
       </div>
@@ -162,7 +189,7 @@ async function createItinerary() {
     const data = await res.json();
 
     if (!res.ok) {
-      alert("Backend error: god damn it!" + data.message);
+      showToast("Could not create trip: " + (data.message || "Unknown error."), "error");
       return;
     }
 
@@ -180,14 +207,12 @@ async function createItinerary() {
 async function loadState() {
   //1. get the logged-in user's email from mongodb hehe
   const userEmail = localStorage.getItem('ecoUserEmail');
-  console.log("DEBUG: Browser thinks the user is:", userEmail);
   if(!userEmail) {
     console.warn("No user email found in localStorage. Itineraries won't load.");
     return;
   }
   try {
     //2. fetch itineraries from backend for that user email
-    console.log(`🌐 DEBUG: Sending GET request to /api/trips/${userEmail}`);
     const res = await fetch(`/api/trips/${userEmail}`);
     const data = await res.json();
     itineraries = data.data || [];
@@ -367,16 +392,16 @@ function createCardHTML(stop, idx, sourceLocation) {
 
             <div class="d-flex gap-2 pe-4 w-100"> 
                 
-                <div style="font-size: 1.2rem; min-width: 25px;">${stop.icon}</div>
+                <div style="font-size: 1.2rem; min-width: 25px;">${esc(stop.icon)}</div>
                 
                 <div class="flex-grow-1" style="min-width: 0;"> 
                     
                     <div class="fw-bold text-wrap text-break mb-1" style="font-size:0.85rem; line-height: 1.2;">
-                        ${stop.name}
+                        ${esc(stop.name)}
                     </div>
                     
                     <div class="d-flex justify-content-between align-items-center mt-1">
-                        <div class="text-muted" style="font-size:0.75rem;">${stop.time}</div>
+                        <div class="text-muted" style="font-size:0.75rem;">${esc(stop.time)}</div>
                         <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${carbonDisplay}kg CO₂</span>
                     </div>
 
@@ -638,6 +663,57 @@ function processPendingIdeas(trip) {
     }
 }
 
+function exportTripAsPDF(tripId) {
+  const trip = itineraries.find(t => t._id == tripId);
+  if (!trip) return;
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Pop-up blocked. Please allow pop-ups for this site to export.', 'warn');
+    return;
+  }
+  const days = (trip.days || []).map(day => `
+    <div style="margin-bottom:1.5rem;">
+      <h3 style="color:#2d6a4f;border-bottom:1px solid #ccc;padding-bottom:4px;">📅 ${esc(day.date)}</h3>
+      ${(day.stops || []).length === 0
+        ? '<p style="color:#999;font-style:italic;">No activities scheduled.</p>'
+        : (day.stops || []).map(stop => `
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;padding:8px;background:#f9f9f9;border-radius:6px;">
+            <div style="font-size:1.4rem;">${esc(stop.icon || '📍')}</div>
+            <div>
+              <div style="font-weight:600;">${esc(stop.name)}</div>
+              <div style="font-size:0.85rem;color:#666;">${esc(stop.time || 'Flexible')} &nbsp;·&nbsp; ${esc(stop.sub || '')}</div>
+              <div style="font-size:0.8rem;color:#2d6a4f;">🌿 ${stop.carbon || 0} kg CO₂</div>
+            </div>
+          </div>`).join('')
+      }
+    </div>`).join('');
+
+  const totalCO2 = (trip.days || []).reduce((sum, d) =>
+    sum + (d.stops || []).reduce((s, st) => s + (parseFloat(st.carbon) || 0), 0), 0);
+
+  win.document.write(`
+    <!DOCTYPE html><html><head>
+    <title>${esc(trip.name)} — EcoPlanner Itinerary</title>
+    <style>
+      body { font-family: sans-serif; max-width: 700px; margin: 40px auto; color: #222; }
+      h1 { color: #1b4332; }
+      .meta { color: #555; font-size: 0.9rem; margin-bottom: 2rem; }
+      .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 0.8rem; color: #999; }
+    </style></head><body>
+    <h1>🌿 ${esc(trip.name)}</h1>
+    <div class="meta">
+      📍 ${esc(trip.city || 'Destination not set')} &nbsp;|&nbsp;
+      📅 ${esc(trip.start || '?')} → ${esc(trip.end || '?')} &nbsp;|&nbsp;
+      🌿 Total CO₂: ${totalCO2.toFixed(1)} kg
+    </div>
+    ${days}
+    <div class="footer">Exported from EcoPlanner · ${new Date().toLocaleDateString()}</div>
+    </body></html>`);
+
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
 
 /* Load sample data and render on page load */
 document.addEventListener('DOMContentLoaded', () => {

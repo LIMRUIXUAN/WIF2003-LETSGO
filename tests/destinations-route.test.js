@@ -51,6 +51,25 @@ function withStubbedFind(records, callback) {
     });
 }
 
+function withFailingFind(callback) {
+  const originalFind = Destination.find;
+
+  Destination.find = () => ({
+    sort() {
+      return this;
+    },
+    lean: async () => {
+      throw new Error('raw database failure');
+    }
+  });
+
+  return Promise.resolve()
+    .then(callback)
+    .finally(() => {
+      Destination.find = originalFind;
+    });
+}
+
 function matchesQuery(record, query) {
   if (!query || Object.keys(query).length === 0) {
     return true;
@@ -105,6 +124,7 @@ test('GET /api/destinations returns legacy and canonical destination fields', as
       const payload = await response.json();
 
       assert.equal(response.status, 200);
+      assert.equal(response.headers.get('cache-control'), 'public, max-age=300');
       assert.equal(payload.success, true);
       assert.equal(payload.count, 2);
       assert.equal(payload.data[0].category, 'hotel');
@@ -140,6 +160,60 @@ test('GET /api/destinations applies search, category, eco, and price filters', a
   });
 });
 
+test('GET /api/destinations/category/:category returns destinations in that category', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/category/restaurant`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.count, 1);
+      assert.equal(payload.data[0].id, 2);
+      assert.equal(payload.data[0].category, 'restaurant');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations/:id returns one destination by numeric display ID', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/1`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.data.id, 1);
+      assert.equal(payload.data.name, 'Bamboo Eco Resort');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations/:id returns 404 for unknown destination IDs', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/999`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 404);
+      assert.equal(payload.success, false);
+      assert.equal(payload.error, 'Destination not found');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('GET /api/destinations/search/suggestions returns search suggestions from Mongo-backed results', async () => {
   await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
     const server = await createServer();
@@ -151,6 +225,41 @@ test('GET /api/destinations/search/suggestions returns search suggestions from M
       assert.equal(response.status, 200);
       assert.equal(payload.success, true);
       assert.deepEqual(payload.suggestions, ['Green Roots Cafe']);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations/search/suggestions returns empty suggestions for blank queries', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/search/suggestions?q=%20%20`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.deepEqual(payload.suggestions, []);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations hides raw database errors', async () => {
+  await withFailingFind(async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 500);
+      assert.equal(payload.success, false);
+      assert.equal(payload.error, 'Internal server error.');
+      assert.equal(JSON.stringify(payload).includes('raw database failure'), false);
     } finally {
       await server.close();
     }

@@ -12,7 +12,14 @@ function base64UrlDecode(value) {
 }
 
 function getAuthSecret() {
-  return process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET || 'ecotravel-dev-token-secret';
+  const secret = process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'FATAL: JWT_SECRET environment variable is not set. ' +
+      'Add JWT_SECRET to your .env file before starting the server.'
+    );
+  }
+  return secret;
 }
 
 function signPayload(unsignedToken) {

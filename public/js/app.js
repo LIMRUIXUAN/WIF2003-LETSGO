@@ -64,11 +64,32 @@ let LISTINGS = [];
  * await this function before rendering listing-dependent UI.
  */
 async function loadListingsFromAPI() {
+  // Check sessionStorage cache first (5-minute TTL).
+  const CACHE_KEY = 'ecoListingsCache';
+  const CACHE_TTL = 5 * 60 * 1000;
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now() - ts < CACHE_TTL && Array.isArray(data) && data.length > 0) {
+        LISTINGS = data;
+        return LISTINGS;
+      }
+    }
+  } catch (_) {
+    // Ignore cache parse errors.
+  }
+
   try {
     const response = await fetch('/api/destinations');
     const data = await response.json();
     if (data.success && Array.isArray(data.data)) {
       LISTINGS = data.data;
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: LISTINGS }));
+      } catch (_) {
+        // Ignore storage quota errors.
+      }
     }
   } catch (error) {
     console.error('Failed to load destinations from API:', error);
@@ -190,8 +211,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (el) el.min = today;
     });
 
-    // ── 2. Fetch destinations from MongoDB so all pages have fresh data ──
-    await loadListingsFromAPI();
+    // ── 2. Fetch destinations from MongoDB - skip auth pages that do not need them ──
+    const authPages = ['login.html', 'register.html', 'reset-password.html', 'index.html'];
+    const isAuthPage = authPages.some(p => window.location.pathname.endsWith(p) || window.location.pathname === '/');
+    if (!isAuthPage) {
+      await loadListingsFromAPI();
+    }
 
     // ── 3. Global UI: Update Navigation Avatar ──
     const navBadge = document.getElementById('navInitial');

@@ -80,6 +80,28 @@ const authLimiter = rateLimit({
   }
 });
 
+const userLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests. Please try again later.'
+  }
+});
+
+const tripLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many trip requests. Please try again later.'
+  }
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({
     success: true,
@@ -95,8 +117,8 @@ app.get('/api/config/maps', requireAuth, (_req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/trips', tripRoutes);
+app.use('/api/users', userLimiter, userRoutes);
+app.use('/api/trips', tripLimiter, tripRoutes);
 app.use('/api/destinations', destinationRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -140,6 +162,12 @@ async function connectToDatabase() {
 
 async function startServer() {
   const port = Number(process.env.PORT || process.env.port) || 3000;
+
+  // Fail fast if critical env vars are missing.
+  if (!process.env.JWT_SECRET && !process.env.AUTH_TOKEN_SECRET && !process.env.SESSION_SECRET) {
+    console.error('FATAL: JWT_SECRET is not set in environment. Add it to your .env file.');
+    process.exit(1);
+  }
 
   try {
     await connectToDatabase();

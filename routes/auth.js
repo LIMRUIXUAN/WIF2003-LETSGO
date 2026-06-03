@@ -6,7 +6,11 @@ const { sendMail } = require('../utils/mailer');
 const { signToken } = require('../middleware/auth');
 
 function hashResetCode(code) {
-    return crypto.createHash('sha256').update(String(code)).digest('hex');
+    const secret = process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET;
+    if (!secret) {
+        throw new Error('FATAL: JWT_SECRET environment variable is not set.');
+    }
+    return crypto.createHmac('sha256', secret).update(String(code)).digest('hex');
 }
 
 function createResetCode() {

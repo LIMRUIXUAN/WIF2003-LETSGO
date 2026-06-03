@@ -6,6 +6,15 @@
 
 'use strict';
 
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) {
+    window.location.href = 'login.html';
+  }
+})();
+
 // ── TYPE-AHEAD SEARCH ──
 function handleSearchInput(el) {
   const query = el.value.toLowerCase();
@@ -132,7 +141,8 @@ async function toggleFav(e, id, name) {
     const btn = e.currentTarget;
     
     // 1. Get the logged-in user's email (from Zi Yu's login)
-    const userEmail = localStorage.getItem('ecoUserEmail') || 'demo@ecoplanner.com';
+    const userEmail = localStorage.getItem('ecoUserEmail');
+    if (!userEmail) { showToast('Please sign in to save favorites.', 'warn'); return; }
 
     // 2. Optimistic UI Update (Visuals)
     if (favorites.has(id)) {
@@ -149,8 +159,6 @@ async function toggleFav(e, id, name) {
 
     // 3. The Database Update
     try {
-        console.log(`Sending PUT request to add ID ${id} for ${userEmail}...`); 
-        
         const response = await fetch(`/api/users/${userEmail}/favorites`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -158,8 +166,6 @@ async function toggleFav(e, id, name) {
         });
 
         const result = await response.json();
-        
-        console.log("Server Response from clicking heart:", result); 
 
         if (!result.success) {
             console.error("Backend refused to save:", result.message);
@@ -306,7 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Load favorites from API
-  const userEmail = localStorage.getItem('ecoUserEmail') || 'test@ecoplanner.com';
+  const userEmail = localStorage.getItem('ecoUserEmail');
+  if (!userEmail) return;
 
   fetch(`/api/users/profile/${userEmail}`)
     .then(res => res.json())
@@ -317,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
   .catch(err => {
-    console.log('Failed to load favorites:', err);
+    console.error('Failed to load favorites:', err);
   });
 });
 

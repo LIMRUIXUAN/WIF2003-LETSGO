@@ -4,6 +4,43 @@ const User = require('../models/User');// ini using for standardise the User jso
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail, signToken } = require('../middleware/auth');
 
+function validateAvatarBase64(value) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string') return null;
+  const match = value.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/]+={0,2})$/i);
+  if (!match) return null;
+  if (value.length > 2 * 1024 * 1024) return null;
+
+  const type = match[1].toLowerCase();
+  const payload = match[2];
+  if (payload.length % 4 === 1) return null;
+
+  const bytes = Buffer.from(payload, 'base64');
+  if (!bytes.length) return null;
+
+  const isPng = type === 'png'
+    && bytes.length >= 8
+    && bytes[0] === 0x89
+    && bytes[1] === 0x50
+    && bytes[2] === 0x4e
+    && bytes[3] === 0x47;
+  const isJpeg = (type === 'jpeg' || type === 'jpg')
+    && bytes.length >= 3
+    && bytes[0] === 0xff
+    && bytes[1] === 0xd8
+    && bytes[2] === 0xff;
+  const isGif = type === 'gif'
+    && bytes.length >= 6
+    && (bytes.subarray(0, 6).toString('ascii') === 'GIF87a' || bytes.subarray(0, 6).toString('ascii') === 'GIF89a');
+  const isWebp = type === 'webp'
+    && bytes.length >= 12
+    && bytes.subarray(0, 4).toString('ascii') === 'RIFF'
+    && bytes.subarray(8, 12).toString('ascii') === 'WEBP';
+
+  if (!isPng && !isJpeg && !isGif && !isWebp) return null;
+  return value;
+}
+
 // GET endpoint to fetch a user's profile by their email
 router.get('/profile/:email', requireAuth, requireSelfEmail, async (req, res) => {
     try {
@@ -18,7 +55,7 @@ router.get('/profile/:email', requireAuth, requireSelfEmail, async (req, res) =>
         res.json({ success: true, data: user});
         
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message});
+        res.status(500).json({ success: false, error: 'Internal server error.' });
     }
 });
 
@@ -106,13 +143,24 @@ router.put('/:email', requireAuth, requireSelfEmail, async (req, res) => {
             email:        requestedEmail,
             city:         req.body.city,
             budget:       req.body.budget === undefined ? undefined : User.normalizeBudget(req.body.budget),
-            avatar:       req.body.avatar,
+            avatar:       (() => {
+                if (req.body.avatar === undefined) return undefined;
+                const validated = validateAvatarBase64(req.body.avatar);
+                if (validated === null) {
+                    res.status(400).json({ success: false, message: 'Invalid avatar format. Must be a PNG, JPEG, GIF, or WebP image under 2MB.' });
+                    return '__INVALID__';
+                }
+                return validated;
+            })(),
             interests:    req.body.interests,
             notifTrip:    req.body.notifTrip,
             notifEco:     req.body.notifEco,
             co2Saved:     req.body.co2Saved,
             co2Footprint: req.body.co2Footprint
         };
+
+        // Early exit if avatar validation failed (response already sent)
+        if (updateData.avatar === '__INVALID__') return;
 
         // Remove undefined fields so partial updates don't wipe existing values
         Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);

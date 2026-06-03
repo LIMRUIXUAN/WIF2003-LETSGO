@@ -45,13 +45,14 @@ router.get('/', async (req, res) => {
     const maxPrice = req.query.maxPrice ? Number.parseInt(req.query.maxPrice, 10) : undefined;
     const filtered = filterByPrice(destinations, minPrice, maxPrice);
 
+    res.set('Cache-Control', 'public, max-age=300');
     res.json({
       success: true,
       count: filtered.length,
       data: filtered
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 });
 
@@ -77,7 +78,7 @@ router.get('/search/suggestions', async (req, res) => {
       suggestions: Array.from(allOptions).slice(0, 8)
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 });
 
@@ -93,7 +94,7 @@ router.get('/category/:category', async (req, res) => {
       data: destinations
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 });
 
@@ -111,7 +112,7 @@ router.get('/:id', async (req, res) => {
       data: destination
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
 });
 

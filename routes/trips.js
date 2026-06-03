@@ -18,7 +18,10 @@ router.post('/', requireAuth, async (req, res) => {
     });
     res.status(201).json({ success: true, data: trip });
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(400).json({ success: false, message: 'Bad request.' });
   }
 });
 
@@ -29,7 +32,7 @@ router.get('/:email', requireAuth, requireSelfEmail, async (req, res) => {
     const trips = await Trip.find({ userEmail: email });
     res.json({ success: true, data: trips });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
 
@@ -56,7 +59,10 @@ router.put('/:id', requireAuth, async (req, res) => {
     );
     res.json({ success: true, data: updatedTrip });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
 
@@ -74,7 +80,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     await Trip.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Trip deleted' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 });
 
