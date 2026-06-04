@@ -277,6 +277,32 @@ test('PUT /api/trips/:id updates owned trips and preserves token ownership', asy
   });
 });
 
+test('PUT /api/trips/:id compares trip ownership case-insensitively', async () => {
+  const sampleTrips = [
+    { _id: 'tripMixed', name: 'Mixed Case Trip', userEmail: 'Test@Example.com' }
+  ];
+
+  await withStubbedTripModel(sampleTrips, async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/trips/tripMixed`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${validToken}`
+        },
+        body: JSON.stringify({ name: 'Updated Mixed Case Trip' })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.data.userEmail, 'test@example.com');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('PUT /api/trips/:id rejects updates to trips owned by another user', async () => {
   const sampleTrips = [
     { _id: 'trip456', name: 'Trip 2', userEmail: 'other@example.com' }
@@ -312,6 +338,28 @@ test('DELETE /api/trips/:id deletes the trip if owned by user', async () => {
     const server = await createServer();
     try {
       const response = await fetch(`${server.baseUrl}/api/trips/trip123`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${validToken}` }
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.message, 'Trip deleted');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('DELETE /api/trips/:id compares trip ownership case-insensitively', async () => {
+  const sampleTrips = [
+    { _id: 'tripMixed', name: 'Mixed Case Trip', userEmail: 'Test@Example.com' }
+  ];
+
+  await withStubbedTripModel(sampleTrips, async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/trips/tripMixed`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${validToken}` }
       });

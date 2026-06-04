@@ -6,14 +6,9 @@
 
 'use strict';
 
-// Auth guard - redirect to login if no session
-(function guardAuth() {
-  const email = localStorage.getItem('ecoUserEmail');
-  const token = localStorage.getItem('ecoAuthToken');
-  if (!email || !token) {
-    window.location.href = 'login.html';
-  }
-})();
+function hasAuthToken() {
+  return Boolean(localStorage.getItem('ecoAuthToken'));
+}
 
 function esc(str) {
   return String(str == null ? '' : str)
@@ -157,6 +152,24 @@ function toggleCardFlip(event, triggerElement) {
   triggerElement.closest('.flip-card')?.classList.toggle('flipped');
 }
 
+function openAuthGateModal() {
+  const modal = document.getElementById('authGateModal');
+  if (modal) {
+    modal.style.display = 'block';
+  } else if (typeof showToast === 'function') {
+    showToast('Please sign in to save favorites.', 'warn');
+  }
+}
+
+function closeAuthGateModal() {
+  const modal = document.getElementById('authGateModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function goToLoginFromAuthGate() {
+  window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
+}
+
 // ── FAVORITES ──
 // Upate for this toggleFav func: designed for Phase 1 (mock) and Phase 2 (real API) with optimistic UI updates.
 async function toggleFav(e, id, name) {
@@ -165,7 +178,10 @@ async function toggleFav(e, id, name) {
     
     // 1. Get the logged-in user's email (from Zi Yu's login)
     const userEmail = localStorage.getItem('ecoUserEmail');
-    if (!userEmail) { showToast('Please sign in to save favorites.', 'warn'); return; }
+    if (!hasAuthToken() || !userEmail) {
+        openAuthGateModal();
+        return;
+    }
 
     // 2. Optimistic UI Update (Visuals)
     if (favorites.has(id)) {
@@ -339,10 +355,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  const authGateModal = document.getElementById('authGateModal');
+  if (authGateModal) {
+    authGateModal.addEventListener('click', (e) => {
+      if (e.target === authGateModal) closeAuthGateModal();
+    });
+  }
+
+  document.querySelectorAll('a[href="favorites.html"]').forEach(link => {
+    link.addEventListener('click', (event) => {
+      if (hasAuthToken()) return;
+      event.preventDefault();
+      openAuthGateModal();
+    });
+  });
   
   // Load favorites from API
   const userEmail = localStorage.getItem('ecoUserEmail');
-  if (!userEmail) return;
+  if (!hasAuthToken() || !userEmail) return;
 
   fetch(`/api/users/profile/${userEmail}`)
     .then(res => res.json())

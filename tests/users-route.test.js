@@ -193,6 +193,35 @@ test('PUT /api/users/:email/favorites rejects invalid destination IDs', async ()
   });
 });
 
+test('PUT /api/users/:email/password updates password and returns a fresh token', async () => {
+  const sampleUsers = [{ email: 'test@example.com', name: 'Test User', password: 'old-password123' }];
+  const token = signToken({ email: 'test@example.com', name: 'Test User', id: '123' });
+
+  await withStubbedUserModel(sampleUsers, async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/users/test@example.com/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: 'old-password123',
+          newPassword: 'new-password123'
+        })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.message, 'Password updated successfully.');
+      assert.equal(verifyToken(payload.token).email, 'test@example.com');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('PUT /api/users/:email updates profile information', async () => {
   const sampleUsers = [{ email: 'test@example.com', name: 'Test User', city: 'Old City' }];
   await withStubbedUserModel(sampleUsers, async () => {
@@ -306,6 +335,31 @@ test('DELETE /api/users/:email deletes the user and their trips', async () => {
       assert.equal(payload.message, 'Account deleted.');
       assert.deepEqual(getRecords(), []);
       assert.deepEqual(calls.tripDeletes, [{ query: { userEmail: 'test@example.com' } }]);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('profile update endpoints rate limit repeated updates', async () => {
+  const sampleUsers = [{ email: 'test@example.com', name: 'Test User', city: 'Old City' }];
+  await withStubbedUserModel(sampleUsers, async () => {
+    const server = await createServer();
+    try {
+      let lastResponse;
+      for (let i = 0; i < 61; i++) {
+        lastResponse = await fetch(`${server.baseUrl}/api/users/test@example.com`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${validToken}`
+          },
+          body: JSON.stringify({ city: `City ${i}` })
+        });
+        await lastResponse.text();
+      }
+
+      assert.equal(lastResponse.status, 429);
     } finally {
       await server.close();
     }

@@ -2,8 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
+
 const Destination = require('../models/Destination');
 const destinationRouter = require('../routes/destinations');
+const { signToken } = require('../middleware/auth');
 
 const SAMPLE_DESTINATIONS = [
   {
@@ -264,4 +267,69 @@ test('GET /api/destinations hides raw database errors', async () => {
       await server.close();
     }
   });
+});
+
+test('POST /api/destinations requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(SAMPLE_DESTINATIONS[0])
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('PUT /api/destinations/:id requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations/1`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: 'Updated' })
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('DELETE /api/destinations/:id requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations/1`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
 });

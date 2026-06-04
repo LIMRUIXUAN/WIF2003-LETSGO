@@ -3,9 +3,13 @@
     let GOAL_CO2 = parseInt(localStorage.getItem('ecoGoalCO2') || '500', 10);
     let _lastUser = null, _lastTrips = [];
 
+    if (typeof requirePageAuth === 'function') {
+      requirePageAuth();
+    }
+
     async function loadDashboard() {
       const email = localStorage.getItem('ecoUserEmail');
-      if (!email) { window.location.href = 'login.html'; return; }
+      if (!email) { if (typeof redirectToLogin === 'function') redirectToLogin(); return; }
 
       // Ensure LISTINGS are loaded from MongoDB before rendering
       await loadListingsFromAPI();

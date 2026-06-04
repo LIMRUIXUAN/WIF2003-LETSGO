@@ -8,11 +8,14 @@
 
 // Auth guard - redirect to login if no session
 (function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
   const email = localStorage.getItem('ecoUserEmail');
   const token = localStorage.getItem('ecoAuthToken');
-  if (!email || !token) {
-    window.location.href = 'login.html';
-  }
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 })();
 
 // XSS-safe HTML escaping - use esc() on user-supplied values in innerHTML templates.
@@ -25,6 +28,18 @@ function esc(str) {
     .replace(/'/g, '&#39;');
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getCurrentUserEmail() {
+  return normalizeEmail(localStorage.getItem('ecoUserEmail'));
+}
+
+function isTripOwner(trip) {
+  return Boolean(trip) && normalizeEmail(trip.userEmail) === getCurrentUserEmail();
+}
+
 let itineraries = [];
 let currentTripId = null;
 let isEditing = false;
@@ -33,11 +48,17 @@ let editItemLocation = null;
 let weatherWarningsByTripId = {};
 
 function getTripTotalCO2(trip) {
-  return (trip?.days || []).reduce((sum, day) => {
+  const stopsCO2 = (trip?.days || []).reduce((sum, day) => {
     return sum + (day.stops || []).reduce((stopSum, stop) => {
       return stopSum + (parseFloat(stop.carbon) || 0);
     }, 0);
   }, 0);
+
+  const transitCO2 = (trip?.days || []).reduce((sum, day) => {
+    return sum + (parseFloat(day.transitCarbon) || 0);
+  }, 0);
+
+  return stopsCO2 + transitCO2;
 }
 
 function getStopCarbonAverage(stops) {
@@ -88,6 +109,27 @@ async function fetchWeatherWarningsForTrip(trip) {
   }
 }
 
+async function calculateDayTransitEmissions(stops, transportMode) {
+  const validStops = stops.filter(hasStopLocation);
+  if (validStops.length < 2) return { distanceKm: 0, carbonFootprintKg: 0 };
+
+  try {
+    const res = await fetch('/api/trips/calculate-carbon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stops: validStops, transportMode })
+    });
+    const data = await res.json();
+    return data.success ? {
+      distanceKm: Number(data.distanceKm) || 0,
+      carbonFootprintKg: Number(data.carbonFootprintKg) || 0
+    } : { distanceKm: 0, carbonFootprintKg: 0 };
+  } catch (err) {
+    console.error("Failed to calculate carbon between stops:", err);
+    return { distanceKm: 0, carbonFootprintKg: 0 };
+  }
+}
+
 async function refreshWeatherWarnings() {
   const pairs = await Promise.all((itineraries || []).map(async (trip) => [
     trip._id,
@@ -101,6 +143,12 @@ async function saveState() {
 
   const trip = itineraries.find(t => t._id == currentTripId);
   if (!trip) return;
+
+  for (const day of trip.days) {
+    const result = await calculateDayTransitEmissions(day.stops, day.transportMode || 'car_petrol');
+    day.transitDistance = result.distanceKm;
+    day.transitCarbon = result.carbonFootprintKg;
+  }
 
   return saveTripState(currentTripId, trip);
 }
@@ -132,13 +180,16 @@ async function syncCO2ToProfile() {
 
   // Sum carbon from planner activities only (exclude calculator imports)
   const totalFootprint = itineraries.reduce((tripSum, trip) => {
-    const tripCO2 = (trip.days || []).reduce((daySum, day) => {
+    const stopsCO2 = (trip.days || []).reduce((daySum, day) => {
       return daySum + (day.stops || []).reduce((s, stop) => {
         if (stop.source === 'calculator') return s;
         return s + (parseFloat(stop.carbon) || 0);
       }, 0);
     }, 0);
-    return tripSum + tripCO2;
+    const transitCO2 = (trip.days || []).reduce((daySum, day) => {
+      return daySum + (parseFloat(day.transitCarbon) || 0);
+    }, 0);
+    return tripSum + stopsCO2 + transitCO2;
   }, 0);
 
   try {
@@ -166,7 +217,9 @@ function renderItineraries() {
     return;
   }
 
-  list.innerHTML = itineraries.map((itin, idx) => `
+  list.innerHTML = itineraries.map((itin, idx) => {
+    const canEdit = isTripOwner(itin);
+    return `
     <div class="stat-card mb-3">
       <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
         <div>
@@ -187,11 +240,11 @@ function renderItineraries() {
             else if (s && s <= today && (!e || e >= today)) { label = 'Active';    color = '#e67e22'; }
             return `<span style="background:${color};color:#fff;border-radius:8px;padding:3px 10px;font-size:.75rem;font-weight:600;">${label}</span>`;
           })()}
-          <button onclick="removeItin('${itin._id}')"
+          ${canEdit ? `<button onclick="removeItin('${itin._id}')"
                   style="background:#fdecea; border:none; border-radius:8px; padding:4px 10px;
                          color:#c0392b; cursor:pointer; font-size:.8rem;">
             <i class="bi bi-trash3"></i>
-          </button>
+          </button>` : ''}
         </div>
       </div>
 
@@ -216,17 +269,18 @@ function renderItineraries() {
       `}).join('')}
 
       <div class="d-flex gap-2 mt-2">
-        <button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
+        ${canEdit ? `<button class="btn-eco-outline" style="font-size:.82rem; padding:7px 16px;"
                 onclick="switchView('board', '${itin._id}')">
           <i class="bi bi-pencil"></i> Edit
-        </button>
+        </button>` : ''}
         <button class="btn-eco" style="font-size:.82rem; padding:7px 16px; justify-content:center;"
                 onclick="exportTripAsPDF('${itin._id}')">
           <i class="bi bi-download"></i> Export
         </button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function createItinerary() {
@@ -298,6 +352,42 @@ async function loadState() {
 function removeItin(id) {
   const removedIndex = itineraries.findIndex(t => t._id === id);
   if (removedIndex === -1) return;
+  if (!isTripOwner(itineraries[removedIndex])) return;
+
+  const [removedTrip] = itineraries.splice(removedIndex, 1);
+  renderItineraries();
+
+  showToast('Trip deleted', 'info', {
+    duration: 6000,
+    undoLabel: 'Undo',
+    onUndo: () => {
+      itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
+      renderItineraries();
+      showToast('Trip restored', 'info');
+    },
+    onExpire: async () => {
+      try {
+        const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Trip delete request failed');
+        syncCO2ToProfile();
+      } catch (err) {
+        console.error(err);
+        itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
+        renderItineraries();
+        showToast('Could not delete trip. Restored it.', 'error');
+      }
+    }
+  });
+}
+
+/*
+ * Switches between the kanban-view and trip-view
+ */
+function switchView(view, tripId = null) {
+    const listView = document.getElementById('listView');
+    const boardView = document.getElementById('boardView');
+
+    if (view === 'list') {
 
   const [removedTrip] = itineraries.splice(removedIndex, 1);
   renderItineraries();
@@ -339,9 +429,9 @@ function switchView(view, tripId = null) {
         boardView.style.display = 'none';
 
         // Clear route line and stop animation when leaving board view
-        if (mapRouteLine) {
-            mapRouteLine.setMap(null);
-            mapRouteLine = null;
+        if (mapRouteLines && mapRouteLines.length) {
+            mapRouteLines.forEach(line => line.setMap(null));
+            mapRouteLines = [];
         }
         if (mapRouteAnimationInterval) {
             clearInterval(mapRouteAnimationInterval);
@@ -364,7 +454,7 @@ function switchView(view, tripId = null) {
         if (trip) {
           processPendingIdeas(trip); // Move any pending ideas into the idea bank before rendering
           document.getElementById('activeTripTitle').innerText = trip.name;
-          generateTimelineColumns(trip.start, trip.end);
+          generateTimelineColumns(trip);
           renderBoardItems(trip); // Put real data in column based on current trip
         }
     }
@@ -410,34 +500,107 @@ function generateDays(start, end) {
   return days;
 }
 
-/**
- * Calculates the days between two dates and generates the columns
- */
-function generateTimelineColumns(startStr, endStr) {
+function generateTimelineColumns(trip) {
     const container = document.getElementById('timelineContainer');
     container.innerHTML = ''; // Clear existing days
 
-    const start = new Date(startStr);
-    const end = new Date(endStr);
+    const start = new Date(trip.start);
+    const end = new Date(trip.end);
     
-    //if end is before start, just show 1 day just to be safe lah
     let tempDate = new Date(start);
+    const canEdit = isTripOwner(trip);
     
     while (tempDate <= end) {
-        const dayId = tempDate.toISOString().split('T')[0];
+      const dayId = tempDate.toISOString().split('T')[0];
+      const dayData = (trip.days || []).find(d => d.date === dayId) || {
+        transportMode: 'car_petrol',
+        transitDistance: 0,
+        transitCarbon: 0
+      };
+
+      const mode = dayData.transportMode || 'car_petrol';
+      const distance = dayData.transitDistance || 0;
+      const carbon = dayData.transitCarbon || 0;
+
+      const transportLabels = {
+        car_petrol: '🚗 Petrol Car',
+        car_ev: '⚡ Electric Vehicle',
+        car_hybrid: '🔌 Hybrid Car',
+        bus: '🚌 Bus',
+        train_electric: '🚆 Train',
+        bicycle: '🚲 Bicycle',
+        walking: '🚶 Walking'
+      };
+
+      const selectDropdown = canEdit ? `
+        <select onchange="updateDayTransportMode('${dayId}', this.value)" class="form-select form-select-sm border-0 bg-transparent text-muted fw-semibold p-0" style="width: auto; box-shadow: none; font-size: 0.75rem; cursor: pointer;">
+          <option value="car_petrol" ${mode === 'car_petrol' ? 'selected' : ''}>🚗 Petrol Car</option>
+          <option value="car_ev" ${mode === 'car_ev' ? 'selected' : ''}>⚡ Electric Vehicle</option>
+          <option value="car_hybrid" ${mode === 'car_hybrid' ? 'selected' : ''}>🔌 Hybrid Car</option>
+          <option value="bus" ${mode === 'bus' ? 'selected' : ''}>🚌 Bus</option>
+          <option value="train_electric" ${mode === 'train_electric' ? 'selected' : ''}>🚆 Train</option>
+          <option value="bicycle" ${mode === 'bicycle' ? 'selected' : ''}>🚲 Bicycle</option>
+          <option value="walking" ${mode === 'walking' ? 'selected' : ''}>🚶 Walking</option>
+        </select>
+      ` : `
+        <span class="text-muted fw-semibold" style="font-size: 0.75rem;">
+          ${transportLabels[mode] || '🚗 Petrol Car'}
+        </span>
+      `;
 
       container.innerHTML += `
-        <div class="kanban-column bg-light rounded-3 p-3" style="min-width: 320px;">
-          <h6 class="text-muted mb-3"><i class="bi bi-calendar-day"></i> ${dayId}</h6>
-          <div id="col-${dayId}" class="d-flex flex-column gap-2 min-vh-25" style="min-height: 150px;"
+        <div class="kanban-column bg-light rounded-3 p-3 d-flex flex-column" style="min-width: 320px; max-height: 80vh;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="text-muted mb-0"><i class="bi bi-calendar-day"></i> ${dayId}</h6>
+            <div class="d-flex align-items-center gap-1">
+              ${selectDropdown}
+            </div>
+          </div>
+          <div id="col-${dayId}" class="d-flex flex-column gap-2 flex-grow-1 overflow-y-auto min-vh-25" style="min-height: 150px;"
                ondragover="allowDrop(event)" 
                ondrop="handleDrop(event, '${dayId}')">
+          </div>
+          <div id="banner-${dayId}" class="mt-2 p-2 rounded bg-white border small text-muted d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-compass"></i> Transit: <strong>${distance.toFixed(1)} km</strong></span>
+            <span class="text-success"><i class="bi bi-leaf"></i> <strong>${carbon.toFixed(1)} kg CO₂</strong></span>
           </div>
         </div>
       `;
 
       tempDate.setDate(tempDate.getDate() + 1);//move to next day
     }
+}
+
+async function updateDayTransportMode(dayId, newMode) {
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!trip) return;
+
+  let day = trip.days.find(d => d.date === dayId);
+  if (!day) {
+    day = { date: dayId, stops: [], transportMode: newMode, transitDistance: 0, transitCarbon: 0 };
+    trip.days.push(day);
+  } else {
+    day.transportMode = newMode;
+  }
+
+  // Recalculate transit footprint for this day
+  const result = await calculateDayTransitEmissions(day.stops, newMode);
+  day.transitDistance = result.distanceKm;
+  day.transitCarbon = result.carbonFootprintKg;
+
+  // Update banner text instantly
+  const banner = document.getElementById(`banner-${dayId}`);
+  if (banner) {
+    banner.innerHTML = `
+      <span><i class="bi bi-compass"></i> Transit: <strong>${day.transitDistance.toFixed(1)} km</strong></span>
+      <span class="text-success"><i class="bi bi-leaf"></i> <strong>${day.transitCarbon.toFixed(1)} kg CO₂</strong></span>
+    `;
+  }
+
+  // Save changes and update total stats / maps
+  updateTripCarbonSummary(trip);
+  await saveTripState(currentTripId, trip);
+  syncMapWithItinerary(trip);
 }
 
 function renderBoardItems(trip) {
@@ -474,22 +637,24 @@ function createCardHTML(stop, idx, sourceLocation) {
     let badgeClass = 'bg-success'; // Low
     if (carbonRaw > 10) badgeClass = 'bg-warning text-dark'; // Medium
     if (carbonRaw > 20) badgeClass = 'bg-danger'; // High
+    const trip = itineraries.find(t => t._id == currentTripId);
+    const canEdit = isTripOwner(trip);
 
     return `
         <div class="itinerary-stop p-2 mb-2 bg-white rounded shadow-sm position-relative"
-             draggable="true" style="cursor: grab;"
-             ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')">
+             draggable="${canEdit ? 'true' : 'false'}" style="cursor: ${canEdit ? 'grab' : 'default'};"
+             ${canEdit ? `ondragstart="handleDragStart(event, ${idx}, '${sourceLocation}')"` : ''}>
 
-            <div class="position-absolute top-0 end-0 m-1 d-flex gap-2">
+            ${canEdit ? `<div class="position-absolute top-0 end-0 m-1 d-flex gap-2">
                 <button onclick="editActivity(${idx}, '${sourceLocation}')" 
                         class="btn btn-sm text-secondary p-0 border-0" style="font-size: 0.8rem; background: transparent;">
                     <i class="bi bi-pencil"></i>
                 </button>
                 <button onclick="deleteActivity(${idx}, '${sourceLocation}')" 
                         class="btn-close" style="font-size: 0.5rem;"></button>
-            </div>
+            </div>` : ''}
 
-            <div class="d-flex gap-2 pe-4 w-100"> 
+            <div class="d-flex gap-2 ${canEdit ? 'pe-4' : ''} w-100">
                 
                 <div style="font-size: 1.2rem; min-width: 25px;">${esc(stop.icon)}</div>
                 
@@ -514,12 +679,19 @@ let draggedItemIndex = null;
 let sourceDayDate = null;
 
 function handleDragStart(event, index, date) {
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!isTripOwner(trip)) {
+    event.preventDefault();
+    return;
+  }
   draggedItemIndex = index;
   sourceDayDate = date;
   event.dataTransfer.setData('text/plain', index);
 }
 
 function allowDrop(event) {
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!isTripOwner(trip)) return;
   event.preventDefault();
 }
 
@@ -528,6 +700,7 @@ function handleDrop(event, targetLocation) {
 
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
+    if (!isTripOwner(trip)) return;
 
     // Gets the correct array whether we drop in the Idea Bank or a Timeline Day
     function getTargetArray(locationId) {
@@ -575,6 +748,7 @@ function openAddActivityModal() {
     isEditing = false; // Make sure we aren't editing when adding new!
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
+    if (!isTripOwner(trip)) return;
 
     // populate location dropdown with timeline days
     const select = document.getElementById('actTargetDay');
@@ -602,6 +776,7 @@ function selectEmoji(emoji) {
 function editActivity(index, sourceLocation) {
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
+    if (!isTripOwner(trip)) return;
 
     // 1. Find the specific activity data
     let stop;
@@ -640,6 +815,7 @@ function editActivity(index, sourceLocation) {
 function saveNewActivity() {
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
+    if (!isTripOwner(trip)) return;
 
     // Grab data from form
     const name = document.getElementById('actName').value || 'New Activity';
@@ -692,6 +868,7 @@ function saveNewActivity() {
 function deleteActivity(index, sourceLocation) {
   const trip = itineraries.find(t => t._id == currentTripId);
   if (!trip) return;
+  if (!isTripOwner(trip)) return;
 
   let targetArray = null;
 
@@ -895,7 +1072,7 @@ NEW MAP LOGIC!!!
 */
 let map;
 let mapMarkers = [];
-let mapRouteLine;
+let mapRouteLines = [];
 let mapRouteAnimationInterval;
 
 window.initMap = function() {
@@ -923,11 +1100,12 @@ function syncMapWithItinerary(trip) {
   mapMarkers.forEach(marker => marker.setMap(null));
   mapMarkers = [];
 
-  // Clear old route line and stop animation
-  if (mapRouteLine) {
-    mapRouteLine.setMap(null);
-    mapRouteLine = null;
+  // Clear old route lines and stop animation
+  if (mapRouteLines && mapRouteLines.length) {
+    mapRouteLines.forEach(line => line.setMap(null));
   }
+  mapRouteLines = [];
+
   if (mapRouteAnimationInterval) {
     clearInterval(mapRouteAnimationInterval);
     mapRouteAnimationInterval = null;
@@ -938,10 +1116,26 @@ function syncMapWithItinerary(trip) {
   let hasLocations = false;
   let stopCounter = 1; //number pins
   const pathCoordinates = [];
-  const routeStops = [];
+
+  const MODE_COLORS = {
+    walking: '#2d6a4f',
+    bicycle: '#2d6a4f',
+    train_electric: '#2d6a4f',
+    car_hybrid: '#e67e22',
+    car_ev: '#e67e22',
+    bus: '#e67e22',
+    car_petrol: '#c0392b',
+    car_diesel: '#c0392b',
+    flight_short: '#c0392b',
+    flight_long: '#c0392b',
+    ferry: '#c0392b',
+    motorcycle: '#c0392b'
+  };
 
   // Loop through days and draw pins for scheduled activities
   (trip.days || []).forEach(day => {
+    const dayCoordinates = [];
+
     (day.stops || []).forEach(stop => {
       // Only draw a pin if the stop has latitude and longitude
       if (hasStopLocation(stop)) {
@@ -950,8 +1144,8 @@ function syncMapWithItinerary(trip) {
             lng: parseFloat(stop.location.lng) 
         };
         
+        dayCoordinates.push(position);
         pathCoordinates.push(position);
-        routeStops.push(stop);
 
         const pin = new google.maps.marker.PinElement({
             glyph: stopCounter.toString(),
@@ -971,53 +1165,53 @@ function syncMapWithItinerary(trip) {
         stopCounter++;
       }
     });
+
+    // Draw route for this day if there are at least two coordinates
+    if (dayCoordinates.length >= 2) {
+      const mode = day.transportMode || 'car_petrol';
+      const routeColor = MODE_COLORS[mode] || '#c0392b';
+
+      const lineSymbol = {
+        path: "M 0,-1 0,1",
+        strokeOpacity: 1,
+        scale: 3,
+        strokeColor: routeColor,
+        strokeWeight: 2
+      };
+
+      const line = new google.maps.Polyline({
+        path: dayCoordinates,
+        strokeOpacity: 0,
+        icons: [
+          {
+            icon: lineSymbol,
+            offset: "0px",
+            repeat: "15px",
+          },
+        ],
+        map: map,
+      });
+
+      mapRouteLines.push(line);
+    }
   });
 
-  // Draw dotted route line connecting pins
-  if (pathCoordinates.length >= 2) {
-    const style = String(trip.style || '');
-    const averageCarbon = getStopCarbonAverage(routeStops);
-    let routeColor = "#2d6a4f";
-    if (style.includes("Baseline") || style.includes("Luxury") || averageCarbon > 20) {
-      routeColor = "#c0392b";
-    } else if (style.includes("Mid-range") || averageCarbon > 10) {
-      routeColor = "#e67e22";
-    }
-
-    const lineSymbol = {
-      path: "M 0,-1 0,1",
-      strokeOpacity: 1,
-      scale: 3,
-      strokeColor: routeColor,
-      strokeWeight: 2
-    };
-
-    mapRouteLine = new google.maps.Polyline({
-      path: pathCoordinates,
-      strokeOpacity: 0,
-      icons: [
-        {
-          icon: lineSymbol,
-          offset: "0px",
-          repeat: "15px",
-        },
-      ],
-      map: map,
-    });
-
-    let count = 0;
+  // Animate route paths
+  let count = 0;
+  if (mapRouteLines.length > 0) {
     mapRouteAnimationInterval = setInterval(() => {
       count = (count + 1) % 15;
-      if (mapRouteLine && window.google) {
-        const icons = mapRouteLine.get("icons");
-        if (icons && icons[0]) {
-          icons[0].offset = count + "px";
-          mapRouteLine.set("icons", icons);
+      mapRouteLines.forEach(line => {
+        if (line && window.google) {
+          const icons = line.get("icons");
+          if (icons && icons[0]) {
+            icons[0].offset = count + "px";
+            line.set("icons", icons);
+          }
         }
-      }
+      });
     }, 60);
   }
-
   //adjust camera
   if (hasLocations) {
     map.fitBounds(bounds);

@@ -32,12 +32,12 @@ async function doLogin() {
             localStorage.setItem('ecoUserEmail', result.email);
             localStorage.setItem('ecoUserName', result.name);
             localStorage.setItem('ecoAuthToken', result.token);
-            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.removeItem('ecoUserInitials');
 
             // Show success and redirect to explore.html
             if (typeof showToast === 'function') showToast(`Welcome back, ${result.name}! 🌿`);
             setTimeout(() => {
-                window.location.href = 'explore.html';
+                window.location.href = getLoginRedirectTarget();
             }, 800);
 
         } else {
@@ -52,6 +52,20 @@ async function doLogin() {
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalBtnHtml;
+    }
+}
+
+function getLoginRedirectTarget() {
+    const requested = new URLSearchParams(window.location.search).get('redirect');
+    if (!requested) return 'explore.html';
+
+    try {
+        const target = new URL(requested, window.location.origin);
+        if (target.origin !== window.location.origin) return 'explore.html';
+        if (target.pathname.endsWith('/login.html') || target.pathname.endsWith('/register.html')) return 'explore.html';
+        return `${target.pathname}${target.search}${target.hash}`;
+    } catch (_error) {
+        return 'explore.html';
     }
 }
 

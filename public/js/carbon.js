@@ -7,11 +7,14 @@
 
 // Auth guard - redirect to login if no session
 (function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
   const email = localStorage.getItem('ecoUserEmail');
   const token = localStorage.getItem('ecoAuthToken');
-  if (!email || !token) {
-    window.location.href = 'login.html';
-  }
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 })();
 
 /* ── DATA & STATE ── */

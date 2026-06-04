@@ -1,8 +1,20 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const User = require('../models/User');// ini using for standardise the User json format
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail, signToken } = require('../middleware/auth');
+
+const profileUpdateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many profile update attempts. Please try again later.'
+  }
+});
 
 function validateAvatarBase64(value) {
   if (value === undefined || value === null) return undefined;
@@ -95,7 +107,7 @@ router.put('/:email/favorites', requireAuth, requireSelfEmail, async (req, res) 
     }
 });
 
-router.put('/:email/password', requireAuth, requireSelfEmail, async (req, res) => {
+router.put('/:email/password', profileUpdateLimiter, requireAuth, requireSelfEmail, async (req, res) => {
     try {
         const email = String(req.params.email || '').trim().toLowerCase();
         const currentPassword = String(req.body.currentPassword || '');
@@ -122,14 +134,18 @@ router.put('/:email/password', requireAuth, requireSelfEmail, async (req, res) =
         user.password = newPassword;
         await user.save();
 
-        res.json({ success: true, message: 'Password updated successfully.' });
+        res.json({
+            success: true,
+            message: 'Password updated successfully.',
+            token: signToken(user)
+        });
     } catch (error) {
         console.error('Password Change Error:', error);
         res.status(500).json({ success: false, message: 'Server error while changing password.' });
     }
 });
 
-router.put('/:email', requireAuth, requireSelfEmail, async (req, res) => {
+router.put('/:email', profileUpdateLimiter, requireAuth, requireSelfEmail, async (req, res) => {
     try {
         const userEmail = String(req.params.email || '').trim().toLowerCase();
 

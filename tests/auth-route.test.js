@@ -149,6 +149,25 @@ test('POST /api/auth/register enforces minimum password length', async () => {
   });
 });
 
+test('POST /api/auth/register enforces maximum password length', async () => {
+  await withStubbedUserFindOne([], async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New', email: 'new@example.com', password: 'a'.repeat(73) })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 400);
+      assert.equal(payload.success, false);
+      assert.equal(payload.message, 'Password must be 72 characters or fewer.');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('POST /api/auth/register fails if email already exists', async () => {
   const existingUser = { email: 'existing@example.com', name: 'Existing', password: 'password123' };
   await withStubbedUserFindOne([existingUser], async () => {
@@ -230,6 +249,25 @@ test('POST /api/auth/login succeeds for correct credentials', async () => {
   });
 });
 
+test('POST /api/auth/login rejects oversized passwords before comparison', async () => {
+  await withStubbedUserFindOne([], async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'valid@example.com', password: 'a'.repeat(73) })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 401);
+      assert.equal(payload.success, false);
+      assert.equal(payload.message, 'Invalid email or password.');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('POST /api/auth/password-reset/request stores hashed code and sends email', async () => {
   const existingUser = {
     email: 'reset@example.com',
@@ -301,6 +339,38 @@ test('POST /api/auth/password-reset/confirm resets password and clears reset tok
   });
 });
 
+test('POST /api/auth/password-reset/confirm enforces maximum password length', async () => {
+  const existingUser = {
+    email: 'reset@example.com',
+    name: 'Reset User',
+    password: 'old-password',
+    resetCodeHash: hashResetCodeForTest('654321'),
+    resetCodeExpiresAt: new Date(Date.now() + 60 * 1000)
+  };
+
+  await withStubbedUserFindOne([existingUser], async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/auth/password-reset/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'reset@example.com',
+          code: '654321',
+          password: 'a'.repeat(73)
+        })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 400);
+      assert.equal(payload.success, false);
+      assert.equal(payload.message, 'Password must be 72 characters or fewer.');
+      assert.equal(existingUser.password, 'old-password');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('POST /api/auth/password-reset/confirm rejects expired codes and clears them', async () => {
   const existingUser = {
     email: 'reset@example.com',
@@ -331,5 +401,28 @@ test('POST /api/auth/password-reset/confirm rejects expired codes and clears the
     } finally {
       await server.close();
     }
+  });
+});
+
+test('auth endpoints rate limit repeated attempts', async () => {
+  await withStubbedUserFindOne([], async () => {
+    await withReloadedAuthRouter({}, async (router) => {
+      const server = await createServer(router);
+      try {
+        let lastResponse;
+        for (let i = 0; i < 31; i++) {
+          lastResponse = await fetch(`${server.baseUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'limited@example.com', password: 'password123' })
+          });
+          await lastResponse.text();
+        }
+
+        assert.equal(lastResponse.status, 429);
+      } finally {
+        await server.close();
+      }
+    });
   });
 });

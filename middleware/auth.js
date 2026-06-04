@@ -36,6 +36,7 @@ function signToken(user) {
     sub: String(user._id || user.id || ''),
     email: String(user.email || '').trim().toLowerCase(),
     name: user.name || '',
+    role: user.role || 'user',
     iat: now,
     exp: now + TOKEN_TTL_SECONDS
   });
@@ -100,8 +101,28 @@ function requireSelfEmail(req, res, next) {
   return next();
 }
 
+function requireRole(allowedRoles) {
+  const normalizedRoles = (Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles])
+    .map((role) => String(role || '').trim().toLowerCase())
+    .filter(Boolean);
+
+  return function requireAllowedRole(req, res, next) {
+    const userRole = String(req.authUser?.role || '').trim().toLowerCase();
+
+    if (!userRole || !normalizedRoles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to perform this action.'
+      });
+    }
+
+    return next();
+  };
+}
+
 module.exports = {
   requireAuth,
+  requireRole,
   requireSelfEmail,
   signToken,
   verifyToken

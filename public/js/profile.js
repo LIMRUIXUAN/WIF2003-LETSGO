@@ -8,11 +8,14 @@
 
 // Auth guard - redirect to login if no session
 (function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
   const email = localStorage.getItem('ecoUserEmail');
   const token = localStorage.getItem('ecoAuthToken');
-  if (!email || !token) {
-    window.location.href = 'login.html';
-  }
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 })();
  
 /* ══════════════════════════════════════════
@@ -39,6 +42,13 @@ const ALL_INTERESTS = [
  
 let tempInterests = [];   // used by interest modal
 let currentUserData = {};
+
+function storeReissuedToken(token) {
+  if (!token) return false;
+  localStorage.setItem('ecoAuthToken', token);
+  localStorage.removeItem('ecoUserInitials');
+  return true;
+}
 
 async function refreshTripStats(email) {
     if (!email) return;
@@ -251,15 +261,13 @@ async function saveProfile() {
       const result = await response.json();
       if(result.success){
           currentUserData = result.data;
-          if (result.token) {
-              localStorage.setItem('ecoAuthToken', result.token);
-          }
+          const tokenReissued = storeReissuedToken(result.token);
           if (result.data.email) {
               localStorage.setItem('ecoUserEmail', result.data.email);
           }
           if (result.data.name) {
               localStorage.setItem('ecoUserName', result.data.name);
-              localStorage.setItem('ecoUserInitials', getInitials(result.data.name));
+              if (!tokenReissued) localStorage.setItem('ecoUserInitials', getInitials(result.data.name));
           }
           
           showToast('Profile updated successfully! ✅');
@@ -312,6 +320,8 @@ async function changePassword() {
       showToast(result.message || 'Could not update password.', 'error');
       return;
     }
+
+    storeReissuedToken(result.token);
 
     document.getElementById('currentPw').value = '';
     document.getElementById('newPw').value     = '';
@@ -608,7 +618,7 @@ async function autoSaveProfile() {
       const result = await response.json();
       if (result.success) {
         currentUserData = result.data;
-        if (result.token) localStorage.setItem('ecoAuthToken', result.token);
+        storeReissuedToken(result.token);
         if (result.data.email) localStorage.setItem('ecoUserEmail', result.data.email);
       }
       // Update the UI elements (initials, name display) instantly

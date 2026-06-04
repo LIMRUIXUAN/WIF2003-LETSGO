@@ -69,17 +69,6 @@ if (isDev && require.main === module) {
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 30,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many authentication attempts. Please try again later.'
-  }
-});
-
 const userLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
@@ -116,7 +105,7 @@ app.get('/api/config/maps', requireAuth, (_req, res) => {
   res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userLimiter, userRoutes);
 app.use('/api/trips', tripLimiter, tripRoutes);
 app.use('/api/destinations', destinationRoutes);

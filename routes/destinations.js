@@ -1,5 +1,6 @@
 const express = require('express');
 const Destination = require('../models/Destination');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const {
   buildDestinationMongoQuery,
   extractPriceValue,
@@ -110,6 +111,65 @@ router.get('/:id', async (req, res) => {
     return res.json({
       success: true,
       data: destination
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Internal server error.' });
+  }
+});
+
+router.post('/', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const destination = await Destination.create(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data: mapDestinationForClient(destination.toObject())
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: err.message || 'Could not create destination.'
+    });
+  }
+});
+
+router.put('/:id', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const destination = await Destination.findOneAndUpdate(
+      buildDestinationMongoQuery({ id: req.params.id }),
+      req.body,
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!destination) {
+      return res.status(404).json({ success: false, error: 'Destination not found' });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDestinationForClient(destination)
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: err.message || 'Could not update destination.'
+    });
+  }
+});
+
+router.delete('/:id', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const destination = await Destination.findOneAndDelete(
+      buildDestinationMongoQuery({ id: req.params.id })
+    ).lean();
+
+    if (!destination) {
+      return res.status(404).json({ success: false, error: 'Destination not found' });
+    }
+
+    return res.json({
+      success: true,
+      data: mapDestinationForClient(destination)
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Internal server error.' });

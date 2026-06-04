@@ -45,6 +45,10 @@ function hasValidCoordinates(location) {
     && lng <= 180;
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
 // ────────────────────────────────────────────────────────────────
 // TRIP CRUD (Create, Read, Update, Delete)
 // ────────────────────────────────────────────────────────────────
@@ -52,7 +56,7 @@ function hasValidCoordinates(location) {
 // POST - Create a new trip
 router.post('/', requireAuth, async (req, res) => {
   try {
-    const userEmail = String(req.authUser.email || '').trim().toLowerCase();
+    const userEmail = normalizeEmail(req.authUser.email);
     const trip = await Trip.create({
       ...req.body,
       userEmail
@@ -69,7 +73,7 @@ router.post('/', requireAuth, async (req, res) => {
 // GET - Get trips for a specific user
 router.get('/:email', requireAuth, requireSelfEmail, async (req, res) => {
   try {
-    const email = String(req.params.email || '').trim().toLowerCase();
+    const email = normalizeEmail(req.params.email);
     const trips = await Trip.find({ userEmail: email });
     res.json({ success: true, data: trips });
   } catch (err) {
@@ -84,13 +88,16 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (!existingTrip) {
       return res.status(404).json({ success: false, message: 'Trip not found' });
     }
-    if (existingTrip.userEmail !== req.authUser.email) {
+    const ownerEmail = normalizeEmail(existingTrip.userEmail);
+    const tokenEmail = normalizeEmail(req.authUser.email);
+
+    if (ownerEmail !== tokenEmail) {
       return res.status(403).json({ success: false, message: 'You can only update your own trips.' });
     }
 
     const updatedData = { ...req.body };
     delete updatedData._id;
-    updatedData.userEmail = req.authUser.email;
+    updatedData.userEmail = tokenEmail;
 
     // Find the trip by its ID and overwrite it with the new data
     const updatedTrip = await Trip.findByIdAndUpdate(
@@ -114,7 +121,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
     if (!trip) {
       return res.status(404).json({ success: false, message: 'Trip not found' });
     }
-    if (trip.userEmail !== req.authUser.email) {
+    const ownerEmail = normalizeEmail(trip.userEmail);
+    const tokenEmail = normalizeEmail(req.authUser.email);
+
+    if (ownerEmail !== tokenEmail) {
       return res.status(403).json({ success: false, message: 'You can only delete your own trips.' });
     }
 
@@ -172,5 +182,6 @@ router.post('/calculate-carbon', requireAuth, (req, res) => {
 module.exports = router;
 module.exports.helpers = {
   calculateHaversineDistance,
-  EMISSION_FACTORS
+  EMISSION_FACTORS,
+  normalizeEmail
 };

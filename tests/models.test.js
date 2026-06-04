@@ -119,6 +119,17 @@ test('User rejects invalid email, invalid budget, and non-numeric favourites', a
   assert.ok(messages.some((message) => message.includes('Favorite destination IDs must be integers.') || message.includes('Cast to [Number] failed')));
 });
 
+test('User rejects passwords longer than bcrypt input limit', async () => {
+  const user = new User({
+    name: 'Long Password',
+    email: 'longpassword@example.com',
+    password: 'a'.repeat(73)
+  });
+
+  const messages = await getValidationMessages(user);
+  assert.ok(messages.includes('Password must be 72 characters or fewer.'));
+});
+
 test('User normalizes budget aliases before validation', async () => {
   const user = new User({
     name: 'Mei',
@@ -142,6 +153,37 @@ test('User accepts numeric favourite IDs', () => {
   });
 
   assert.equal(user.validateSync(), undefined);
+});
+
+test('User defaults to user role and accepts admin role', () => {
+  const regularUser = new User({
+    name: 'Regular User',
+    email: 'regular@example.com',
+    password: 'password123'
+  });
+  const adminUser = new User({
+    name: 'Admin User',
+    email: 'admin@example.com',
+    password: 'password123',
+    role: 'admin'
+  });
+
+  assert.equal(regularUser.validateSync(), undefined);
+  assert.equal(regularUser.role, 'user');
+  assert.equal(adminUser.validateSync(), undefined);
+  assert.equal(adminUser.role, 'admin');
+});
+
+test('User rejects invalid roles', async () => {
+  const user = new User({
+    name: 'Bad Role',
+    email: 'badrole@example.com',
+    password: 'password123',
+    role: 'owner'
+  });
+
+  const messages = await getValidationMessages(user);
+  assert.ok(messages.some((message) => message.includes('`owner` is not a valid enum value')));
 });
 
 test('User JSON output excludes password and reset-code fields', () => {

@@ -17,8 +17,24 @@ function clearAuthSession() {
   localStorage.removeItem('ecoUserEmail');
   localStorage.removeItem('ecoUserName');
   localStorage.removeItem('ecoUserInitials');
-  localStorage.removeItem('isLoggedIn');
   sessionStorage.clear();
+}
+
+function redirectToLogin() {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  window.location.href = `login.html?redirect=${encodeURIComponent(currentPath)}`;
+}
+
+function requirePageAuth() {
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+
+  if (!email || !token) {
+    redirectToLogin();
+    return false;
+  }
+
+  return true;
 }
 
 function isInternalApiRequest(resource) {
@@ -36,6 +52,7 @@ function isInternalApiRequest(resource) {
 }
 
 const nativeFetch = window.fetch.bind(window);
+let sessionExpiredRedirectPending = false;
 window.fetch = function fetchWithAuth(resource, options = {}) {
   const token = getAuthToken();
   const headers = new Headers(options.headers || (resource instanceof Request ? resource.headers : undefined));
@@ -44,13 +61,34 @@ window.fetch = function fetchWithAuth(resource, options = {}) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return nativeFetch(resource, { ...options, headers }).then(response => {
+  return nativeFetch(resource, { ...options, headers }).then(async response => {
     if (response.status === 401 && isInternalApiRequest(resource)) {
       clearAuthSession();
-      if (!window.location.pathname.endsWith('/login.html') && !window.location.pathname.endsWith('/register.html')) {
-        window.location.href = 'login.html';
+      const isAuthPage = window.location.pathname.endsWith('/login.html') || window.location.pathname.endsWith('/register.html');
+
+      if (!isAuthPage && !sessionExpiredRedirectPending) {
+        sessionExpiredRedirectPending = true;
+        if (typeof showToast === 'function') {
+          showToast('Your session expired. Please sign in again.', 'warn', { duration: 1200 });
+        }
+        setTimeout(() => redirectToLogin(), 1200);
       }
     }
+
+    if (response.status === 403 && isInternalApiRequest(resource)) {
+      let message = 'You do not have permission to perform this action.';
+      try {
+        const payload = await response.clone().json();
+        message = payload.message || payload.error || message;
+      } catch (_error) {
+        // Keep the generic permission message if the response is not JSON.
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(message, 'error');
+      }
+    }
+
     return response;
   });
 };
