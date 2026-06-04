@@ -1,123 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EcoPlanner – Sustainable Travel, Reimagined</title>
+  <title>EcoPlanner – Sustainable Travel & Green Itinerary Planner</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     LANDING PAGE
-     ═══════════════════════════════════════════════════════════ -->
+  <!-- TOAST NOTIFICATION WRAPPER -->
+  <div id="toastWrap" class="toast-wrap"></div>
 
-<!-- Hero Section -->
-<div class="hero">
-  <div class="container">
-    <div class="row align-items-center gy-5">
+  <!-- TOP BAR (EcoTravel Portal style) -->
+  <div class="top-bar-portal">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <i class="bi bi-telephone-fill"></i> Eco Enquiry Hotline: <strong>(012) 3456 789</strong>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <a href="login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+        <a href="register.html"><i class="bi bi-person-plus-fill"></i> Register Now</a>
+      </div>
+    </div>
+  </div>
 
-      <!-- Left: Headline + CTA -->
-      <div class="col-lg-6 hero-content">
-        <div style="background-color: #fefaf4; display: inline-block; padding: 15px 25px; border-radius: 12px; margin-bottom: 40px;">
-          <img src="images/logo_letsgo.png" alt="Let's Go Logo" style="max-height: 120px;">
+  <!-- PORTAL NAVIGATION -->
+  <nav class="navbar navbar-expand-lg portal-nav sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+        <img src="images/logo_letsgo.png" alt="EcoPlanner Logo"
+          style="max-height: 48px; background: #fff; border-radius: 8px; padding: 2px 6px;">
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+        data-bs-target="#portalNavContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="portalNavContent">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+        </ul>
+        <div class="d-flex gap-2">
+          <a href="register.html" class="btn-eco-sm">Plan Your Trip</a>
         </div>
-        <h1>Travel <em>Green</em>,<br>Travel Far.</h1>
-        <p>Plan eco-friendly adventures with smart carbon tracking, green itineraries, and real-time weather — all in one beautiful platform.</p>
-        <div class="d-flex gap-3 flex-wrap">
-          <a href="register.html" class="btn-eco"><i class="bi bi-rocket-takeoff"></i> Start Planning Free</a>
-          <a href="login.html"    class="btn-ghost"><i class="bi bi-box-arrow-in-right"></i> Sign In</a>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat"><div class="num">2.4K</div><div class="lbl">Eco Destinations</div></div>
-          <div class="hero-stat"><div class="num">98%</div><div class="lbl">Carbon Accurate</div></div>
-          <div class="hero-stat"><div class="num">12K</div><div class="lbl">Green Travelers</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SLIDER (Revolution Slider Inspired Carousel) -->
+  <div id="portalHeroCarousel" class="carousel slide portal-carousel" data-bs-ride="carousel" data-bs-interval="6000">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#portalHeroCarousel" data-bs-slide-to="0" class="active"></button>
+      <button type="button" data-bs-target="#portalHeroCarousel" data-bs-slide-to="1"></button>
+      <button type="button" data-bs-target="#portalHeroCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner">
+
+      <!-- Slide 1: Langkawi Mangroves -->
+      <div class="carousel-item active">
+        <img src="images/langkawi_mangroves_slide.png" alt="Langkawi Mangroves">
+        <div class="carousel-caption-glass">
+          <span class="eco-badge mb-2"><i class="bi bi-tree"></i> Ecotourism Highlight</span>
+          <h2>Langkawi Mangrove Discovery</h2>
+          <p>Explore serene coastal wetland habitats, ancient limestone rock formations, and rich local biodiversity
+            with low-impact certified guides.</p>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="co2-badge"><i class="bi bi-leaf"></i> Zero Emission Travel</span>
+            <a href="register.html" class="btn-eco"><i class="bi bi-map"></i> Plan Itinerary</a>
+          </div>
         </div>
       </div>
 
-      <!-- Right: Floating preview card -->
-      <div class="col-lg-5 offset-lg-1">
-        <div class="hero-card-float">
-          <div class="d-flex align-items-center gap-2 mb-3">
-            <span style="font-size:1.5rem;">🌿</span>
-            <div>
-              <h5 class="mb-0">Bamboo Eco Resort</h5>
-              <small style="opacity:.7;">Cameron Highlands, MY</small>
-            </div>
+      <!-- Slide 2: Borneo Rainforest -->
+      <div class="carousel-item">
+        <img src="images/borneo_rainforest_slide.png" alt="Borneo Rainforest Canopy">
+        <div class="carousel-caption-glass">
+          <span class="eco-badge mb-2"><i class="bi bi-award"></i> Carbon-Saver Partner</span>
+          <h2>Borneo Rainforest Canopy</h2>
+          <p>Experience pristine rainforest ecosystems, native orangutan rehabilitation centers, and stay at certified
+            solar-powered eco-lodges.</p>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="co2-badge"><i class="bi bi-bar-chart-line"></i> Saves 45kg CO₂ / Day</span>
+            <a href="register.html" class="btn-eco"><i class="bi bi-map"></i> Plan Itinerary</a>
           </div>
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <span class="eco-badge"><i class="bi bi-award"></i> Eco Score: 9.4/10</span>
-            <span class="co2-badge">↓ 34kg CO₂</span>
-          </div>
-          <div class="progress-eco mb-1">
-            <div class="progress-eco-bar" style="width:94%"></div>
-          </div>
-          <small style="opacity:.65;">Environmental impact vs conventional hotels</small>
-          <hr style="border-color:rgba(255,255,255,.2); margin:1rem 0;">
-          <div style="display:flex; justify-content:space-between; opacity:.85; font-size:.83rem;">
-            <span>⛅ 22°C · Partly Cloudy</span>
-            <span>⭐ 4.9 · 312 reviews</span>
+        </div>
+      </div>
+
+      <!-- Slide 3: Cameron Highlands -->
+      <div class="carousel-item">
+        <img src="images/cameron_highlands_slide.png" alt="Cameron Highlands">
+        <div class="carousel-caption-glass">
+          <span class="eco-badge mb-2"><i class="bi bi-compass"></i> Sustainable Stay</span>
+          <h2>Cameron Tea Highlands</h2>
+          <p>Hike cool misty terraces, discover organic agricultural tea farms, and learn about highland environmental
+            slope protection initiatives.</p>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="co2-badge"><i class="bi bi-brightness-high"></i> Eco Score: 9.6/10</span>
+            <a href="register.html" class="btn-eco"><i class="bi bi-map"></i> Plan Itinerary</a>
           </div>
         </div>
       </div>
 
     </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#portalHeroCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#portalHeroCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
   </div>
-</div>
 
-<!-- Feature Cards Strip -->
-<div class="container py-5">
-  <div class="text-center mb-5">
-    <span class="tag-pill">Everything you need</span>
-    <h2 class="section-title mt-2" style="font-size:2rem;">Smarter. Greener. Together.</h2>
+  <!-- KEY PORTAL FEATURES STRIP -->
+  <div class="container py-5 my-3">
+    <div class="text-center mb-5">
+      <span class="tag-pill">Comprehensive Green Tech</span>
+      <h2 class="section-title mt-2" style="font-size:2.2rem;">Plan Responsibly. Travel Sustainably.</h2>
+      <p class="text-muted mx-auto" style="max-width: 600px;">Our platform empowers green travelers with smart digital
+        planning utilities designed to estimate, minimize, and offset your carbon footprint.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-3 col-6">
+        <div class="stat-card text-center h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="icon mx-auto" style="background:#d8f3dc; color:#2d6a4f; margin-bottom:1rem;"><i
+                class="bi bi-search"></i></div>
+            <h5 class="fw-bold mb-2" style="font-size: 1.05rem;">Eco Explorer</h5>
+            <p style="font-size:.8rem; color:#6b7c6e;">Find verified green hotels, organic kitchens, and electric
+              transport options across major hubs.</p>
+          </div>
+          <div style="font-size:.78rem; color:#2d6a4f; font-weight:600; margin-top: 10px;">Search Destinations <i
+              class="bi bi-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card text-center h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="icon mx-auto" style="background:#e3f0fb; color:#0c447c; margin-bottom:1rem;"><i
+                class="bi bi-calendar3"></i></div>
+            <h5 class="fw-bold mb-2" style="font-size: 1.05rem;">Drag-Drop Planner</h5>
+            <p style="font-size:.8rem; color:#6b7c6e;">Schedule daily activities with drag-and-drop kanban boards,
+              complete with distance indicators.</p>
+          </div>
+          <div style="font-size:.78rem; color:#0c447c; font-weight:600; margin-top: 10px;">Build Itinerary <i
+              class="bi bi-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card text-center h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="icon mx-auto" style="background:#fff3cd; color:#634900; margin-bottom:1rem;"><i
+                class="bi bi-cloud-sun"></i></div>
+            <h5 class="fw-bold mb-2" style="font-size: 1.05rem;">Live Weather Alerts</h5>
+            <p style="font-size:.8rem; color:#6b7c6e;">Stay ahead of tropical rains with live forecasts and weather
+              hazard alerts mapped onto planning days.</p>
+          </div>
+          <div style="font-size:.78rem; color:#7d4e00; font-weight:600; margin-top: 10px;">Check Forecasts <i
+              class="bi bi-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card text-center h-100 d-flex flex-column justify-content-between">
+          <div>
+            <div class="icon mx-auto" style="background:#fdecea; color:#c0392b; margin-bottom:1rem;"><i
+                class="bi bi-bar-chart-line"></i></div>
+            <h5 class="fw-bold mb-2" style="font-size: 1.05rem;">Carbon Tracker</h5>
+            <p style="font-size:.8rem; color:#6b7c6e;">Measure transit carbon footprint dynamically and buy verified
+              local tree seedlings to offset your journey.</p>
+          </div>
+          <div style="font-size:.78rem; color:#c0392b; font-weight:600; margin-top: 10px;">Offset Emissions <i
+              class="bi bi-arrow-right"></i></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="row g-4">
-    <div class="col-md-3 col-6">
-        <div class="stat-card text-center">
-          <div class="icon mx-auto" style="background:#d8f3dc; color:#2d6a4f; margin-bottom:.75rem;"><i class="bi bi-search"></i></div>
-          <div style="font-weight:600; margin-bottom:5px;">Eco Search</div>
-          <div style="font-size:.8rem; color:#9ab3a0;">Find green stays, food &amp; transport</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="stat-card text-center">
-          <div class="icon mx-auto" style="background:#e3f0fb; color:#0c447c; margin-bottom:.75rem;"><i class="bi bi-calendar3"></i></div>
-          <div style="font-weight:600; margin-bottom:5px;">Green Itinerary</div>
-          <div style="font-size:.8rem; color:#9ab3a0;">AI-powered eco travel plans</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="stat-card text-center">
-          <div class="icon mx-auto" style="background:#fff3cd; color:#634900; margin-bottom:.75rem;"><i class="bi bi-cloud-sun"></i></div>
-          <div style="font-weight:600; margin-bottom:5px;">Weather Forecast</div>
-          <div style="font-size:.8rem; color:#9ab3a0;">Real-time conditions per city</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="stat-card text-center">
-          <div class="icon mx-auto" style="background:#fdecea; color:#c0392b; margin-bottom:.75rem;"><i class="bi bi-bar-chart-line"></i></div>
-          <div style="font-weight:600; margin-bottom:5px;">Carbon Calculator</div>
-          <div style="font-size:.8rem; color:#9ab3a0;">Track &amp; offset your footprint</div>
-        </div>
-    </div>
-  </div>
-</div>
 
-<footer class="text-center py-4 mt-5" style="border-top: 1px solid rgba(0,0,0,0.05);">
-  <div class="container">
-    <p class="mb-0" style="color: #9ab3a0; font-size: 0.9rem;">
-      &copy; 2026 EcoPlanner.<br>
-      Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE QINGLAN.
-    </p>
-  </div>
-</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/app.js"></script>
+  <!-- PORTAL MULTI-COLUMN DETAILED FOOTER -->
+  <footer id="footer" class="bg-light py-5 border-top" style="color: #4a5e4f;">
+    <div class="container">
+      <div class="row gy-4">
+
+        <!-- Column 1: Contact Us -->
+        <div class="col-lg-4 col-md-6">
+          <h5 class="fw-bold mb-3" style="color: var(--eco-green);">Contact Us</h5>
+          <p class="mb-2"><i class="bi bi-telephone-fill me-2"></i> Hotline: <a href="tel:+85231050767"
+              class="text-decoration-none text-dark">(012) 3456 789</a></p>
+          <p class="mb-2"><i class="bi bi-envelope-fill me-2"></i> Email: <a href="mailto:enquiry@ecoplanner.com"
+              class="text-decoration-none text-dark">enquiry@ecoplanner.com</a></p>
+          <p class="mb-2"><i class="bi bi-facebook me-2"></i> Facebook: <a href="https://www.facebook.com/EcoTravelLtd"
+              target="_blank" class="text-decoration-none text-dark">EcoPlannerLtd</a></p>
+          <p class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i> Address: Aberdeen Post Office Box 24203</p>
+        </div>
+
+        <!-- Column 2: Office Hours -->
+        <div class="col-lg-4 col-md-6">
+          <h5 class="fw-bold mb-3" style="color: var(--eco-green);">Office Hours</h5>
+          <p class="mb-2"><strong>Monday to Friday:</strong> 9:00 AM – 6:00 PM</p>
+          <p class="mb-2"><strong>Saturday:</strong> 9:00 AM – 1:00 PM</p>
+          <p class="mb-0"><strong>Sunday &amp; Public Holidays:</strong> Closed</p>
+        </div>
+
+        <!-- Column 3: Product tags -->
+        <div class="col-lg-4 col-md-12">
+          <h5 class="fw-bold mb-3" style="color: var(--eco-green);">Sustainable Tags</h5>
+          <div class="tag-cloud">
+            <a href="#">ecoguide</a>
+            <a href="#">ecojet</a>
+            <a href="#">geology</a>
+            <a href="#">R2G</a>
+            <a href="#">ecology</a>
+            <a href="#">ecotourism</a>
+            <a href="#">bird watching</a>
+            <a href="#">green stays</a>
+            <a href="#">zero carbon</a>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="my-4" style="border-color: rgba(0,0,0,0.08);">
+
+      <!-- Bottom bar -->
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div style="font-size: 0.85rem; color: #7a8e7f;">
+          &copy; 2026 EcoPlanner. All Rights Reserved.
+        </div>
+        <div class="d-flex gap-3" style="font-size: 0.85rem;">
+          <a href="#" class="text-decoration-none text-muted">Privacy Policy</a>
+          <a href="#" class="text-decoration-none text-muted">Terms &amp; Disclaimers</a>
+        </div>
+      </div>
+      <div class="text-center mt-3" style="font-size: 0.78rem; color: #9ab3a0;">
+        Designed and developed by LIM RUI XUAN, CHA ZI YU, JULIUS LIM JUN HERNG, CHIN KIN HIUNG, TAN JIN XIANG, YE
+        QINGLAN.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js"></script>
 </body>
+
 </html>

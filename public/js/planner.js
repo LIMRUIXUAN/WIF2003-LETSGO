@@ -164,10 +164,10 @@ async function saveTripState(tripId, trip) {
     const data = await res.json();
 
     if (!res.ok) {
-        console.error("Backend refused to save:", data.message);
-        showToast("Could not save trip. Please try again.", "error");
+      console.error("Backend refused to save:", data.message);
+      showToast("Could not save trip. Please try again.", "error");
     } else {
-        syncCO2ToProfile();
+      syncCO2ToProfile();
     }
   } catch (err) {
     console.error("Failed to save to MongoDB:", err);
@@ -231,15 +231,15 @@ function renderItineraries() {
         </div>
         <div class="d-flex gap-2">
           <span class="eco-badge"><i class="bi bi-leaf"></i> Eco Trip</span>
-          ${(()=>{
-            const today = new Date(); today.setHours(0,0,0,0);
-            const s = itin.start ? new Date(itin.start) : null;
-            const e = itin.end   ? new Date(itin.end)   : null;
-            let label = 'Planned'; let color = '#6c757d';
-            if (e && e < today)                         { label = 'Completed'; color = '#2d6a4f'; }
-            else if (s && s <= today && (!e || e >= today)) { label = 'Active';    color = '#e67e22'; }
-            return `<span style="background:${color};color:#fff;border-radius:8px;padding:3px 10px;font-size:.75rem;font-weight:600;">${label}</span>`;
-          })()}
+          ${(() => {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const s = itin.start ? new Date(itin.start) : null;
+        const e = itin.end ? new Date(itin.end) : null;
+        let label = 'Planned'; let color = '#6c757d';
+        if (e && e < today) { label = 'Completed'; color = '#2d6a4f'; }
+        else if (s && s <= today && (!e || e >= today)) { label = 'Active'; color = '#e67e22'; }
+        return `<span style="background:${color};color:#fff;border-radius:8px;padding:3px 10px;font-size:.75rem;font-weight:600;">${label}</span>`;
+      })()}
           ${canEdit ? `<button onclick="removeItin('${itin._id}')"
                   style="background:#fdecea; border:none; border-radius:8px; padding:4px 10px;
                          color:#c0392b; cursor:pointer; font-size:.8rem;">
@@ -284,11 +284,11 @@ function renderItineraries() {
 }
 
 async function createItinerary() {
-  const name  = document.getElementById('itinName').value || 'My Trip';
-  const city  = document.getElementById('itinCity').value || 'Destination';
+  const name = document.getElementById('itinName').value || 'My Trip';
+  const city = document.getElementById('itinCity').value || 'Destination';
   const today = new Date().toISOString().split('T')[0];
   const start = document.getElementById('itinStart').value || today;
-  const end   = document.getElementById('itinEnd').value || today;
+  const end = document.getElementById('itinEnd').value || today;
   const style = document.getElementById('itinStyle')?.value || '';
 
   // Grab the user's email from when they logged in!
@@ -332,7 +332,7 @@ async function createItinerary() {
 async function loadState() {
   //1. get the logged-in user's email from mongodb hehe
   const userEmail = localStorage.getItem('ecoUserEmail');
-  if(!userEmail) {
+  if (!userEmail) {
     console.warn("No user email found in localStorage. Itineraries won't load.");
     return;
   }
@@ -383,133 +383,98 @@ function removeItin(id) {
 /*
  * Switches between the kanban-view and trip-view
  */
-function switchView(view, tripId = null) {
+  function switchView(view, tripId = null) {
     const listView = document.getElementById('listView');
     const boardView = document.getElementById('boardView');
 
     if (view === 'list') {
+      listView.classList.remove('d-none');
+      boardView.classList.add('d-none');
+      listView.style.display = 'block';
+      boardView.style.display = 'none';
 
-  const [removedTrip] = itineraries.splice(removedIndex, 1);
-  renderItineraries();
+      // Clear route line and stop animation when leaving board view
+      if (mapRouteLines && mapRouteLines.length) {
+        mapRouteLines.forEach(line => line.setMap(null));
+        mapRouteLines = [];
+      }
+      if (mapRouteAnimationInterval) {
+        clearInterval(mapRouteAnimationInterval);
+        mapRouteAnimationInterval = null;
+      }
 
-  showToast('Trip deleted', 'info', {
-    duration: 6000,
-    undoLabel: 'Undo',
-    onUndo: () => {
-      itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
       renderItineraries();
-      showToast('Trip restored', 'info');
-    },
-    onExpire: async () => {
-      try {
-        const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Trip delete request failed');
-        syncCO2ToProfile();
-      } catch (err) {
-        console.error(err);
-        itineraries.splice(Math.min(removedIndex, itineraries.length), 0, removedTrip);
-        renderItineraries();
-        showToast('Could not delete trip. Restored it.', 'error');
+    } else {
+      listView.classList.add('d-none');
+      boardView.classList.remove('d-none');
+      listView.style.display = 'none';
+      boardView.style.display = 'block';
+
+      // Sync current trip ID to board view
+      currentTripId = tripId;
+      switchPlannerTab('ideas');
+
+      // Find the trip data
+      const trip = itineraries.find(t => t._id == tripId);
+      if (trip) {
+        processPendingIdeas(trip); // Move any pending ideas into the idea bank before rendering
+        document.getElementById('activeTripTitle').innerText = trip.name;
+        generateTimelineColumns(trip);
+        renderBoardItems(trip); // Put real data in column based on current trip
       }
     }
-  });
-}
+  }
 
-/*
- * Switches between the kanban-view and trip-view
- */
-function switchView(view, tripId = null) {
-    const listView = document.getElementById('listView');
+  function switchPlannerTab(tab) {
     const boardView = document.getElementById('boardView');
+    if (!boardView) return;
 
-    if (view === 'list') {
-        listView.classList.remove('d-none');
-        boardView.classList.add('d-none');
-        listView.style.display = 'block';
-        boardView.style.display = 'none';
-
-        // Clear route line and stop animation when leaving board view
-        if (mapRouteLines && mapRouteLines.length) {
-            mapRouteLines.forEach(line => line.setMap(null));
-            mapRouteLines = [];
-        }
-        if (mapRouteAnimationInterval) {
-            clearInterval(mapRouteAnimationInterval);
-            mapRouteAnimationInterval = null;
-        }
-
-        renderItineraries();
-    } else {
-        listView.classList.add('d-none');
-        boardView.classList.remove('d-none');
-        listView.style.display = 'none';
-        boardView.style.display = 'block';
-        
-        // Sync current trip ID to board view
-        currentTripId = tripId;
-        switchPlannerTab('ideas');
-
-        // Find the trip data
-        const trip = itineraries.find(t => t._id == tripId);
-        if (trip) {
-          processPendingIdeas(trip); // Move any pending ideas into the idea bank before rendering
-          document.getElementById('activeTripTitle').innerText = trip.name;
-          generateTimelineColumns(trip);
-          renderBoardItems(trip); // Put real data in column based on current trip
-        }
-    }
-}
-
-function switchPlannerTab(tab) {
-  const boardView = document.getElementById('boardView');
-  if (!boardView) return;
-
-  boardView.dataset.activeTab = tab;
-  document.querySelectorAll('.nav-tabs-eco .tab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${tab}'`));
-  });
-
-  if (tab === 'map' && map && window.google) {
-    setTimeout(() => {
-      google.maps.event.trigger(map, 'resize');
-      const trip = itineraries.find(t => t._id == currentTripId);
-      if (trip) syncMapWithItinerary(trip);
-    }, 60);
-  }
-}
-
-function updateTripCarbonSummary(trip) {
-  const summary = document.getElementById('tripCarbonSummary');
-  if (!summary) return;
-  summary.textContent = `${getTripTotalCO2(trip).toFixed(1)} kg`;
-}
-
-function generateDays(start, end) {
-  const days = [];
-  let temp = new Date(start);
-  const endDate = new Date(end);
-
-  while (temp <= endDate) {
-    days.push({
-      date: temp.toISOString().split('T')[0],
-      stops: []
+    boardView.dataset.activeTab = tab;
+    document.querySelectorAll('.nav-tabs-eco .tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${tab}'`));
     });
-    temp.setDate(temp.getDate() + 1);
+
+    if (tab === 'map' && map && window.google) {
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+        const trip = itineraries.find(t => t._id == currentTripId);
+        if (trip) syncMapWithItinerary(trip);
+      }, 60);
+    }
   }
 
-  return days;
-}
+  function updateTripCarbonSummary(trip) {
+    const summary = document.getElementById('tripCarbonSummary');
+    if (!summary) return;
+    summary.textContent = `${getTripTotalCO2(trip).toFixed(1)} kg`;
+  }
 
-function generateTimelineColumns(trip) {
+  function generateDays(start, end) {
+    const days = [];
+    let temp = new Date(start);
+    const endDate = new Date(end);
+
+    while (temp <= endDate) {
+      days.push({
+        date: temp.toISOString().split('T')[0],
+        stops: []
+      });
+      temp.setDate(temp.getDate() + 1);
+    }
+
+    return days;
+  }
+
+  function generateTimelineColumns(trip) {
     const container = document.getElementById('timelineContainer');
     container.innerHTML = ''; // Clear existing days
 
     const start = new Date(trip.start);
     const end = new Date(trip.end);
-    
+
     let tempDate = new Date(start);
     const canEdit = isTripOwner(trip);
-    
+
     while (tempDate <= end) {
       const dayId = tempDate.toISOString().split('T')[0];
       const dayData = (trip.days || []).find(d => d.date === dayId) || {
@@ -569,67 +534,67 @@ function generateTimelineColumns(trip) {
 
       tempDate.setDate(tempDate.getDate() + 1);//move to next day
     }
-}
-
-async function updateDayTransportMode(dayId, newMode) {
-  const trip = itineraries.find(t => t._id == currentTripId);
-  if (!trip) return;
-
-  let day = trip.days.find(d => d.date === dayId);
-  if (!day) {
-    day = { date: dayId, stops: [], transportMode: newMode, transitDistance: 0, transitCarbon: 0 };
-    trip.days.push(day);
-  } else {
-    day.transportMode = newMode;
   }
 
-  // Recalculate transit footprint for this day
-  const result = await calculateDayTransitEmissions(day.stops, newMode);
-  day.transitDistance = result.distanceKm;
-  day.transitCarbon = result.carbonFootprintKg;
+  async function updateDayTransportMode(dayId, newMode) {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!trip) return;
 
-  // Update banner text instantly
-  const banner = document.getElementById(`banner-${dayId}`);
-  if (banner) {
-    banner.innerHTML = `
+    let day = trip.days.find(d => d.date === dayId);
+    if (!day) {
+      day = { date: dayId, stops: [], transportMode: newMode, transitDistance: 0, transitCarbon: 0 };
+      trip.days.push(day);
+    } else {
+      day.transportMode = newMode;
+    }
+
+    // Recalculate transit footprint for this day
+    const result = await calculateDayTransitEmissions(day.stops, newMode);
+    day.transitDistance = result.distanceKm;
+    day.transitCarbon = result.carbonFootprintKg;
+
+    // Update banner text instantly
+    const banner = document.getElementById(`banner-${dayId}`);
+    if (banner) {
+      banner.innerHTML = `
       <span><i class="bi bi-compass"></i> Transit: <strong>${day.transitDistance.toFixed(1)} km</strong></span>
       <span class="text-success"><i class="bi bi-leaf"></i> <strong>${day.transitCarbon.toFixed(1)} kg CO₂</strong></span>
     `;
+    }
+
+    // Save changes and update total stats / maps
+    updateTripCarbonSummary(trip);
+    await saveTripState(currentTripId, trip);
+    syncMapWithItinerary(trip);
   }
 
-  // Save changes and update total stats / maps
-  updateTripCarbonSummary(trip);
-  await saveTripState(currentTripId, trip);
-  syncMapWithItinerary(trip);
-}
+  function renderBoardItems(trip) {
+    updateTripCarbonSummary(trip);
 
-function renderBoardItems(trip) {
-  updateTripCarbonSummary(trip);
-
-  const ideaContainer = document.getElementById('ideaBankContainer');
-  if (ideaContainer) {
+    const ideaContainer = document.getElementById('ideaBankContainer');
+    if (ideaContainer) {
       ideaContainer.innerHTML = '';
       if (trip.ideaBank) {
-          ideaContainer.innerHTML = trip.ideaBank.map((stop, index) => 
-              createCardHTML(stop, index, 'ideaBank')
-          ).join('');
+        ideaContainer.innerHTML = trip.ideaBank.map((stop, index) =>
+          createCardHTML(stop, index, 'ideaBank')
+        ).join('');
       }
+    }
+
+    trip.days.forEach(day => {
+      const col = document.getElementById(`col-${day.date}`);
+      if (col) {
+        sortStopsByTime(day.stops);
+        col.innerHTML = day.stops.map((stop, index) =>
+          createCardHTML(stop, index, day.date)).join('');
+      }
+    });
+
+    // for google maps
+    syncMapWithItinerary(trip);
   }
 
-  trip.days.forEach(day => {
-    const col = document.getElementById(`col-${day.date}`);
-    if (col) {
-      sortStopsByTime(day.stops);
-      col.innerHTML = day.stops.map((stop, index) =>
-        createCardHTML(stop, index, day.date)).join('');
-    }
-  });
-
-  // for google maps
-  syncMapWithItinerary(trip);
-}
-
-function createCardHTML(stop, idx, sourceLocation) {
+  function createCardHTML(stop, idx, sourceLocation) {
     // Determine color based on carbon weight
     const carbonRaw = parseFloat(stop.carbon) || 0;
 
@@ -673,29 +638,29 @@ function createCardHTML(stop, idx, sourceLocation) {
             </div>
         </div>
     `;
-}
-
-let draggedItemIndex = null;
-let sourceDayDate = null;
-
-function handleDragStart(event, index, date) {
-  const trip = itineraries.find(t => t._id == currentTripId);
-  if (!isTripOwner(trip)) {
-    event.preventDefault();
-    return;
   }
-  draggedItemIndex = index;
-  sourceDayDate = date;
-  event.dataTransfer.setData('text/plain', index);
-}
 
-function allowDrop(event) {
-  const trip = itineraries.find(t => t._id == currentTripId);
-  if (!isTripOwner(trip)) return;
-  event.preventDefault();
-}
+  let draggedItemIndex = null;
+  let sourceDayDate = null;
 
-function handleDrop(event, targetLocation) {
+  function handleDragStart(event, index, date) {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!isTripOwner(trip)) {
+      event.preventDefault();
+      return;
+    }
+    draggedItemIndex = index;
+    sourceDayDate = date;
+    event.dataTransfer.setData('text/plain', index);
+  }
+
+  function allowDrop(event) {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!isTripOwner(trip)) return;
+    event.preventDefault();
+  }
+
+  function handleDrop(event, targetLocation) {
     event.preventDefault();
 
     const trip = itineraries.find(t => t._id == currentTripId);
@@ -704,17 +669,17 @@ function handleDrop(event, targetLocation) {
 
     // Gets the correct array whether we drop in the Idea Bank or a Timeline Day
     function getTargetArray(locationId) {
-        if (locationId === 'ideaBank') {
-            if (!trip.ideaBank) trip.ideaBank = []; // Safety check
-            return trip.ideaBank;
-        } else {
-            let day = trip.days.find(d => d.date === locationId);
-            if (!day) {
-                day = { date: locationId, stops: [] };
-                trip.days.push(day);
-            }
-            return day.stops;
+      if (locationId === 'ideaBank') {
+        if (!trip.ideaBank) trip.ideaBank = []; // Safety check
+        return trip.ideaBank;
+      } else {
+        let day = trip.days.find(d => d.date === locationId);
+        if (!day) {
+          day = { date: locationId, stops: [] };
+          trip.days.push(day);
         }
+        return day.stops;
+      }
     }
 
     //identify two arrays we are moving to and fro
@@ -723,28 +688,28 @@ function handleDrop(event, targetLocation) {
 
     //removes item from old array, push to new array
     if (sourceArray && sourceArray[draggedItemIndex]) {
-        const [movedItem] = sourceArray.splice(draggedItemIndex, 1);
-        targetArray.push(movedItem);
-        
-        saveState();
-        //Redraw the board to reflect the new data structure
-        renderBoardItems(trip);
-        showToast("Activity moved!");
+      const [movedItem] = sourceArray.splice(draggedItemIndex, 1);
+      targetArray.push(movedItem);
+
+      saveState();
+      //Redraw the board to reflect the new data structure
+      renderBoardItems(trip);
+      showToast("Activity moved!");
     }
-}
+  }
 
-function sortStopsByTime(stopsArray) {
+  function sortStopsByTime(stopsArray) {
     stopsArray.sort((a, b) => {
-        // If time is "Flexible" or empty, treat it as 11:59 PM so it goes to the bottom
-        const timeA = (a.time === 'Flexible' || !a.time) ? '23:59' : a.time;
-        const timeB = (b.time === 'Flexible' || !b.time) ? '23:59' : b.time;
-        
-        // Standard alphabetical string sort works perfectly for 24-hour time!
-        return timeA.localeCompare(timeB);
-    });
-}
+      // If time is "Flexible" or empty, treat it as 11:59 PM so it goes to the bottom
+      const timeA = (a.time === 'Flexible' || !a.time) ? '23:59' : a.time;
+      const timeB = (b.time === 'Flexible' || !b.time) ? '23:59' : b.time;
 
-function openAddActivityModal() {
+      // Standard alphabetical string sort works perfectly for 24-hour time!
+      return timeA.localeCompare(timeB);
+    });
+  }
+
+  function openAddActivityModal() {
     isEditing = false; // Make sure we aren't editing when adding new!
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
@@ -754,7 +719,7 @@ function openAddActivityModal() {
     const select = document.getElementById('actTargetDay');
     select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
     trip.days.forEach(day => {
-        select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
+      select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
     });
 
     // Clear out any old text from the inputs so it's a fresh blank form
@@ -765,15 +730,15 @@ function openAddActivityModal() {
     document.getElementById('actCarbon').value = '0';
     document.getElementById('actLat').value = '';
     document.getElementById('actLng').value = '';
-    
+
     openModal('addActivityModal');
-}
+  }
 
-function selectEmoji(emoji) {
-  document.getElementById('actIconBtn').innerText = emoji;
-}
+  function selectEmoji(emoji) {
+    document.getElementById('actIconBtn').innerText = emoji;
+  }
 
-function editActivity(index, sourceLocation) {
+  function editActivity(index, sourceLocation) {
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
     if (!isTripOwner(trip)) return;
@@ -781,22 +746,22 @@ function editActivity(index, sourceLocation) {
     // 1. Find the specific activity data
     let stop;
     if (sourceLocation === 'ideaBank') {
-        stop = trip.ideaBank[index];
+      stop = trip.ideaBank[index];
     } else {
-        const day = trip.days.find(d => d.date === sourceLocation);
-        stop = day.stops[index];
+      const day = trip.days.find(d => d.date === sourceLocation);
+      stop = day.stops[index];
     }
 
     // 2. Populate the destination dropdown
     const select = document.getElementById('actTargetDay');
     select.innerHTML = `<option value="ideaBank">💡 Activites Idea</option>`;
     trip.days.forEach(day => {
-        select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
+      select.innerHTML += `<option value="${day.date}">📅 Day: ${day.date}</option>`;
     });
 
     // 3. Fill the form boxes with the old data!
     document.getElementById('actName').value = stop.name;
-    document.getElementById('actTime').value = stop.time === 'Flexible' ? '' : stop.time; 
+    document.getElementById('actTime').value = stop.time === 'Flexible' ? '' : stop.time;
     document.getElementById('actIconBtn').innerText = stop.icon || '📍';
     document.getElementById('actSub').value = stop.sub;
     document.getElementById('actCarbon').value = stop.carbon;
@@ -810,9 +775,9 @@ function editActivity(index, sourceLocation) {
     editItemLocation = sourceLocation;
 
     openModal('addActivityModal');
-}
+  }
 
-function saveNewActivity() {
+  function saveNewActivity() {
     const trip = itineraries.find(t => t._id == currentTripId);
     if (!trip) return;
     if (!isTripOwner(trip)) return;
@@ -830,32 +795,32 @@ function saveNewActivity() {
     // Create the new Stop Object
     const newStop = { time, icon, name, sub, carbon };
     if (lat && lng) {
-        newStop.location = { lat: parseFloat(lat), lng: parseFloat(lng) };
+      newStop.location = { lat: parseFloat(lat), lng: parseFloat(lng) };
     }
 
     if (isEditing) {
-        if (editItemLocation === 'ideaBank') {
-            trip.ideaBank.splice(editItemIndex, 1);
-        } else {
-            const oldDay = trip.days.find(d => d.date === editItemLocation);
-            if (oldDay) oldDay.stops.splice(editItemIndex, 1);
-        }
-        // Turn edit mode off so we can add new activities later
-        isEditing = false; 
+      if (editItemLocation === 'ideaBank') {
+        trip.ideaBank.splice(editItemIndex, 1);
+      } else {
+        const oldDay = trip.days.find(d => d.date === editItemLocation);
+        if (oldDay) oldDay.stops.splice(editItemIndex, 1);
+      }
+      // Turn edit mode off so we can add new activities later
+      isEditing = false;
     }
 
     // Push it to the correct Array
     if (targetId === 'ideaBank') {
-        if (!trip.ideaBank) trip.ideaBank = [];
-        trip.ideaBank.push(newStop);
+      if (!trip.ideaBank) trip.ideaBank = [];
+      trip.ideaBank.push(newStop);
     } else {
-        let targetDay = trip.days.find(d => d.date === targetId);
-        // if day don't exist, create it
-        if (!targetDay) {
-            targetDay = { date: targetId, stops: [] };
-            trip.days.push(targetDay);
-        }
-        targetDay.stops.push(newStop);
+      let targetDay = trip.days.find(d => d.date === targetId);
+      // if day don't exist, create it
+      if (!targetDay) {
+        targetDay = { date: targetId, stops: [] };
+        trip.days.push(targetDay);
+      }
+      targetDay.stops.push(newStop);
     }
 
     // refresh UI
@@ -863,92 +828,92 @@ function saveNewActivity() {
     renderBoardItems(trip);
     saveState();
     showToast("Activity added! ✨");
-}
-
-function deleteActivity(index, sourceLocation) {
-  const trip = itineraries.find(t => t._id == currentTripId);
-  if (!trip) return;
-  if (!isTripOwner(trip)) return;
-
-  let targetArray = null;
-
-  if (sourceLocation === 'ideaBank') {
-    targetArray = trip.ideaBank;
-  } else {
-    const day = trip.days.find(d => d.date === sourceLocation);
-    if (day) targetArray = day.stops;
   }
 
-  if (!targetArray || !targetArray[index]) return;
+  function deleteActivity(index, sourceLocation) {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!trip) return;
+    if (!isTripOwner(trip)) return;
 
-  const [removedActivity] = targetArray.splice(index, 1);
-  renderBoardItems(trip);
+    let targetArray = null;
 
-  showToast('Activity deleted', 'info', {
-    duration: 6000,
-    undoLabel: 'Undo',
-    onUndo: async () => {
-      const latestTrip = itineraries.find(t => t._id == trip._id);
-      if (!latestTrip) return;
-
-      let restoreArray = null;
-      if (sourceLocation === 'ideaBank') {
-        if (!latestTrip.ideaBank) latestTrip.ideaBank = [];
-        restoreArray = latestTrip.ideaBank;
-      } else {
-        const day = latestTrip.days.find(d => d.date === sourceLocation);
-        if (day) restoreArray = day.stops;
-      }
-
-      if (!restoreArray) return;
-      restoreArray.splice(Math.min(index, restoreArray.length), 0, removedActivity);
-      renderBoardItems(latestTrip);
-      await saveTripState(latestTrip._id, latestTrip);
-      showToast('Activity restored', 'info');
-    },
-    onExpire: async () => {
-      const latestTrip = itineraries.find(t => t._id == trip._id);
-      if (latestTrip) await saveTripState(latestTrip._id, latestTrip);
+    if (sourceLocation === 'ideaBank') {
+      targetArray = trip.ideaBank;
+    } else {
+      const day = trip.days.find(d => d.date === sourceLocation);
+      if (day) targetArray = day.stops;
     }
-  });
-}
 
-function processPendingIdeas(trip) {
+    if (!targetArray || !targetArray[index]) return;
+
+    const [removedActivity] = targetArray.splice(index, 1);
+    renderBoardItems(trip);
+
+    showToast('Activity deleted', 'info', {
+      duration: 6000,
+      undoLabel: 'Undo',
+      onUndo: async () => {
+        const latestTrip = itineraries.find(t => t._id == trip._id);
+        if (!latestTrip) return;
+
+        let restoreArray = null;
+        if (sourceLocation === 'ideaBank') {
+          if (!latestTrip.ideaBank) latestTrip.ideaBank = [];
+          restoreArray = latestTrip.ideaBank;
+        } else {
+          const day = latestTrip.days.find(d => d.date === sourceLocation);
+          if (day) restoreArray = day.stops;
+        }
+
+        if (!restoreArray) return;
+        restoreArray.splice(Math.min(index, restoreArray.length), 0, removedActivity);
+        renderBoardItems(latestTrip);
+        await saveTripState(latestTrip._id, latestTrip);
+        showToast('Activity restored', 'info');
+      },
+      onExpire: async () => {
+        const latestTrip = itineraries.find(t => t._id == trip._id);
+        if (latestTrip) await saveTripState(latestTrip._id, latestTrip);
+      }
+    });
+  }
+
+  function processPendingIdeas(trip) {
     // 1. Open the browser's temporary "Shopping Cart"
     const pendingIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
 
     if (pendingIdeas.length > 0) {
-        // 2. Ensure the trip has an array ready to hold the ideas
-        if (!trip.ideaBank) trip.ideaBank = [];
+      // 2. Ensure the trip has an array ready to hold the ideas
+      if (!trip.ideaBank) trip.ideaBank = [];
 
-        // 3. Move everything from the cart into the trip's Idea Bank
-        pendingIdeas.forEach(idea => {
-            trip.ideaBank.push(idea);
-        });
+      // 3. Move everything from the cart into the trip's Idea Bank
+      pendingIdeas.forEach(idea => {
+        trip.ideaBank.push(idea);
+      });
 
-        // 4. Empty the local cart so we don't import them again later!
-        localStorage.removeItem('ecoPendingIdeas');
+      // 4. Empty the local cart so we don't import them again later!
+      localStorage.removeItem('ecoPendingIdeas');
 
-        // 5. Fire off a save to MongoDB to make the new additions permanent
-        saveState();
+      // 5. Fire off a save to MongoDB to make the new additions permanent
+      saveState();
 
-        // 6. Give the user a nice UI alert
-        if (typeof showToast === 'function') {
-            showToast(`Imported ${pendingIdeas.length} saved activities from Explore! 🌟`);
-        }
+      // 6. Give the user a nice UI alert
+      if (typeof showToast === 'function') {
+        showToast(`Imported ${pendingIdeas.length} saved activities from Explore! 🌟`);
+      }
     }
-}
-
-function exportTripAsPDF(tripId) {
-  const trip = itineraries.find(t => t._id == tripId);
-  if (!trip) return;
-
-  const win = window.open('', '_blank');
-  if (!win) {
-    showToast('Pop-up blocked. Please allow pop-ups for this site to export.', 'warn');
-    return;
   }
-  const days = (trip.days || []).map(day => `
+
+  function exportTripAsPDF(tripId) {
+    const trip = itineraries.find(t => t._id == tripId);
+    if (!trip) return;
+
+    const win = window.open('', '_blank');
+    if (!win) {
+      showToast('Pop-up blocked. Please allow pop-ups for this site to export.', 'warn');
+      return;
+    }
+    const days = (trip.days || []).map(day => `
     <div style="margin-bottom:1.5rem;">
       <h3 style="color:#2d6a4f;border-bottom:1px solid #ccc;padding-bottom:4px;">📅 ${esc(day.date)}</h3>
       ${(day.stops || []).length === 0
@@ -965,10 +930,10 @@ function exportTripAsPDF(tripId) {
       }
     </div>`).join('');
 
-  const totalCO2 = (trip.days || []).reduce((sum, d) =>
-    sum + (d.stops || []).reduce((s, st) => s + (parseFloat(st.carbon) || 0), 0), 0);
+    const totalCO2 = (trip.days || []).reduce((sum, d) =>
+      sum + (d.stops || []).reduce((s, st) => s + (parseFloat(st.carbon) || 0), 0), 0);
 
-  win.document.write(`
+    win.document.write(`
     <!DOCTYPE html><html><head>
     <title>${esc(trip.name)} — EcoPlanner Itinerary</title>
     <style>
@@ -987,24 +952,24 @@ function exportTripAsPDF(tripId) {
     <div class="footer">Exported from EcoPlanner · ${new Date().toLocaleDateString()}</div>
     </body></html>`);
 
-  win.document.close();
-  setTimeout(() => win.print(), 500);
-}
-
-function openOffsetModal() {
-  const trip = itineraries.find(t => t._id == currentTripId);
-  if (!trip) {
-    showToast('Open a trip before offsetting.', 'warn');
-    return;
+    win.document.close();
+    setTimeout(() => win.print(), 500);
   }
 
-  const totalCO2 = getTripTotalCO2(trip);
-  const treeCount = Math.max(1, Math.ceil(totalCO2 / 20));
-  const offsetCost = treeCount * 10;
-  const body = document.getElementById('offsetModalBody');
-  if (!body) return;
+  function openOffsetModal() {
+    const trip = itineraries.find(t => t._id == currentTripId);
+    if (!trip) {
+      showToast('Open a trip before offsetting.', 'warn');
+      return;
+    }
 
-  body.innerHTML = `
+    const totalCO2 = getTripTotalCO2(trip);
+    const treeCount = Math.max(1, Math.ceil(totalCO2 / 20));
+    const offsetCost = treeCount * 10;
+    const body = document.getElementById('offsetModalBody');
+    if (!body) return;
+
+    body.innerHTML = `
     <div class="offset-summary">
       <div>
         <span>Total Trip CO₂</span>
@@ -1044,237 +1009,237 @@ function openOffsetModal() {
     </div>
   `;
 
-  body.querySelectorAll('.offset-project').forEach(label => {
-    label.addEventListener('click', () => {
-      body.querySelectorAll('.offset-project').forEach(item => item.classList.remove('active'));
-      label.classList.add('active');
+    body.querySelectorAll('.offset-project').forEach(label => {
+      label.addEventListener('click', () => {
+        body.querySelectorAll('.offset-project').forEach(item => item.classList.remove('active'));
+        label.classList.add('active');
+      });
     });
-  });
 
-  openModal('offsetModal');
-}
-
-function confirmOffsetContribution() {
-  const selectedProject = document.querySelector('input[name="offsetProject"]:checked')?.value || 'local offset project';
-  closeModal('offsetModal');
-  showToast(`Thank you for planning green! Offset pledged with ${selectedProject}.`);
-}
-
-/* Load sample data and render on page load */
-document.addEventListener('DOMContentLoaded', () => {
-  loadState();
-  renderItineraries();
-  loadGoogleMapsScript(); // Fetch API key and load Google Maps script
-});
-
-/*
-NEW MAP LOGIC!!!
-*/
-let map;
-let mapMarkers = [];
-let mapRouteLines = [];
-let mapRouteAnimationInterval;
-
-window.initMap = function() {
-  const mapElement = document.getElementById('map');
-  if (!mapElement) return; //safety check
-
-  //Defaults to malaysia
-  map = new google.maps.Map(mapElement, {
-    center: { lat: 4.2105, lng: 101.9758 }, 
-    zoom: 6,
-    mapTypeControl: false,
-    streetViewControl: false,
-    mapId: "DEMO_MAP_ID"
-  });
-}
-
-function syncMapWithItinerary(trip) {
-  //ensure google map is loaded
-  if (!map || !window.google) return;
-
-  const mapContainer = document.getElementById('mapContainer');
-  if (mapContainer) mapContainer.style.display = 'block';
-
-  // Clear old markers
-  mapMarkers.forEach(marker => marker.setMap(null));
-  mapMarkers = [];
-
-  // Clear old route lines and stop animation
-  if (mapRouteLines && mapRouteLines.length) {
-    mapRouteLines.forEach(line => line.setMap(null));
-  }
-  mapRouteLines = [];
-
-  if (mapRouteAnimationInterval) {
-    clearInterval(mapRouteAnimationInterval);
-    mapRouteAnimationInterval = null;
+    openModal('offsetModal');
   }
 
-  // set bounds to auto zooom
-  const bounds = new google.maps.LatLngBounds();
-  let hasLocations = false;
-  let stopCounter = 1; //number pins
-  const pathCoordinates = [];
+  function confirmOffsetContribution() {
+    const selectedProject = document.querySelector('input[name="offsetProject"]:checked')?.value || 'local offset project';
+    closeModal('offsetModal');
+    showToast(`Thank you for planning green! Offset pledged with ${selectedProject}.`);
+  }
 
-  const MODE_COLORS = {
-    walking: '#2d6a4f',
-    bicycle: '#2d6a4f',
-    train_electric: '#2d6a4f',
-    car_hybrid: '#e67e22',
-    car_ev: '#e67e22',
-    bus: '#e67e22',
-    car_petrol: '#c0392b',
-    car_diesel: '#c0392b',
-    flight_short: '#c0392b',
-    flight_long: '#c0392b',
-    ferry: '#c0392b',
-    motorcycle: '#c0392b'
-  };
+  /* Load sample data and render on page load */
+  document.addEventListener('DOMContentLoaded', () => {
+    loadState();
+    renderItineraries();
+    loadGoogleMapsScript(); // Fetch API key and load Google Maps script
+  });
 
-  // Loop through days and draw pins for scheduled activities
-  (trip.days || []).forEach(day => {
-    const dayCoordinates = [];
+  /*
+  NEW MAP LOGIC!!!
+  */
+  let map;
+  let mapMarkers = [];
+  let mapRouteLines = [];
+  let mapRouteAnimationInterval;
 
-    (day.stops || []).forEach(stop => {
-      // Only draw a pin if the stop has latitude and longitude
-      if (hasStopLocation(stop)) {
-        const position = { 
-            lat: parseFloat(stop.location.lat), 
-            lng: parseFloat(stop.location.lng) 
-        };
-        
-        dayCoordinates.push(position);
-        pathCoordinates.push(position);
+  window.initMap = function () {
+    const mapElement = document.getElementById('map');
+    if (!mapElement) return; //safety check
 
-        const pin = new google.maps.marker.PinElement({
+    //Defaults to malaysia
+    map = new google.maps.Map(mapElement, {
+      center: { lat: 4.2105, lng: 101.9758 },
+      zoom: 6,
+      mapTypeControl: false,
+      streetViewControl: false,
+      mapId: "DEMO_MAP_ID"
+    });
+  }
+
+  function syncMapWithItinerary(trip) {
+    //ensure google map is loaded
+    if (!map || !window.google) return;
+
+    const mapContainer = document.getElementById('mapContainer');
+    if (mapContainer) mapContainer.style.display = 'block';
+
+    // Clear old markers
+    mapMarkers.forEach(marker => marker.setMap(null));
+    mapMarkers = [];
+
+    // Clear old route lines and stop animation
+    if (mapRouteLines && mapRouteLines.length) {
+      mapRouteLines.forEach(line => line.setMap(null));
+    }
+    mapRouteLines = [];
+
+    if (mapRouteAnimationInterval) {
+      clearInterval(mapRouteAnimationInterval);
+      mapRouteAnimationInterval = null;
+    }
+
+    // set bounds to auto zooom
+    const bounds = new google.maps.LatLngBounds();
+    let hasLocations = false;
+    let stopCounter = 1; //number pins
+    const pathCoordinates = [];
+
+    const MODE_COLORS = {
+      walking: '#2d6a4f',
+      bicycle: '#2d6a4f',
+      train_electric: '#2d6a4f',
+      car_hybrid: '#e67e22',
+      car_ev: '#e67e22',
+      bus: '#e67e22',
+      car_petrol: '#c0392b',
+      car_diesel: '#c0392b',
+      flight_short: '#c0392b',
+      flight_long: '#c0392b',
+      ferry: '#c0392b',
+      motorcycle: '#c0392b'
+    };
+
+    // Loop through days and draw pins for scheduled activities
+    (trip.days || []).forEach(day => {
+      const dayCoordinates = [];
+
+      (day.stops || []).forEach(stop => {
+        // Only draw a pin if the stop has latitude and longitude
+        if (hasStopLocation(stop)) {
+          const position = {
+            lat: parseFloat(stop.location.lat),
+            lng: parseFloat(stop.location.lng)
+          };
+
+          dayCoordinates.push(position);
+          pathCoordinates.push(position);
+
+          const pin = new google.maps.marker.PinElement({
             glyph: stopCounter.toString(),
             glyphColor: "white",
-        });
+          });
 
-        const marker = new google.maps.marker.AdvancedMarkerElement({
+          const marker = new google.maps.marker.AdvancedMarkerElement({
             position: position,
             map: map,
             title: stop.name,
             content: pin.element
+          });
+
+          mapMarkers.push(marker);
+          bounds.extend(position);
+          hasLocations = true;
+          stopCounter++;
+        }
+      });
+
+      // Draw route for this day if there are at least two coordinates
+      if (dayCoordinates.length >= 2) {
+        const mode = day.transportMode || 'car_petrol';
+        const routeColor = MODE_COLORS[mode] || '#c0392b';
+
+        const lineSymbol = {
+          path: "M 0,-1 0,1",
+          strokeOpacity: 1,
+          scale: 3,
+          strokeColor: routeColor,
+          strokeWeight: 2
+        };
+
+        const line = new google.maps.Polyline({
+          path: dayCoordinates,
+          strokeOpacity: 0,
+          icons: [
+            {
+              icon: lineSymbol,
+              offset: "0px",
+              repeat: "15px",
+            },
+          ],
+          map: map,
         });
 
-        mapMarkers.push(marker);
-        bounds.extend(position);
-        hasLocations = true;
-        stopCounter++;
+        mapRouteLines.push(line);
       }
     });
 
-    // Draw route for this day if there are at least two coordinates
-    if (dayCoordinates.length >= 2) {
-      const mode = day.transportMode || 'car_petrol';
-      const routeColor = MODE_COLORS[mode] || '#c0392b';
-
-      const lineSymbol = {
-        path: "M 0,-1 0,1",
-        strokeOpacity: 1,
-        scale: 3,
-        strokeColor: routeColor,
-        strokeWeight: 2
-      };
-
-      const line = new google.maps.Polyline({
-        path: dayCoordinates,
-        strokeOpacity: 0,
-        icons: [
-          {
-            icon: lineSymbol,
-            offset: "0px",
-            repeat: "15px",
-          },
-        ],
-        map: map,
-      });
-
-      mapRouteLines.push(line);
-    }
-  });
-
-  // Animate route paths
-  let count = 0;
-  if (mapRouteLines.length > 0) {
-    mapRouteAnimationInterval = setInterval(() => {
-      count = (count + 1) % 15;
-      mapRouteLines.forEach(line => {
-        if (line && window.google) {
-          const icons = line.get("icons");
-          if (icons && icons[0]) {
-            icons[0].offset = count + "px";
-            line.set("icons", icons);
+    // Animate route paths
+    let count = 0;
+    if (mapRouteLines.length > 0) {
+      mapRouteAnimationInterval = setInterval(() => {
+        count = (count + 1) % 15;
+        mapRouteLines.forEach(line => {
+          if (line && window.google) {
+            const icons = line.get("icons");
+            if (icons && icons[0]) {
+              icons[0].offset = count + "px";
+              line.set("icons", icons);
+            }
           }
-        }
+        });
+      }, 60);
+    }
+    //adjust camera
+    if (hasLocations) {
+      map.fitBounds(bounds);
+
+      const listener = google.maps.event.addListener(map, "idle", function () {
+        if (map.getZoom() > 14) map.setZoom(14);
+        google.maps.event.removeListener(listener);
       });
-    }, 60);
+    } else {
+      // If no locations, center on Malaysia
+      map.setCenter({ lat: 4.2105, lng: 101.9758 });
+      map.setZoom(6);
+    }
   }
-  //adjust camera
-  if (hasLocations) {
-    map.fitBounds(bounds);
-    
-    const listener = google.maps.event.addListener(map, "idle", function() {
-      if (map.getZoom() > 14) map.setZoom(14);
-      google.maps.event.removeListener(listener);
-    });
-  } else {
-    // If no locations, center on Malaysia
-    map.setCenter({ lat: 4.2105, lng: 101.9758 });
-    map.setZoom(6);
-  }
-}
 
-// Function to fetch the API key and load the Google Maps script
-async function loadGoogleMapsScript() {
+  // Function to fetch the API key and load the Google Maps script
+  async function loadGoogleMapsScript() {
     try {
-        const response = await fetch('/api/config/maps');
-        const data = await response.json();
-        const apiKey = data.apiKey;
+      const response = await fetch('/api/config/maps');
+      const data = await response.json();
+      const apiKey = data.apiKey;
 
-        if (!apiKey) {
-            console.error("No API key found!");
-            return;
-        }
+      if (!apiKey) {
+        console.error("No API key found!");
+        return;
+      }
 
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places,marker&loading=async`;
-        script.async = true;
-        script.defer = true;
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places,marker&loading=async`;
+      script.async = true;
+      script.defer = true;
 
-        document.head.appendChild(script);
+      document.head.appendChild(script);
 
     } catch (error) {
-        console.error("Failed to load Google Maps API key:", error);
+      console.error("Failed to load Google Maps API key:", error);
     }
-}
+  }
 
-// -------------------------------------------------------------
-// MAP PICKER LOGIC
-// -------------------------------------------------------------
-let pickerMap;
-let pickerMarker;
+  // -------------------------------------------------------------
+  // MAP PICKER LOGIC
+  // -------------------------------------------------------------
+  let pickerMap;
+  let pickerMarker;
 
-function openMapPicker() {
+  function openMapPicker() {
     // 1. Show modal
     document.getElementById('mapPickerModal').style.display = 'flex';
-    
+
     // 2. Initialize picker map if not already done
     if (!pickerMap && window.google) {
-        const pickerMapElement = document.getElementById('pickerMap');
-        pickerMap = new google.maps.Map(pickerMapElement, {
-            center: { lat: 4.2105, lng: 101.9758 }, // Malaysia default
-            zoom: 6,
-            mapTypeControl: false,
-            streetViewControl: false,
-            mapId: "PICKER_MAP_ID"
-        });
+      const pickerMapElement = document.getElementById('pickerMap');
+      pickerMap = new google.maps.Map(pickerMapElement, {
+        center: { lat: 4.2105, lng: 101.9758 }, // Malaysia default
+        zoom: 6,
+        mapTypeControl: false,
+        streetViewControl: false,
+        mapId: "PICKER_MAP_ID"
+      });
 
-        pickerMap.addListener('click', (e) => {
-            placePickerMarker(e.latLng);
-        });
+      pickerMap.addListener('click', (e) => {
+        placePickerMarker(e.latLng);
+      });
     }
 
     if (!pickerMap) {
@@ -1285,67 +1250,67 @@ function openMapPicker() {
     // 3. Resize map to prevent grey box issue when map is initialized inside a hidden div
     // We use a small timeout to allow the modal to finish displaying
     setTimeout(() => {
-        google.maps.event.trigger(pickerMap, 'resize');
-        
-        // 4. Try to read current inputs
-        const currentLat = parseFloat(document.getElementById('actLat').value);
-        const currentLng = parseFloat(document.getElementById('actLng').value);
+      google.maps.event.trigger(pickerMap, 'resize');
 
-        if (!isNaN(currentLat) && !isNaN(currentLng)) {
-            const pos = { lat: currentLat, lng: currentLng };
-            placePickerMarker(pos);
-            pickerMap.setCenter(pos);
-            pickerMap.setZoom(12);
-        } else {
-            // Clear marker if no lat/lng is set
-            if (pickerMarker) {
-                pickerMarker.map = null;
-                pickerMarker = null; // Reset so placePickerMarker creates a new one cleanly or properly maps it
-            }
-            
-            // Optionally try HTML5 Geolocation to center on user
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        pickerMap.setCenter(pos);
-                        pickerMap.setZoom(10);
-                    },
-                    () => {
-                        // Ignore errors, just use default center
-                    }
-                );
-            }
+      // 4. Try to read current inputs
+      const currentLat = parseFloat(document.getElementById('actLat').value);
+      const currentLng = parseFloat(document.getElementById('actLng').value);
+
+      if (!isNaN(currentLat) && !isNaN(currentLng)) {
+        const pos = { lat: currentLat, lng: currentLng };
+        placePickerMarker(pos);
+        pickerMap.setCenter(pos);
+        pickerMap.setZoom(12);
+      } else {
+        // Clear marker if no lat/lng is set
+        if (pickerMarker) {
+          pickerMarker.map = null;
+          pickerMarker = null; // Reset so placePickerMarker creates a new one cleanly or properly maps it
         }
-    }, 50);
-}
 
-function placePickerMarker(latLng) {
+        // Optionally try HTML5 Geolocation to center on user
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              pickerMap.setCenter(pos);
+              pickerMap.setZoom(10);
+            },
+            () => {
+              // Ignore errors, just use default center
+            }
+          );
+        }
+      }
+    }, 50);
+  }
+
+  function placePickerMarker(latLng) {
     if (!pickerMarker) {
-        pickerMarker = new google.maps.marker.AdvancedMarkerElement({
-            map: pickerMap
-        });
+      pickerMarker = new google.maps.marker.AdvancedMarkerElement({
+        map: pickerMap
+      });
     }
     pickerMarker.map = pickerMap; // Ensure it's on the map
     pickerMarker.position = latLng;
-}
+  }
 
-function closeMapPicker() {
+  function closeMapPicker() {
     document.getElementById('mapPickerModal').style.display = 'none';
-}
+  }
 
-function confirmMapSelection() {
+  function confirmMapSelection() {
     if (pickerMarker && pickerMarker.position) {
-        const pos = pickerMarker.position;
-        // Update the form inputs
-        // toFixed(6) to prevent extremely long decimals
-        document.getElementById('actLat').value = (typeof pos.lat === 'function' ? pos.lat() : pos.lat).toFixed(6);
-        document.getElementById('actLng').value = (typeof pos.lng === 'function' ? pos.lng() : pos.lng).toFixed(6);
-        closeMapPicker();
+      const pos = pickerMarker.position;
+      // Update the form inputs
+      // toFixed(6) to prevent extremely long decimals
+      document.getElementById('actLat').value = (typeof pos.lat === 'function' ? pos.lat() : pos.lat).toFixed(6);
+      document.getElementById('actLng').value = (typeof pos.lng === 'function' ? pos.lng() : pos.lng).toFixed(6);
+      closeMapPicker();
     } else {
-        showToast('Please click on the map to select a location first!', 'warn');
+      showToast('Please click on the map to select a location first!', 'warn');
     }
-}
+  }

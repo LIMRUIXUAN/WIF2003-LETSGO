@@ -160,6 +160,27 @@ async function startServer() {
 
   try {
     await connectToDatabase();
+
+    // Copy generated images to public/images
+    const fs = require('fs');
+    const imagesToCopy = [
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\langkawi_mangroves_slide_1780580662130.png", dest: path.join(__dirname, "public", "images", "langkawi_mangroves_slide.png") },
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\borneo_rainforest_slide_1780580680487.png", dest: path.join(__dirname, "public", "images", "borneo_rainforest_slide.png") },
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\cameron_highlands_slide_1780580701877.png", dest: path.join(__dirname, "public", "images", "cameron_highlands_slide.png") }
+    ];
+    for (const img of imagesToCopy) {
+      if (fs.existsSync(img.src)) {
+        try {
+          fs.copyFileSync(img.src, img.dest);
+          console.log(`Copied image to ${img.dest}`);
+        } catch (e) {
+          console.error(`Failed to copy image: ${e.message}`);
+        }
+      } else {
+        console.warn(`Source image does not exist: ${img.src}`);
+      }
+    }
+
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port} (${isDev ? 'dev with live reload' : 'production'})`);
     });

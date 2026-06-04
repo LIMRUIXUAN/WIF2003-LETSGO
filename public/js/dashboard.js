@@ -38,7 +38,6 @@
       renderCO2Chart(user, trips);
       renderWeatherWidget(user);
       renderProfileSummary(user);
-      renderActivityFeed(user, trips);
     }
 
     function renderWelcome(user) {
@@ -400,75 +399,6 @@
     </div>
     <div style="font-size:.82rem;color:#6b7c6e;margin-bottom:.5rem;"><strong>Interests:</strong></div>
     <div>${chips}</div>`;
-    }
-
-    function renderActivityFeed(user, trips) {
-      const c = document.getElementById('activityFeed');
-      const events = [];
-
-      // Trip events
-      trips.forEach(t => {
-        events.push({
-          type: 'trip',
-          title: `Planned trip: <strong>${esc(t.name)}</strong>${t.city ? ' to ' + esc(t.city) : ''}`,
-          time: new Date(t.createdAt),
-          icon: '<i class="bi bi-map-fill"></i>',
-          cls: 'ad-trip'
-        });
-      });
-
-      // Favourite events — DB only stores IDs, no timestamps, so we synthesise from LISTINGS
-      const favIds = user ? (user.favorites || []) : [];
-      favIds.forEach(id => {
-        const listing = LISTINGS.find(l => l.id === id);
-        if (!listing) return;
-        events.push({
-          type: 'fav',
-          title: `Saved <strong>${esc(listing.name)}</strong> to favourites`,
-          time: null,
-          icon: '<i class="bi bi-heart-fill"></i>',
-          cls: 'ad-fav'
-        });
-      });
-
-      // Account created event
-      if (user && user.createdAt) {
-        events.push({
-          type: 'account',
-          title: 'Joined <strong>EcoPlanner</strong> 🌿',
-          time: new Date(user.createdAt),
-          icon: '<i class="bi bi-person-check-fill"></i>',
-          cls: 'ad-account'
-        });
-      }
-
-      // Sort: timestamped events first (newest → oldest), then un-timestamped
-      const withTime = events.filter(e => e.time).sort((a, b) => b.time - a.time);
-      const withoutTime = events.filter(e => !e.time);
-      const sorted = [...withTime, ...withoutTime].slice(0, 10);
-
-      if (!sorted.length) {
-        c.innerHTML = `<div class="empty-state"><i class="bi bi-clock"></i>No activity yet. Start planning!</div>`;
-        return;
-      }
-
-      c.innerHTML = `<div class="activity-feed">${sorted.map(e => `
-    <div class="activity-item">
-      <div class="activity-dot ${e.cls}">${e.icon}</div>
-      <div class="activity-body">
-        <div class="ab-title">${e.title}</div>
-        <div class="ab-time">${e.time ? timeAgo(e.time) : 'Saved'}</div>
-      </div>
-    </div>`).join('')}</div>`;
-    }
-
-    function timeAgo(date) {
-      const diff = Math.floor((Date.now() - date) / 1000);
-      if (diff < 60) return 'Just now';
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-      return date.toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
     function openGoalEditor() {
