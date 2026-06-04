@@ -21,6 +21,7 @@ const EMISSION_FACTORS = {
 };
 
 const BASELINE_FACTOR = EMISSION_FACTORS.car_petrol;
+const BASELINE_TRANSPORT_MODE = 'car_petrol';
 
 function calculateHaversineDistance(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -43,6 +44,44 @@ function hasValidCoordinates(location) {
     && lat <= 90
     && lng >= -180
     && lng <= 180;
+}
+
+function roundCarbonMetric(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function resolveTransportMode(transportMode) {
+  return EMISSION_FACTORS[transportMode] !== undefined
+    ? transportMode
+    : BASELINE_TRANSPORT_MODE;
+}
+
+function calculateRouteCarbon(stops, transportMode) {
+  const resolvedTransportMode = resolveTransportMode(transportMode);
+  const factor = EMISSION_FACTORS[resolvedTransportMode];
+  let totalDistance = 0;
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    const current = stops[i].location;
+    const next = stops[i + 1].location;
+    totalDistance += calculateHaversineDistance(
+      Number(current.lat),
+      Number(current.lng),
+      Number(next.lat),
+      Number(next.lng)
+    );
+  }
+
+  const footprint = totalDistance * factor;
+  const baseline = totalDistance * BASELINE_FACTOR;
+
+  return {
+    distanceKm: roundCarbonMetric(totalDistance),
+    carbonFootprintKg: roundCarbonMetric(footprint),
+    baselineFootprintKg: roundCarbonMetric(baseline),
+    carbonSavedKg: roundCarbonMetric(baseline - footprint),
+    transportMode: resolvedTransportMode
+  };
 }
 
 function normalizeEmail(value) {
@@ -146,33 +185,16 @@ router.post('/calculate-carbon', requireAuth, (req, res) => {
       });
     }
 
-    const factor = EMISSION_FACTORS[transportMode] !== undefined
-      ? EMISSION_FACTORS[transportMode]
-      : BASELINE_FACTOR;
-    let totalDistance = 0;
-
-    for (let i = 0; i < stops.length - 1; i++) {
-      const current = stops[i].location;
-      const next = stops[i + 1].location;
-      if (hasValidCoordinates(current) && hasValidCoordinates(next)) {
-        totalDistance += calculateHaversineDistance(
-          Number(current.lat),
-          Number(current.lng),
-          Number(next.lat),
-          Number(next.lng)
-        );
-      }
+    if (stops.some(stop => !hasValidCoordinates(stop.location))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Each stop must include valid latitude and longitude.'
+      });
     }
-
-    const footprint = totalDistance * factor;
-    const baseline = totalDistance * BASELINE_FACTOR;
-    const savings = baseline - footprint;
 
     return res.json({
       success: true,
-      distanceKm: Math.round(totalDistance * 10) / 10,
-      carbonFootprintKg: Math.round(footprint * 10) / 10,
-      carbonSavedKg: Math.round(savings * 10) / 10
+      ...calculateRouteCarbon(stops, transportMode)
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -182,6 +204,7 @@ router.post('/calculate-carbon', requireAuth, (req, res) => {
 module.exports = router;
 module.exports.helpers = {
   calculateHaversineDistance,
+  calculateRouteCarbon,
   EMISSION_FACTORS,
   normalizeEmail
 };

@@ -64,7 +64,7 @@ window.fetch = function fetchWithAuth(resource, options = {}) {
   return nativeFetch(resource, { ...options, headers }).then(async response => {
     if (response.status === 401 && isInternalApiRequest(resource)) {
       clearAuthSession();
-      const isAuthPage = window.location.pathname.endsWith('/login.html') || window.location.pathname.endsWith('/register.html');
+      const isAuthPage = window.location.pathname.endsWith('/login.html');
 
       if (!isAuthPage && !sessionExpiredRedirectPending) {
         sessionExpiredRedirectPending = true;
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── 2. Fetch destinations from MongoDB - skip auth pages that do not need them ──
-    const authPages = ['login.html', 'register.html', 'reset-password.html', 'index.html'];
+    const authPages = ['login.html', 'reset-password.html', 'index.html'];
     const isAuthPage = authPages.some(p => window.location.pathname.endsWith(p) || window.location.pathname === '/');
     if (!isAuthPage) {
       await loadListingsFromAPI();

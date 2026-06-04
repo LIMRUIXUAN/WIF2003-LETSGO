@@ -2133,3 +2133,30 @@ footer {
   }
 }
 
+/* Google Maps Autocomplete predictions dropdown positioning above modal */
+.pac-container {
+  z-index: 10000 !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 4px;
+  border: 1px solid #e2ece6;
+}
+.pac-item {
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f4f6f5;
+}
+.pac-item:hover {
+  background-color: #e8f5e9;
+}
+.pac-item-query {
+  font-size: 0.9rem;
+  color: #17231d;
+}
+.pac-matched {
+  font-weight: 700;
+  color: var(--eco-green);
+}
+

@@ -156,6 +156,15 @@
         <h5 class="section-title mb-0 style-ebc214">Select Location</h5>
         <button type="button" onclick="closeMapPicker()" class="btn-close"></button>
       </div>
+      <!-- Location Search Input -->
+      <div class="mb-3">
+        <div class="input-group">
+          <input type="text" id="mapSearchInput" class="form-control-eco" placeholder="Search address or location..." style="border-radius: 6px 0 0 6px;">
+          <button class="btn-eco" type="button" onclick="searchMapLocation()" style="border-radius: 0 6px 6px 0; margin-top: 0; width: auto; padding: 0 15px;">
+            <i class="bi bi-search"></i> Search
+          </button>
+        </div>
+      </div>
       <div id="pickerMapContainer" class="style-d91ff8">
         <div id="pickerMap" class="style-23b83a"></div>
       </div>
@@ -214,7 +223,7 @@
       <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
       <div class="section-label">Account</div>
       <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-      <a class="sidebar-link" href="index.html" class="sidebar-link-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+      <a class="sidebar-link sidebar-link-logout" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
     </div>
 
     <!-- Main Content -->
@@ -258,6 +267,48 @@
           <button class="btn-eco py-2 btn-offset" onclick="openOffsetModal()">
             <i class="bi bi-tree"></i> Offset This Trip
           </button>
+        </div>
+
+        <div class="planner-carbon-panel mb-3" id="plannerCarbonPanel">
+          <div class="planner-carbon-head">
+            <div>
+              <span class="planner-offset-label">Route Calculator</span>
+              <strong>Calculate travel CO₂ inside this itinerary</strong>
+            </div>
+            <select id="plannerCalcTargetDay" class="form-select form-select-sm planner-carbon-target"></select>
+          </div>
+          <div class="planner-carbon-grid">
+            <div>
+              <label class="form-label small fw-bold text-muted">Origin</label>
+              <input type="text" class="form-control-eco" id="plannerCalcFrom" placeholder="e.g. Kuala Lumpur">
+            </div>
+            <div>
+              <label class="form-label small fw-bold text-muted">Destination</label>
+              <input type="text" class="form-control-eco" id="plannerCalcTo" placeholder="e.g. Penang">
+            </div>
+            <div>
+              <label class="form-label small fw-bold text-muted">Transport</label>
+              <select class="form-control-eco" id="plannerCalcMode">
+                <option value="car_petrol">Petrol Car</option>
+                <option value="car_diesel">Diesel Car</option>
+                <option value="car_ev">Electric Vehicle</option>
+                <option value="car_hybrid">Hybrid Car</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="bus">Public Bus</option>
+                <option value="train_electric">Electric Train</option>
+                <option value="klia_ekspres">KLIA Ekspres</option>
+                <option value="flight_short">Short-haul Flight</option>
+                <option value="flight_long">Long-haul Flight</option>
+                <option value="ferry">Ferry</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="walking">Walking</option>
+              </select>
+            </div>
+            <button type="button" class="btn-eco planner-carbon-calc-btn" id="btnPlannerCalculateCarbon" onclick="calculatePlannerCarbon()">
+              <i class="bi bi-lightning-charge"></i> Calculate
+            </button>
+          </div>
+          <div id="plannerCarbonResult" class="planner-carbon-result d-none"></div>
         </div>
 
         <div class="d-flex d-lg-none nav-tabs-eco justify-content-center gap-2 mb-3">

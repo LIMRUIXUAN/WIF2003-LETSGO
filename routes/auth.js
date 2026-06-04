@@ -44,51 +44,6 @@ function validatePasswordLength(password) {
     return '';
 }
 
-// POST: /api/auth/register
-router.post('/register', authEndpointLimiter, async (req, res) => {
-    try {
-        const name = String(req.body.name || '').trim();
-        const email = String(req.body.email || '').trim().toLowerCase();
-        const password = String(req.body.password || '');
-
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
-        }
-
-        const passwordError = validatePasswordLength(password);
-        if (passwordError) {
-            return res.status(400).json({ success: false, message: passwordError });
-        }
-
-        // 1. Check if the email is already in the database
-        const existingUser = await User.findOne({ email: email });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: 'Email already registered.' });
-        }
-
-        // 2. Create the new user object
-        const newUser = new User({
-            name: name,
-            email: email,
-            password: password
-        });
-
-        // 3. Save to MongoDB
-        await newUser.save();
-
-        res.status(201).json({ success: true, message: 'Account created successfully!' });
-
-    } catch (error) {
-        console.error("Registration Error:", error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ success: false, message: error.message });
-        }
-        if (error.code === 11000) {
-            return res.status(400).json({ success: false, message: 'Email already registered.' });
-        }
-        return res.status(500).json({ success: false, message: 'Server error during registration.' });
-    }
-});
 
 // POST: /api/auth/login
 // ini will act as security guard checking if user's credentials match what is in MongoDB

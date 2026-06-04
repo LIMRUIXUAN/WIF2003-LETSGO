@@ -109,7 +109,37 @@ test('POST /api/trips/calculate-carbon calculates distance, footprint, and savin
     assert.equal(payload.success, true);
     assert.equal(payload.distanceKm, 133.4);
     assert.equal(payload.carbonFootprintKg, 14);
+    assert.equal(payload.baselineFootprintKg, 18.7);
     assert.equal(payload.carbonSavedKg, 4.7);
+    assert.equal(payload.transportMode, 'bus');
+  } finally {
+    await server.close();
+  }
+});
+
+test('POST /api/trips/calculate-carbon falls back to petrol baseline for unknown transport modes', async () => {
+  const server = await createServer();
+  try {
+    const response = await fetch(`${server.baseUrl}/api/trips/calculate-carbon`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        transportMode: 'hoverboard',
+        stops: [
+          { location: { lat: 0, lng: 0 } },
+          { location: { lat: 0, lng: 1 } }
+        ]
+      })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.success, true);
+    assert.equal(payload.transportMode, 'car_petrol');
+    assert.equal(payload.carbonFootprintKg, payload.baselineFootprintKg);
+    assert.equal(payload.carbonSavedKg, 0);
   } finally {
     await server.close();
   }
@@ -130,6 +160,32 @@ test('POST /api/trips/calculate-carbon rejects missing route stops', async () =>
     assert.equal(response.status, 400);
     assert.equal(payload.success, false);
     assert.equal(payload.message, 'At least two stops are required for route calculations.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('POST /api/trips/calculate-carbon rejects invalid route coordinates', async () => {
+  const server = await createServer();
+  try {
+    const response = await fetch(`${server.baseUrl}/api/trips/calculate-carbon`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        transportMode: 'bus',
+        stops: [
+          { location: { lat: 3.1, lng: 101.7 } },
+          { location: { lat: 999, lng: 101.8 } }
+        ]
+      })
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 400);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'Each stop must include valid latitude and longitude.');
   } finally {
     await server.close();
   }

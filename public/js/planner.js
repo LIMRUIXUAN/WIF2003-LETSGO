@@ -46,6 +46,23 @@ let isEditing = false;
 let editItemIndex = null;
 let editItemLocation = null;
 let weatherWarningsByTripId = {};
+let lastPlannerCarbonCalculation = null;
+
+const TRANSPORT_LABELS = {
+  car_petrol: '🚗 Petrol Car',
+  car_diesel: '🚙 Diesel Car',
+  car_ev: '⚡ Electric Vehicle',
+  car_hybrid: '🔌 Hybrid Car',
+  motorcycle: '🏍️ Motorcycle',
+  bus: '🚌 Bus',
+  train_electric: '🚆 Train',
+  klia_ekspres: '🚄 KLIA Ekspres',
+  flight_short: '✈️ Short-haul Flight',
+  flight_long: '✈️ Long-haul Flight',
+  ferry: '⛴️ Ferry',
+  bicycle: '🚲 Bicycle',
+  walking: '🚶 Walking'
+};
 
 function getTripTotalCO2(trip) {
   const stopsCO2 = (trip?.days || []).reduce((sum, day) => {
@@ -128,6 +145,196 @@ async function calculateDayTransitEmissions(stops, transportMode) {
     console.error("Failed to calculate carbon between stops:", err);
     return { distanceKm: 0, carbonFootprintKg: 0 };
   }
+}
+
+function getTransportLabel(mode) {
+  return TRANSPORT_LABELS[mode] || TRANSPORT_LABELS.car_petrol;
+}
+
+function setPlannerCarbonLoading(isLoading) {
+  const btn = document.getElementById('btnPlannerCalculateCarbon');
+  if (!btn) return;
+  btn.disabled = isLoading;
+  btn.innerHTML = isLoading
+    ? '<span class="spinner-border spinner-border-sm"></span> Calculating'
+    : '<i class="bi bi-lightning-charge"></i> Calculate';
+}
+
+function populatePlannerCarbonTargetDays(trip) {
+  const select = document.getElementById('plannerCalcTargetDay');
+  if (!select || !trip) return;
+
+  select.innerHTML = '<option value="ideaBank">Add to Idea Bank</option>';
+  (trip.days || []).forEach(day => {
+    select.innerHTML += `<option value="${esc(day.date)}">Add to ${esc(day.date)}</option>`;
+  });
+}
+
+function resetPlannerCarbonResult() {
+  lastPlannerCarbonCalculation = null;
+  const result = document.getElementById('plannerCarbonResult');
+  if (!result) return;
+  result.classList.add('d-none');
+  result.innerHTML = '';
+}
+
+function refreshPlannerCarbonPanel(trip) {
+  const panel = document.getElementById('plannerCarbonPanel');
+  if (!panel) return;
+
+  const canEdit = isTripOwner(trip);
+  panel.classList.toggle('d-none', !canEdit);
+  if (canEdit) populatePlannerCarbonTargetDays(trip);
+}
+
+async function geocodePlannerCarbonLocation(query) {
+  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
+  if (!response.ok) throw new Error('Location lookup failed');
+
+  const data = await response.json();
+  const match = data.results?.[0];
+  if (!match) throw new Error(`Could not find ${query}.`);
+
+  return {
+    name: match.name,
+    country: match.country || '',
+    location: {
+      lat: Number(match.latitude),
+      lng: Number(match.longitude)
+    }
+  };
+}
+
+function formatPlannerLocation(location) {
+  return [location.name, location.country].filter(Boolean).join(', ');
+}
+
+function renderPlannerCarbonResult(calculation) {
+  const result = document.getElementById('plannerCarbonResult');
+  if (!result) return;
+
+  const saved = Number(calculation.carbonSavedKg) || 0;
+  const savedText = saved >= 0
+    ? `${saved.toFixed(1)} kg saved`
+    : `${Math.abs(saved).toFixed(1)} kg added`;
+  const savedClass = saved >= 0 ? 'text-success' : 'text-danger';
+
+  result.classList.remove('d-none');
+  result.innerHTML = `
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+      <div>
+        <div class="fw-bold text-success">${esc(formatPlannerLocation(calculation.from))} → ${esc(formatPlannerLocation(calculation.to))}</div>
+        <div class="small text-muted">${esc(getTransportLabel(calculation.transportMode))} compared with petrol car baseline</div>
+      </div>
+      <button type="button" class="btn-eco py-2" onclick="addPlannerCarbonToTrip()">
+        <i class="bi bi-plus-circle"></i> Add to Itinerary
+      </button>
+    </div>
+    <div class="planner-carbon-result-grid">
+      <div class="planner-carbon-metric">
+        <span>Distance</span>
+        <strong>${Number(calculation.distanceKm).toFixed(1)} km</strong>
+      </div>
+      <div class="planner-carbon-metric">
+        <span>Produced</span>
+        <strong>${Number(calculation.carbonFootprintKg).toFixed(1)} kg</strong>
+      </div>
+      <div class="planner-carbon-metric">
+        <span>Petrol Baseline</span>
+        <strong>${Number(calculation.baselineFootprintKg).toFixed(1)} kg</strong>
+      </div>
+      <div class="planner-carbon-metric">
+        <span>Impact</span>
+        <strong class="${savedClass}">${savedText}</strong>
+      </div>
+    </div>
+  `;
+}
+
+async function calculatePlannerCarbon() {
+  const fromInput = document.getElementById('plannerCalcFrom');
+  const toInput = document.getElementById('plannerCalcTo');
+  const modeInput = document.getElementById('plannerCalcMode');
+  const trip = itineraries.find(t => t._id == currentTripId);
+
+  if (!trip || !isTripOwner(trip)) return;
+
+  const fromQuery = fromInput?.value.trim();
+  const toQuery = toInput?.value.trim();
+  const transportMode = modeInput?.value || 'car_petrol';
+
+  if (!fromQuery || !toQuery) {
+    showToast('Enter both origin and destination first.', 'warn');
+    return;
+  }
+
+  setPlannerCarbonLoading(true);
+
+  try {
+    const [from, to] = await Promise.all([
+      geocodePlannerCarbonLocation(fromQuery),
+      geocodePlannerCarbonLocation(toQuery)
+    ]);
+
+    const response = await fetch('/api/trips/calculate-carbon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transportMode,
+        stops: [
+          { location: from.location },
+          { location: to.location }
+        ]
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      showToast(data.message || 'Could not calculate this route.', 'error');
+      return;
+    }
+
+    lastPlannerCarbonCalculation = { ...data, from, to };
+    renderPlannerCarbonResult(lastPlannerCarbonCalculation);
+  } catch (err) {
+    console.error('Planner carbon calculation failed:', err);
+    showToast(err.message || 'Could not calculate this route.', 'error');
+  } finally {
+    setPlannerCarbonLoading(false);
+  }
+}
+
+async function addPlannerCarbonToTrip() {
+  const trip = itineraries.find(t => t._id == currentTripId);
+  if (!trip || !isTripOwner(trip) || !lastPlannerCarbonCalculation) return;
+
+  const targetId = document.getElementById('plannerCalcTargetDay')?.value || 'ideaBank';
+  const calculation = lastPlannerCarbonCalculation;
+  const newStop = {
+    time: 'Flexible',
+    icon: '🧭',
+    name: `Travel: ${formatPlannerLocation(calculation.from)} → ${formatPlannerLocation(calculation.to)}`,
+    sub: `${getTransportLabel(calculation.transportMode)} · ${Number(calculation.distanceKm).toFixed(1)} km · ${Number(calculation.carbonSavedKg).toFixed(1)} kg vs petrol`,
+    carbon: Number(calculation.carbonFootprintKg) || 0,
+    source: 'calculator'
+  };
+
+  if (targetId === 'ideaBank') {
+    if (!trip.ideaBank) trip.ideaBank = [];
+    trip.ideaBank.push(newStop);
+  } else {
+    let targetDay = trip.days.find(day => day.date === targetId);
+    if (!targetDay) {
+      targetDay = { date: targetId, stops: [], transportMode: calculation.transportMode, transitDistance: 0, transitCarbon: 0 };
+      trip.days.push(targetDay);
+    }
+    targetDay.stops.push(newStop);
+  }
+
+  renderBoardItems(trip);
+  await saveTripState(currentTripId, trip);
+  resetPlannerCarbonResult();
+  showToast('Calculated route added to itinerary.');
 }
 
 async function refreshWeatherWarnings() {
@@ -417,6 +624,8 @@ function removeItin(id) {
       // Find the trip data
       const trip = itineraries.find(t => t._id == tripId);
       if (trip) {
+        resetPlannerCarbonResult();
+        refreshPlannerCarbonPanel(trip);
         processPendingIdeas(trip); // Move any pending ideas into the idea bank before rendering
         document.getElementById('activeTripTitle').innerText = trip.name;
         generateTimelineColumns(trip);
@@ -487,29 +696,25 @@ function removeItin(id) {
       const distance = dayData.transitDistance || 0;
       const carbon = dayData.transitCarbon || 0;
 
-      const transportLabels = {
-        car_petrol: '🚗 Petrol Car',
-        car_ev: '⚡ Electric Vehicle',
-        car_hybrid: '🔌 Hybrid Car',
-        bus: '🚌 Bus',
-        train_electric: '🚆 Train',
-        bicycle: '🚲 Bicycle',
-        walking: '🚶 Walking'
-      };
-
       const selectDropdown = canEdit ? `
         <select onchange="updateDayTransportMode('${dayId}', this.value)" class="form-select form-select-sm border-0 bg-transparent text-muted fw-semibold p-0" style="width: auto; box-shadow: none; font-size: 0.75rem; cursor: pointer;">
           <option value="car_petrol" ${mode === 'car_petrol' ? 'selected' : ''}>🚗 Petrol Car</option>
+          <option value="car_diesel" ${mode === 'car_diesel' ? 'selected' : ''}>🚙 Diesel Car</option>
           <option value="car_ev" ${mode === 'car_ev' ? 'selected' : ''}>⚡ Electric Vehicle</option>
           <option value="car_hybrid" ${mode === 'car_hybrid' ? 'selected' : ''}>🔌 Hybrid Car</option>
+          <option value="motorcycle" ${mode === 'motorcycle' ? 'selected' : ''}>🏍️ Motorcycle</option>
           <option value="bus" ${mode === 'bus' ? 'selected' : ''}>🚌 Bus</option>
           <option value="train_electric" ${mode === 'train_electric' ? 'selected' : ''}>🚆 Train</option>
+          <option value="klia_ekspres" ${mode === 'klia_ekspres' ? 'selected' : ''}>🚄 KLIA Ekspres</option>
+          <option value="flight_short" ${mode === 'flight_short' ? 'selected' : ''}>✈️ Short-haul Flight</option>
+          <option value="flight_long" ${mode === 'flight_long' ? 'selected' : ''}>✈️ Long-haul Flight</option>
+          <option value="ferry" ${mode === 'ferry' ? 'selected' : ''}>⛴️ Ferry</option>
           <option value="bicycle" ${mode === 'bicycle' ? 'selected' : ''}>🚲 Bicycle</option>
           <option value="walking" ${mode === 'walking' ? 'selected' : ''}>🚶 Walking</option>
         </select>
       ` : `
         <span class="text-muted fw-semibold" style="font-size: 0.75rem;">
-          ${transportLabels[mode] || '🚗 Petrol Car'}
+          ${getTransportLabel(mode)}
         </span>
       `;
 
@@ -570,6 +775,7 @@ function removeItin(id) {
 
   function renderBoardItems(trip) {
     updateTripCarbonSummary(trip);
+    refreshPlannerCarbonPanel(trip);
 
     const ideaContainer = document.getElementById('ideaBankContainer');
     if (ideaContainer) {
@@ -1113,7 +1319,7 @@ function removeItin(id) {
           pathCoordinates.push(position);
 
           const pin = new google.maps.marker.PinElement({
-            glyph: stopCounter.toString(),
+            glyphText: stopCounter.toString(),
             glyphColor: "white",
           });
 
@@ -1121,7 +1327,7 @@ function removeItin(id) {
             position: position,
             map: map,
             title: stop.name,
-            content: pin.element
+            content: pin
           });
 
           mapMarkers.push(marker);
@@ -1222,9 +1428,42 @@ function removeItin(id) {
   let pickerMap;
   let pickerMarker;
 
+  // Geocoding search function
+  window.searchMapLocation = function () {
+    const searchInput = document.getElementById('mapSearchInput');
+    const address = searchInput ? searchInput.value.trim() : '';
+    if (!address) {
+      showToast('Please enter a location name or address first!', 'warn');
+      return;
+    }
+
+    if (!window.google || !window.google.maps) {
+      showToast('Google Maps is not loaded yet.', 'error');
+      return;
+    }
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: address }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        const location = results[0].geometry.location;
+        pickerMap.setCenter(location);
+        pickerMap.setZoom(14);
+        placePickerMarker(location);
+      } else {
+        showToast('Location not found. Please try a different query.', 'warn');
+      }
+    });
+  };
+
   function openMapPicker() {
     // 1. Show modal
     document.getElementById('mapPickerModal').style.display = 'flex';
+
+    // Clear search input
+    const searchInput = document.getElementById('mapSearchInput');
+    if (searchInput) {
+      searchInput.value = '';
+    }
 
     // 2. Initialize picker map if not already done
     if (!pickerMap && window.google) {
@@ -1240,6 +1479,47 @@ function removeItin(id) {
       pickerMap.addListener('click', (e) => {
         placePickerMarker(e.latLng);
       });
+
+      // Initialize Google Places Autocomplete
+      if (searchInput && window.google.maps.places) {
+        const autocomplete = new google.maps.places.Autocomplete(searchInput, {
+          fields: ['geometry', 'formatted_address', 'name']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry && place.geometry.location) {
+            const location = place.geometry.location;
+            pickerMap.setCenter(location);
+            pickerMap.setZoom(15);
+            placePickerMarker(location);
+          } else {
+            searchMapLocation();
+          }
+        });
+
+        // Prevent pressing enter from triggering other actions when Autocomplete is active
+        searchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            // Check if there is an active suggestion highlight to let Google Autocomplete handle it
+            const hasSelection = document.querySelector('.pac-item-selected');
+            if (hasSelection) {
+              e.stopPropagation();
+            } else {
+              e.preventDefault();
+              searchMapLocation();
+            }
+          }
+        });
+      } else if (searchInput) {
+        // Fallback: Bind Enter key to search input geocoding
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            searchMapLocation();
+          }
+        });
+      }
     }
 
     if (!pickerMap) {

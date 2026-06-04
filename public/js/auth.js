@@ -62,69 +62,10 @@ function getLoginRedirectTarget() {
     try {
         const target = new URL(requested, window.location.origin);
         if (target.origin !== window.location.origin) return 'explore.html';
-        if (target.pathname.endsWith('/login.html') || target.pathname.endsWith('/register.html')) return 'explore.html';
+        if (target.pathname.endsWith('/login.html')) return 'explore.html';
         return `${target.pathname}${target.search}${target.hash}`;
     } catch (_error) {
         return 'explore.html';
-    }
-}
-
-// ── 2. REGISTER FUNCTION ──
-async function doRegister() {
-    // Grab values
-    const name = document.getElementById('regName').value.trim();
-    const email = document.getElementById('regEmail').value.trim().toLowerCase();
-    const password = document.getElementById('regPw').value;
-
-    // Frontend Validation
-    if (!name || !email || !password) {
-        if (typeof showToast === 'function') showToast('Please fill in all fields ⚠️', 'warn');
-        return;
-    }
-    if (password.length < 8) {
-        if (typeof showToast === 'function') showToast('Password must be at least 8 characters ⚠️', 'warn');
-        return;
-    }
-
-    // Client-side email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showToast('Please enter a valid email format.', 'warn');
-        return;
-    }
-
-    const btn = document.querySelector('.btn-eco');
-    const originalBtnHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-
-    try {
-        // Send the data to your Node.js backend
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, email: email, password: password })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Success! Send them to the login page to sign in
-            if (typeof showToast === 'function') showToast('Account created! Please Sign In 🌿');
-            setTimeout(() => {
-                window.location.href = 'login.html'; // Assuming Cha Zi Yu named it login.html
-            }, 1200);
-        } else {
-            // Usually hits if email is already registered
-            if (typeof showToast === 'function') showToast(result.message + ' ⚠️', 'error');
-            else alert(result.message);
-        }
-    } catch (error) {
-        console.error("Registration error:", error);
-        alert("Failed to connect to the server.");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalBtnHtml;
     }
 }
 
@@ -264,7 +205,6 @@ async function resetPassword() {
 document.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         if (window.location.pathname.includes('login.html')) doLogin();
-        if (window.location.pathname.includes('register.html')) doRegister();
         if (window.location.pathname.includes('reset-password.html')) resetPassword();
     }
 });
