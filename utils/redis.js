@@ -13,6 +13,7 @@
 
 let client = null;
 let isConnected = false;
+let connectionPromise = null;
 
 async function getClient() {
   // Return existing connected client if available
@@ -25,6 +26,15 @@ async function getClient() {
     return null;
   }
 
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  connectionPromise = connectClient(redisUrl);
+  return connectionPromise;
+}
+
+async function connectClient(redisUrl) {
   try {
     const { createClient } = require('redis');
 
@@ -32,7 +42,7 @@ async function getClient() {
       url: redisUrl,
       socket: {
         // Prevent hanging connections in serverless environments
-        connectTimeout: 5000,
+        connectTimeout: 1200,
         reconnectStrategy: (attempts) => {
           // Give up after 3 failed reconnect attempts
           if (attempts >= 3) {
@@ -71,6 +81,8 @@ async function getClient() {
     client = null;
     isConnected = false;
     return null;
+  } finally {
+    connectionPromise = null;
   }
 }
 

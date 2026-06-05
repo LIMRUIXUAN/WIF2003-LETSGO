@@ -55,6 +55,58 @@ async function doLogin() {
     }
 }
 
+async function doRegister() {
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
+    const password = document.getElementById('regPw').value;
+    const confirmPassword = document.getElementById('regConfirmPw').value;
+
+    if (!name || !email || !password || !confirmPassword) {
+        showToast('Please fill in all fields.', 'warn');
+        return;
+    }
+
+    if (password.length < 8) {
+        showToast('Password must be at least 8 characters.', 'warn');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        showToast('Passwords do not match.', 'warn');
+        return;
+    }
+
+    const btn = document.querySelector('.btn-eco');
+    const originalBtnHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Account created successfully! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1200);
+        } else {
+            showToast(result.message || 'Registration failed.', 'error');
+        }
+    } catch (error) {
+        console.error("Fetch error during registration:", error);
+        showToast('Failed to connect to the server.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+    }
+}
+
 function getLoginRedirectTarget() {
     const requested = new URLSearchParams(window.location.search).get('redirect');
     if (!requested) return 'explore.html';
@@ -205,6 +257,7 @@ async function resetPassword() {
 document.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         if (window.location.pathname.includes('login.html')) doLogin();
+        if (window.location.pathname.includes('register.html')) doRegister();
         if (window.location.pathname.includes('reset-password.html')) resetPassword();
     }
 });

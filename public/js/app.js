@@ -95,6 +95,7 @@ window.fetch = function fetchWithAuth(resource, options = {}) {
 
 /* ── SHARED DATA: Eco listings (fetched from MongoDB via API) ── */
 let LISTINGS = [];
+let listingsLoadPromise = null;
 
 /**
  * Fetches all destinations from the backend API and populates the
@@ -118,6 +119,11 @@ async function loadListingsFromAPI() {
     // Ignore cache parse errors.
   }
 
+  if (listingsLoadPromise) {
+    return listingsLoadPromise;
+  }
+
+  listingsLoadPromise = (async () => {
   try {
     const response = await fetch('/api/destinations');
     const data = await response.json();
@@ -131,8 +137,13 @@ async function loadListingsFromAPI() {
     }
   } catch (error) {
     console.error('Failed to load destinations from API:', error);
+  } finally {
+    listingsLoadPromise = null;
   }
   return LISTINGS;
+  })();
+
+  return listingsLoadPromise;
 }
 
 /* ── MODAL ── */
@@ -253,7 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const authPages = ['login.html', 'reset-password.html', 'index.html'];
     const isAuthPage = authPages.some(p => window.location.pathname.endsWith(p) || window.location.pathname === '/');
     if (!isAuthPage) {
-      await loadListingsFromAPI();
+      loadListingsFromAPI();
     }
 
     // ── 3. Global UI: Update Navigation Avatar ──
@@ -281,4 +292,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     }
+
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href') || '';
+      if (!['dashboard.html', 'explore.html', 'planner.html', 'favorites.html'].includes(href)) return;
+
+      const prefetchListings = () => {
+        loadListingsFromAPI();
+      };
+
+      link.addEventListener('pointerenter', prefetchListings, { once: true });
+      link.addEventListener('focus', prefetchListings, { once: true });
+    });
 });

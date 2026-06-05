@@ -163,9 +163,6 @@ async function startServer() {
   try {
     await connectToDatabase();
 
-    // Initialize Redis cache (fail-safe — app continues without Redis)
-    await getRedisClient();
-
     // Copy generated images to public/images
     const fs = require('fs');
     const imagesToCopy = [
@@ -188,6 +185,8 @@ async function startServer() {
 
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port} (${isDev ? 'dev with live reload' : 'production'})`);
+      // Warm Redis in the background. Requests still fall back to MongoDB if Redis is unavailable.
+      getRedisClient().catch(err => console.error('Redis connection failed during background warm-up:', err.message));
     });
   } catch (error) {
     console.error('MongoDB connection failed:', error.message);

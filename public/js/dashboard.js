@@ -11,8 +11,10 @@
       const email = localStorage.getItem('ecoUserEmail');
       if (!email) { if (typeof redirectToLogin === 'function') redirectToLogin(); return; }
 
-      // Ensure LISTINGS are loaded from MongoDB before rendering
-      await loadListingsFromAPI();
+      const listingsPromise = loadListingsFromAPI().catch((error) => {
+        console.error('Failed to load dashboard destination data:', error);
+        return [];
+      });
 
       let user = null, trips = [];
       try {
@@ -38,6 +40,10 @@
       renderCO2Chart(user, trips);
       renderWeatherWidget(user);
       renderProfileSummary(user);
+
+      await listingsPromise;
+      renderStats(user, trips);
+      renderFavs(user);
     }
 
     function renderWelcome(user) {

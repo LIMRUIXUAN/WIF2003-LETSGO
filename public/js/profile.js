@@ -505,10 +505,15 @@ function checkStrength(pw) {
    ══════════════════════════════════════════ */
 function togglePw(inputId, iconEl) {
   const input = document.getElementById(inputId);
+  if (!input || !iconEl) return;
+
   const isHidden = input.type === 'password';
   input.type = isHidden ? 'text' : 'password';
-  iconEl.className = isHidden ? 'bi bi-eye-slash toggle-pw' : 'bi bi-eye toggle-pw';
-  iconEl.style.cssText = 'position:absolute;right:.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);';
+
+  const icon = iconEl.querySelector('i') || iconEl;
+  icon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+  iconEl.setAttribute('aria-pressed', String(isHidden));
+  iconEl.setAttribute('aria-label', `${isHidden ? 'Hide' : 'Show'} ${input.placeholder.toLowerCase()}`);
 }
  
 /* ══════════════════════════════════════════

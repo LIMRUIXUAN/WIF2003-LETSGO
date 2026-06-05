@@ -24,6 +24,57 @@ function ecoColor(score) {
   return 'low';
 }
 
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escAttr(str) {
+  return esc(str).replace(/`/g, '&#96;');
+}
+
+function renderFavoritesLoading() {
+    const grid = document.getElementById('favGrid');
+    const empty = document.getElementById('emptyFavs');
+    if (!grid) return;
+
+    if (empty) empty.style.display = 'none';
+    grid.innerHTML = Array.from({ length: 3 }).map(() => `
+      <div class="col-sm-6 col-lg-4">
+        <div class="listing-card loading-card-skeleton" aria-hidden="true">
+          <div class="loading-skeleton-img"></div>
+          <div class="card-body">
+            <div class="loading-skeleton-line loading-skeleton-title"></div>
+            <div class="loading-skeleton-line loading-skeleton-short"></div>
+            <div class="loading-skeleton-pill-row">
+              <div class="loading-skeleton-pill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+}
+
+function renderFavoritesError() {
+    const grid = document.getElementById('favGrid');
+    const empty = document.getElementById('emptyFavs');
+    if (!grid) return;
+
+    if (empty) empty.style.display = 'none';
+    grid.innerHTML = `
+      <div class="col-12">
+        <div class="loading-state-panel">
+          <i class="bi bi-wifi-off"></i>
+          <span>Could not load favorites. Please try again.</span>
+        </div>
+      </div>
+    `;
+}
+
 async function renderFavs() {
     const grid  = document.getElementById('favGrid');
     const empty = document.getElementById('emptyFavs');
@@ -32,11 +83,13 @@ async function renderFavs() {
     const userEmail = localStorage.getItem('ecoUserEmail'); 
 
     try {
-        // 2. Ensure destinations are loaded from MongoDB
-        await loadListingsFromAPI();
+        renderFavoritesLoading();
 
-        // 3. Fetch the user's profile from MongoDB
-        const response = await fetch(`/api/users/profile/${userEmail}`);
+        // 2. Load destinations and the user's profile in parallel.
+        const [, response] = await Promise.all([
+            loadListingsFromAPI(),
+            fetch(`/api/users/profile/${userEmail}`)
+        ]);
         const userData = await response.json();
 
         if (userData.success) {
@@ -57,14 +110,14 @@ async function renderFavs() {
             grid.innerHTML = favList.map(l => `
               <div class="col-sm-6 col-lg-4">
                 <div class="listing-card">
-                  <div class="card-img" style="background-image: url('${l.image || l.imageUrl}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
+                  <div class="card-img" style="background-image: url('${escAttr(l.image || l.imageUrl)}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
                     <button class="fav-btn saved" onclick="removeFav(event, ${l.id})">
                       <i class="bi bi-heart-fill" style="color: #e74c3c;"></i>
                     </button>
                   </div>
                   <div class="card-body">
-                    <div class="card-title">${l.name}</div>
-                    <div class="card-location"><i class="bi bi-geo-alt"></i> ${l.location}</div>
+                    <div class="card-title">${esc(l.name)}</div>
+                    <div class="card-location"><i class="bi bi-geo-alt"></i> ${esc(l.location)}</div>
                     <button onclick="addToTripFromFav(${l.id})" class="btn-eco w-100 mt-2" style="font-size:.82rem; padding:8px; justify-content:center; border:none;">
                       <i class="bi bi-plus"></i> Add to Trip
                     </button>
@@ -75,6 +128,7 @@ async function renderFavs() {
         }
     } catch (error) {
         console.error("Error loading favorites from database:", error);
+        renderFavoritesError();
     }
 }
 

@@ -147,6 +147,41 @@ function renderListings(list = LISTINGS) {
   `).join('');
 }
 
+function renderListingsLoading() {
+  const grid = document.getElementById('listingsGrid');
+  if (!grid) return;
+
+  grid.innerHTML = Array.from({ length: 6 }).map(() => `
+    <div class="col-sm-6 col-lg-4">
+      <div class="listing-card loading-card-skeleton" aria-hidden="true">
+        <div class="loading-skeleton-img"></div>
+        <div class="card-body">
+          <div class="loading-skeleton-line loading-skeleton-title"></div>
+          <div class="loading-skeleton-line loading-skeleton-short"></div>
+          <div class="loading-skeleton-pill-row">
+            <div class="loading-skeleton-pill"></div>
+            <div class="loading-skeleton-pill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderListingsError() {
+  const grid = document.getElementById('listingsGrid');
+  if (!grid) return;
+
+  grid.innerHTML = `
+    <div class="col-12">
+      <div class="loading-state-panel">
+        <i class="bi bi-wifi-off"></i>
+        <span>Could not load destinations. Please try again.</span>
+      </div>
+    </div>
+  `;
+}
+
 function toggleCardFlip(event, triggerElement) {
   event.stopPropagation();
   triggerElement.closest('.flip-card')?.classList.toggle('flipped');
@@ -345,6 +380,7 @@ function handleSearchKeydown(event) {
 document.addEventListener('DOMContentLoaded', () => {
   // Destinations are already loaded by app.js (loadListingsFromAPI).
   // We just need to render once LISTINGS are ready and load favorites.
+  renderListingsLoading();
   loadDestinations();
   // Close modal when clicking outside
   const modal = document.getElementById('filterModal');
@@ -398,6 +434,7 @@ async function loadDestinations() {
         renderListings();            // Draw the flip cards
     } catch (error) {
         console.error("Database connection error:", error);
+        renderListingsError();
         if(typeof showToast === 'function') showToast("Could not load destinations", "error");
     }
 }
