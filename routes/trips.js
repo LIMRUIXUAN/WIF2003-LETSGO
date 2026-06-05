@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const Destination = require('../models/Destination');
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail } = require('../middleware/auth');
 const { getCache, setCache, delCache } = require('../utils/redis');
