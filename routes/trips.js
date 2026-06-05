@@ -3,6 +3,9 @@ const router = express.Router();
 const Destination = require('../models/Destination');
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail } = require('../middleware/auth');
+const { getCache, setCache, delCache } = require('../utils/redis');
+
+const TRIPS_TTL = 60 * 15; // 15 minutes
 
 const EMISSION_FACTORS = {
   car_petrol: 0.1405,
@@ -100,6 +103,8 @@ router.post('/', requireAuth, async (req, res) => {
       ...req.body,
       userEmail
     });
+    // Invalidate the user's trips cache after creating a new trip
+    await delCache(`cache:user:trips:${userEmail}`);
     res.status(201).json({ success: true, data: trip });
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -113,8 +118,20 @@ router.post('/', requireAuth, async (req, res) => {
 router.get('/:email', requireAuth, requireSelfEmail, async (req, res) => {
   try {
     const email = normalizeEmail(req.params.email);
+
+    // Check Redis cache first
+    const cacheKey = `cache:user:trips:${email}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      return res.json(cached);
+    }
+
     const trips = await Trip.find({ userEmail: email });
-    res.json({ success: true, data: trips });
+    const payload = { success: true, data: trips };
+
+    await setCache(cacheKey, payload, TRIPS_TTL);
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ success: false, message: 'Internal server error.' });
   }
@@ -144,6 +161,8 @@ router.put('/:id', requireAuth, async (req, res) => {
       updatedData,
       { new: true, runValidators: true }
     );
+    // Invalidate the user's trips cache after update
+    await delCache(`cache:user:trips:${tokenEmail}`);
     res.json({ success: true, data: updatedTrip });
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -168,6 +187,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 
     await Trip.findByIdAndDelete(req.params.id);
+    // Invalidate the user's trips cache after deletion
+    await delCache(`cache:user:trips:${tokenEmail}`);
     res.json({ success: true, message: 'Trip deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Internal server error.' });

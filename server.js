@@ -12,6 +12,8 @@ const destinationRoutes = require('./routes/destinations');
 const tripRoutes = require('./routes/trips');
 const userRoutes = require('./routes/users');
 
+const { getClient: getRedisClient } = require('./utils/redis');
+
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const isDev = !isProduction;
@@ -160,6 +162,9 @@ async function startServer() {
 
   try {
     await connectToDatabase();
+
+    // Initialize Redis cache (fail-safe — app continues without Redis)
+    await getRedisClient();
 
     // Copy generated images to public/images
     const fs = require('fs');

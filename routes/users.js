@@ -4,6 +4,9 @@ const router = express.Router();
 const User = require('../models/User');// ini using for standardise the User json format
 const Trip = require('../models/Trip');
 const { requireAuth, requireSelfEmail, signToken } = require('../middleware/auth');
+const { getCache, setCache, delCache } = require('../utils/redis');
+
+const USER_PROFILE_TTL = 60 * 10; // 10 minutes
 
 const profileUpdateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -57,14 +60,26 @@ function validateAvatarBase64(value) {
 router.get('/profile/:email', requireAuth, requireSelfEmail, async (req, res) => {
     try {
         const email = String(req.params.email || '').trim().toLowerCase();
+
+        // Check Redis cache first
+        const cacheKey = `cache:user:profile:${email}`;
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            console.log(`[Redis] Cache Hit: ${cacheKey}`);
+            return res.json(cached);
+        }
+
         // 1. Ask MongoDB to find the user
         const user = await User.findOne({ email: email });
         
         // 2. If no user exists, send an error
         if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
         
-        // 3. If found, send the data back as JSON
-        res.json({ success: true, data: user});
+        // 3. Cache and return the result
+        const payload = { success: true, data: user };
+        await setCache(cacheKey, payload, USER_PROFILE_TTL);
+
+        res.json(payload);
         
     } catch (err) {
         res.status(500).json({ success: false, error: 'Internal server error.' });
@@ -100,6 +115,8 @@ router.put('/:email/favorites', requireAuth, requireSelfEmail, async (req, res) 
         }
 
         await user.save();
+        // Invalidate cached profile since favorites changed
+        await delCache(`cache:user:profile:${email}`);
         res.json({ success: true, action: action, favorites: user.favorites});
     }catch (err){
         console.error('Favorite Toggle Error:', err);
@@ -133,6 +150,8 @@ router.put('/:email/password', profileUpdateLimiter, requireAuth, requireSelfEma
 
         user.password = newPassword;
         await user.save();
+        // Invalidate cached profile since credentials changed
+        await delCache(`cache:user:profile:${email}`);
 
         res.json({
             success: true,
@@ -194,6 +213,10 @@ router.put('/:email', profileUpdateLimiter, requireAuth, requireSelfEmail, async
 
         if (requestedEmail && requestedEmail !== userEmail) {
             await Trip.updateMany({ userEmail }, { $set: { userEmail: requestedEmail } });
+            // Invalidate old email profile cache when email changes
+            await delCache(`cache:user:profile:${userEmail}`);
+        } else {
+            await delCache(`cache:user:profile:${userEmail}`);
         }
 
         res.json({
@@ -221,6 +244,8 @@ router.delete('/:email', requireAuth, requireSelfEmail, async (req, res) => {
         }
 
         await Trip.deleteMany({ userEmail: email });
+        // Invalidate cached profile on account deletion
+        await delCache(`cache:user:profile:${email}`);
 
         res.json({ success: true, message: 'Account deleted.' });
     } catch (error) {

@@ -6,8 +6,11 @@ const {
   extractPriceValue,
   mapDestinationForClient
 } = require('../utils/destinationCompat');
+const { getCache, setCache, delCachePattern } = require('../utils/redis');
 
 const router = express.Router();
+
+const DEST_TTL = 60 * 60; // 1 hour
 
 async function fetchDestinations(query = {}) {
   const documents = await Destination.find(query).sort({ id: 1 }).lean();
@@ -36,22 +39,27 @@ function filterByPrice(destinations, minPrice, maxPrice) {
 
 router.get('/', async (req, res) => {
   try {
-    const destinations = await fetchDestinations(buildDestinationMongoQuery({
-      search: req.query.search,
-      category: req.query.category,
-      minEco: req.query.minEco
-    }));
+    const { search, category, minEco, minPrice, maxPrice } = req.query;
 
-    const minPrice = req.query.minPrice ? Number.parseInt(req.query.minPrice, 10) : undefined;
-    const maxPrice = req.query.maxPrice ? Number.parseInt(req.query.maxPrice, 10) : undefined;
-    const filtered = filterByPrice(destinations, minPrice, maxPrice);
+    // Build a deterministic cache key from the query params
+    const cacheKey = `cache:destinations:list:${search || ''}:${category || ''}:${minEco || ''}:${minPrice || ''}:${maxPrice || ''}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      return res.json(cached);
+    }
+
+    const destinations = await fetchDestinations(buildDestinationMongoQuery({ search, category, minEco }));
+
+    const minPriceNum = minPrice ? Number.parseInt(minPrice, 10) : undefined;
+    const maxPriceNum = maxPrice ? Number.parseInt(maxPrice, 10) : undefined;
+    const filtered = filterByPrice(destinations, minPriceNum, maxPriceNum);
+
+    const payload = { success: true, count: filtered.length, data: filtered };
+    await setCache(cacheKey, payload, DEST_TTL);
 
     res.set('Cache-Control', 'public, max-age=300');
-    res.json({
-      success: true,
-      count: filtered.length,
-      data: filtered
-    });
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ success: false, error: 'Internal server error.' });
   }
@@ -65,6 +73,13 @@ router.get('/search/suggestions', async (req, res) => {
       return res.json({ success: true, suggestions: [] });
     }
 
+    const cacheKey = `cache:destinations:suggest:${query}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      return res.json(cached);
+    }
+
     const destinations = await fetchDestinations(buildDestinationMongoQuery({ search: query }));
     const allOptions = new Set();
 
@@ -74,10 +89,10 @@ router.get('/search/suggestions', async (req, res) => {
       if (destination.name.toLowerCase().includes(query)) allOptions.add(destination.name);
     });
 
-    return res.json({
-      success: true,
-      suggestions: Array.from(allOptions).slice(0, 8)
-    });
+    const payload = { success: true, suggestions: Array.from(allOptions).slice(0, 8) };
+    await setCache(cacheKey, payload, DEST_TTL);
+
+    return res.json(payload);
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
@@ -85,15 +100,21 @@ router.get('/search/suggestions', async (req, res) => {
 
 router.get('/category/:category', async (req, res) => {
   try {
+    const cacheKey = `cache:destinations:cat:${req.params.category}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      return res.json(cached);
+    }
+
     const destinations = await fetchDestinations(buildDestinationMongoQuery({
       category: req.params.category
     }));
 
-    res.json({
-      success: true,
-      count: destinations.length,
-      data: destinations
-    });
+    const payload = { success: true, count: destinations.length, data: destinations };
+    await setCache(cacheKey, payload, DEST_TTL);
+
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ success: false, error: 'Internal server error.' });
   }
@@ -101,6 +122,13 @@ router.get('/category/:category', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    const cacheKey = `cache:destinations:id:${req.params.id}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      return res.json(cached);
+    }
+
     const destinations = await fetchDestinations(buildDestinationMongoQuery({ id: req.params.id }));
     const destination = destinations[0];
 
@@ -108,10 +136,10 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Destination not found' });
     }
 
-    return res.json({
-      success: true,
-      data: destination
-    });
+    const payload = { success: true, data: destination };
+    await setCache(cacheKey, payload, DEST_TTL);
+
+    return res.json(payload);
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Internal server error.' });
   }
@@ -120,6 +148,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', requireAuth, requireRole(['admin']), async (req, res) => {
   try {
     const destination = await Destination.create(req.body);
+    // Invalidate all destination caches after a new destination is created
+    await delCachePattern('cache:destinations:*');
 
     return res.status(201).json({
       success: true,
@@ -145,6 +175,9 @@ router.put('/:id', requireAuth, requireRole(['admin']), async (req, res) => {
       return res.status(404).json({ success: false, error: 'Destination not found' });
     }
 
+    // Invalidate all destination caches after an update
+    await delCachePattern('cache:destinations:*');
+
     return res.json({
       success: true,
       data: mapDestinationForClient(destination)
@@ -166,6 +199,9 @@ router.delete('/:id', requireAuth, requireRole(['admin']), async (req, res) => {
     if (!destination) {
       return res.status(404).json({ success: false, error: 'Destination not found' });
     }
+
+    // Invalidate all destination caches after deletion
+    await delCachePattern('cache:destinations:*');
 
     return res.json({
       success: true,
