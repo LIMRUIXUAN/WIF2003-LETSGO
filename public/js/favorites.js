@@ -6,6 +6,18 @@
 
 'use strict';
 
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
+})();
+
 function ecoColor(score) {
   if (score >= 9) return '';
   if (score >= 8) return 'medium';
@@ -68,7 +80,8 @@ async function renderFavs() {
 
 async function removeFav(e, id) {
     e.stopPropagation();
-    const userEmail = localStorage.getItem('ecoUserEmail') || 'test@ecoplanner.com';
+    const userEmail = localStorage.getItem('ecoUserEmail');
+    if (!userEmail) return;
 
     // 1. Tell MongoDB to remove it
     try {

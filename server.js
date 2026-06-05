@@ -12,6 +12,8 @@ const destinationRoutes = require('./routes/destinations');
 const tripRoutes = require('./routes/trips');
 const userRoutes = require('./routes/users');
 
+const { getClient: getRedisClient } = require('./utils/redis');
+
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const isDev = !isProduction;
@@ -69,14 +71,25 @@ if (isDev && require.main === module) {
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
-const authLimiter = rateLimit({
+const userLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 30,
+  limit: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'Too many authentication attempts. Please try again later.'
+    message: 'Too many requests. Please try again later.'
+  }
+});
+
+const tripLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many trip requests. Please try again later.'
   }
 });
 
@@ -94,9 +107,9 @@ app.get('/api/config/maps', requireAuth, (_req, res) => {
   res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/trips', tripRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userLimiter, userRoutes);
+app.use('/api/trips', tripLimiter, tripRoutes);
 app.use('/api/destinations', destinationRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -141,8 +154,38 @@ async function connectToDatabase() {
 async function startServer() {
   const port = Number(process.env.PORT || process.env.port) || 3000;
 
+  // Fail fast if critical env vars are missing.
+  if (!process.env.JWT_SECRET && !process.env.AUTH_TOKEN_SECRET && !process.env.SESSION_SECRET) {
+    console.error('FATAL: JWT_SECRET is not set in environment. Add it to your .env file.');
+    process.exit(1);
+  }
+
   try {
     await connectToDatabase();
+
+    // Initialize Redis cache (fail-safe — app continues without Redis)
+    await getRedisClient();
+
+    // Copy generated images to public/images
+    const fs = require('fs');
+    const imagesToCopy = [
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\langkawi_mangroves_slide_1780580662130.png", dest: path.join(__dirname, "public", "images", "langkawi_mangroves_slide.png") },
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\borneo_rainforest_slide_1780580680487.png", dest: path.join(__dirname, "public", "images", "borneo_rainforest_slide.png") },
+      { src: "C:\\Users\\PC\\.gemini\\antigravity-ide\\brain\\79c6f94a-e6cc-4eeb-af64-6dd2d6d0cca3\\cameron_highlands_slide_1780580701877.png", dest: path.join(__dirname, "public", "images", "cameron_highlands_slide.png") }
+    ];
+    for (const img of imagesToCopy) {
+      if (fs.existsSync(img.src)) {
+        try {
+          fs.copyFileSync(img.src, img.dest);
+          console.log(`Copied image to ${img.dest}`);
+        } catch (e) {
+          console.error(`Failed to copy image: ${e.message}`);
+        }
+      } else {
+        console.warn(`Source image does not exist: ${img.src}`);
+      }
+    }
+
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port} (${isDev ? 'dev with live reload' : 'production'})`);
     });

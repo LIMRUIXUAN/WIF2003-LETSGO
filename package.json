@@ -29,7 +29,8 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.1.0",
     "mongodb": "^7.1.1",
-    "mongoose": "^9.3.3"
+    "mongoose": "^9.3.3",
+    "redis": "^4.7.1"
   },
   "devDependencies": {
     "connect-livereload": "^0.6.1",

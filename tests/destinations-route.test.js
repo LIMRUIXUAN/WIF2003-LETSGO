@@ -2,8 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
+
 const Destination = require('../models/Destination');
 const destinationRouter = require('../routes/destinations');
+const { signToken } = require('../middleware/auth');
 
 const SAMPLE_DESTINATIONS = [
   {
@@ -42,6 +45,25 @@ function withStubbedFind(records, callback) {
       return this;
     },
     lean: async () => records.filter((record) => matchesQuery(record, query))
+  });
+
+  return Promise.resolve()
+    .then(callback)
+    .finally(() => {
+      Destination.find = originalFind;
+    });
+}
+
+function withFailingFind(callback) {
+  const originalFind = Destination.find;
+
+  Destination.find = () => ({
+    sort() {
+      return this;
+    },
+    lean: async () => {
+      throw new Error('raw database failure');
+    }
   });
 
   return Promise.resolve()
@@ -105,6 +127,7 @@ test('GET /api/destinations returns legacy and canonical destination fields', as
       const payload = await response.json();
 
       assert.equal(response.status, 200);
+      assert.equal(response.headers.get('cache-control'), 'public, max-age=300');
       assert.equal(payload.success, true);
       assert.equal(payload.count, 2);
       assert.equal(payload.data[0].category, 'hotel');
@@ -140,6 +163,60 @@ test('GET /api/destinations applies search, category, eco, and price filters', a
   });
 });
 
+test('GET /api/destinations/category/:category returns destinations in that category', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/category/restaurant`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.count, 1);
+      assert.equal(payload.data[0].id, 2);
+      assert.equal(payload.data[0].category, 'restaurant');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations/:id returns one destination by numeric display ID', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/1`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.equal(payload.data.id, 1);
+      assert.equal(payload.data.name, 'Bamboo Eco Resort');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations/:id returns 404 for unknown destination IDs', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/999`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 404);
+      assert.equal(payload.success, false);
+      assert.equal(payload.error, 'Destination not found');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('GET /api/destinations/search/suggestions returns search suggestions from Mongo-backed results', async () => {
   await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
     const server = await createServer();
@@ -155,4 +232,104 @@ test('GET /api/destinations/search/suggestions returns search suggestions from M
       await server.close();
     }
   });
+});
+
+test('GET /api/destinations/search/suggestions returns empty suggestions for blank queries', async () => {
+  await withStubbedFind(SAMPLE_DESTINATIONS, async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations/search/suggestions?q=%20%20`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.deepEqual(payload.suggestions, []);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('GET /api/destinations hides raw database errors', async () => {
+  await withFailingFind(async () => {
+    const server = await createServer();
+
+    try {
+      const response = await fetch(`${server.baseUrl}/api/destinations`);
+      const payload = await response.json();
+
+      assert.equal(response.status, 500);
+      assert.equal(payload.success, false);
+      assert.equal(payload.error, 'Internal server error.');
+      assert.equal(JSON.stringify(payload).includes('raw database failure'), false);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('POST /api/destinations requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(SAMPLE_DESTINATIONS[0])
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('PUT /api/destinations/:id requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations/1`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: 'Updated' })
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
+});
+
+test('DELETE /api/destinations/:id requires an admin role', async () => {
+  const server = await createServer();
+  const token = signToken({ id: '1', email: 'test@example.com', name: 'Test', role: 'user' });
+
+  try {
+    const response = await fetch(`${server.baseUrl}/api/destinations/1`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 403);
+    assert.equal(payload.success, false);
+    assert.equal(payload.message, 'You do not have permission to perform this action.');
+  } finally {
+    await server.close();
+  }
 });

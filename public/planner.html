@@ -156,6 +156,15 @@
         <h5 class="section-title mb-0 style-ebc214">Select Location</h5>
         <button type="button" onclick="closeMapPicker()" class="btn-close"></button>
       </div>
+      <!-- Location Search Input -->
+      <div class="mb-3">
+        <div class="input-group">
+          <input type="text" id="mapSearchInput" class="form-control-eco" placeholder="Search address or location..." style="border-radius: 6px 0 0 6px;">
+          <button class="btn-eco" type="button" onclick="searchMapLocation()" style="border-radius: 0 6px 6px 0; margin-top: 0; width: auto; padding: 0 15px;">
+            <i class="bi bi-search"></i> Search
+          </button>
+        </div>
+      </div>
       <div id="pickerMapContainer" class="style-d91ff8">
         <div id="pickerMap" class="style-23b83a"></div>
       </div>
@@ -164,6 +173,20 @@
       </div>
       <button type="button" class="btn-eco w-100 mt-3 style-c157e3" onclick="confirmMapSelection()">
         Confirm Location
+      </button>
+    </div>
+  </div>
+
+  <!-- Carbon Offset Modal -->
+  <div id="offsetModal" class="eco-modal-backdrop d-none">
+    <div class="eco-modal">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="section-title mb-0 style-ebc214">Offset This Trip</h5>
+        <button type="button" onclick="closeModal('offsetModal')" class="btn-close"></button>
+      </div>
+      <div id="offsetModalBody"></div>
+      <button type="button" class="btn-eco w-100 mt-3 style-c157e3" onclick="confirmOffsetContribution()">
+        <i class="bi bi-tree"></i> Confirm Offset
       </button>
     </div>
   </div>
@@ -200,7 +223,7 @@
       <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
       <div class="section-label">Account</div>
       <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-      <a class="sidebar-link" href="index.html" class="sidebar-link-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+      <a class="sidebar-link sidebar-link-logout" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
     </div>
 
     <!-- Main Content -->
@@ -236,33 +259,86 @@
           </button>
         </div>
 
-        <div id="mapContainer" class="mb-4 shadow-sm style-0da3c9">
-          <div id="map" class="style-23b83a"></div>
+        <div class="planner-offset-panel mb-3">
+          <div>
+            <span class="planner-offset-label">Trip CO₂</span>
+            <strong id="tripCarbonSummary">0.0 kg</strong>
+          </div>
+          <button class="btn-eco py-2 btn-offset" onclick="openOffsetModal()">
+            <i class="bi bi-tree"></i> Offset This Trip
+          </button>
+        </div>
+
+        <div class="planner-carbon-panel mb-3" id="plannerCarbonPanel">
+          <div class="planner-carbon-head">
+            <div>
+              <span class="planner-offset-label">Route Calculator</span>
+              <strong>Calculate travel CO₂ inside this itinerary</strong>
+            </div>
+            <select id="plannerCalcTargetDay" class="form-select form-select-sm planner-carbon-target"></select>
+          </div>
+          <div class="planner-carbon-grid">
+            <div>
+              <label class="form-label small fw-bold text-muted">Origin</label>
+              <input type="text" class="form-control-eco" id="plannerCalcFrom" placeholder="e.g. Kuala Lumpur">
+            </div>
+            <div>
+              <label class="form-label small fw-bold text-muted">Destination</label>
+              <input type="text" class="form-control-eco" id="plannerCalcTo" placeholder="e.g. Penang">
+            </div>
+            <div>
+              <label class="form-label small fw-bold text-muted">Transport</label>
+              <select class="form-control-eco" id="plannerCalcMode">
+                <option value="car_petrol">Petrol Car</option>
+                <option value="car_diesel">Diesel Car</option>
+                <option value="car_ev">Electric Vehicle</option>
+                <option value="car_hybrid">Hybrid Car</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="bus">Public Bus</option>
+                <option value="train_electric">Electric Train</option>
+                <option value="klia_ekspres">KLIA Ekspres</option>
+                <option value="flight_short">Short-haul Flight</option>
+                <option value="flight_long">Long-haul Flight</option>
+                <option value="ferry">Ferry</option>
+                <option value="bicycle">Bicycle</option>
+                <option value="walking">Walking</option>
+              </select>
+            </div>
+            <button type="button" class="btn-eco planner-carbon-calc-btn" id="btnPlannerCalculateCarbon" onclick="calculatePlannerCarbon()">
+              <i class="bi bi-lightning-charge"></i> Calculate
+            </button>
+          </div>
+          <div id="plannerCarbonResult" class="planner-carbon-result d-none"></div>
+        </div>
+
+        <div class="d-flex d-lg-none nav-tabs-eco justify-content-center gap-2 mb-3">
+          <button class="tab-btn active" onclick="switchPlannerTab('ideas')"><i class="bi bi-lightbulb"></i> Idea Bank</button>
+          <button class="tab-btn" onclick="switchPlannerTab('calendar')"><i class="bi bi-calendar3"></i> Calendar</button>
+          <button class="tab-btn" onclick="switchPlannerTab('map')"><i class="bi bi-map"></i> Map</button>
+        </div>
+
+        <div id="mapCol" class="planner-tab-panel">
+          <div id="mapContainer" class="mb-4 shadow-sm style-0da3c9">
+            <div id="map" class="style-23b83a"></div>
+          </div>
         </div>
 
         <div class="kanban-arena d-flex gap-4 overflow-x-auto pb-4 mt-4 style-b3b582">
-          <div class="kanban-column bg-light rounded-3 p-3 style-374c4e" ondragover="allowDrop(event)"
+          <div id="ideaBankCol" class="planner-tab-panel kanban-column bg-light rounded-3 p-3 style-374c4e" ondragover="allowDrop(event)"
             ondrop="handleDrop(event, 'ideaBank')">
 
             <h6 class="text-muted mb-3"><i class="bi bi-lightbulb"></i> Activities Idea</h6>
 
             <div id="ideaBankContainer" class="d-flex flex-column gap-2 min-vh-25">
-
-              <div class="card border-0 shadow-sm p-2 cursor-grab" draggable="true"
-                ondragstart="handleDragStart(event, 'act_1', 'ideaBank')" id="card_act_1">
-                <div class="d-flex justify-content-between">
-                  <strong class="style-33dd45">Mangrove Kayaking</strong>
-                  <span class="badge bg-success" title="Low Carbon"><i class="bi bi-leaf"></i></span>
-                </div>
-                <small class="text-muted mt-1">2 Hours • Nature</small>
-              </div>
-
             </div>
           </div>
 
-          <div id="timelineContainer" class="d-flex gap-4 h-100">
+          <div id="itineraryCol" class="planner-tab-panel">
+            <div id="timelineContainer" class="d-flex gap-4 h-100">
+            </div>
           </div>
         </div>
+
       </div><!-- /dash-main -->
       <footer class="text-center py-4 mt-5 style-66e4ab">
         <div class="container">

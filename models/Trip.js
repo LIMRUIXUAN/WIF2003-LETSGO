@@ -30,7 +30,10 @@ const tripDaySchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{4}-\d{2}-\d{2}$/, 'Trip day date must use YYYY-MM-DD format.']
   },
-  stops: { type: [stopSchema], default: [] }
+  stops: { type: [stopSchema], default: [] },
+  transportMode: { type: String, default: 'car_petrol' },
+  transitDistance: { type: Number, default: 0 },
+  transitCarbon: { type: Number, default: 0 }
 }, { _id: false });
 
 const tripSchema = new mongoose.Schema({

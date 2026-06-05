@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$/;
 const BCRYPT_ROUNDS = 12;
+const PASSWORD_MAX_LENGTH = 72;
 const BUDGET_ALIASES = {
     budget: 'low',
     luxury: 'high'
@@ -43,7 +44,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Password is required.'],
         minlength: [8, 'Password must be at least 8 characters.'],
+        maxlength: [PASSWORD_MAX_LENGTH, 'Password must be 72 characters or fewer.'],
         select: false
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
     },
 
     city: { type: String, trim: true, default: '' },
@@ -134,5 +141,6 @@ userSchema.methods.isPasswordHashed = function isPasswordHashed() {
 };
 
 userSchema.statics.normalizeBudget = normalizeBudget;
+userSchema.statics.PASSWORD_MAX_LENGTH = PASSWORD_MAX_LENGTH;
 
 module.exports = mongoose.model('User', userSchema);

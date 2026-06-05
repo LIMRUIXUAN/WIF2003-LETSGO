@@ -5,6 +5,15 @@
 
 'use strict';
 
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) {
+    window.location.href = 'login.html';
+  }
+})();
+
 /* ── 1. HELPERS & FULL WMO MAPPING (No more ❓) ── */
 function getWeatherInterpretation(code, isDay = 1) {
   const weatherCodes = {

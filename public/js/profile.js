@@ -5,6 +5,18 @@
    ═══════════════════════════════════════════════════════════ */
 
 'use strict';
+
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
+})();
  
 /* ══════════════════════════════════════════
    STORAGE HELPERS  (sessionStorage mock)
@@ -31,6 +43,34 @@ const ALL_INTERESTS = [
 let tempInterests = [];   // used by interest modal
 let currentUserData = {};
 
+function storeReissuedToken(token) {
+  if (!token) return false;
+  localStorage.setItem('ecoAuthToken', token);
+  localStorage.removeItem('ecoUserInitials');
+  return true;
+}
+
+async function refreshTripStats(email) {
+    if (!email) return;
+
+    try {
+      const tRes = await fetch(`/api/trips/${email}`);
+      const tData = await tRes.json();
+      if (tData.success && Array.isArray(tData.data)) {
+        const tripCount = tData.data.length;
+        const totalDays = tData.data.reduce((sum, trip) => sum + (trip.days ? trip.days.length : 0), 0);
+        const tripsEl = document.getElementById('statTrips');
+        const daysEl  = document.getElementById('statDays');
+        const tripCountEl = document.getElementById('tripCount');
+        if (tripsEl) tripsEl.textContent = tripCount;
+        if (daysEl)  daysEl.textContent  = totalDays;
+        if (tripCountEl) tripCountEl.textContent = tripCount + ' trips completed';
+      }
+    } catch (e) {
+      // Stat display is not critical.
+    }
+}
+
 async function loadProfile() {
     // 1. Who is logged in?
     const userEmail = localStorage.getItem('ecoUserEmail');
@@ -48,6 +88,7 @@ async function loadProfile() {
             // 3. Draw the screen with the REAL data!
             renderProfile(currentUserData);
             renderInterestDisplay(currentUserData);
+            await refreshTripStats(currentUserData.email);
         }
     } catch (error) {
         console.error("Failed to load profile from database:", error);
@@ -118,8 +159,10 @@ function renderProfile(user) {
   // Stats
   const favCount = user.favorites ? user.favorites.length : 0;
   document.getElementById('statFavs').textContent  = favCount;
-  document.getElementById('statTrips').textContent = user.trips     || 0;
-  document.getElementById('statDays').textContent  = user.days      || 0;
+  // Note: user.trips and user.days are not auto-updated in DB.
+  // They remain as stored values; live counts are fetched in loadProfile().
+  document.getElementById('statTrips').textContent = user.trips || 0;
+  document.getElementById('statDays').textContent  = user.days  || 0;
   document.getElementById('statCO2').textContent   = user.co2Saved      || 0;
   const fpEl = document.getElementById('statFootprint');
   if (fpEl) fpEl.textContent = user.co2Footprint || 0;
@@ -218,15 +261,13 @@ async function saveProfile() {
       const result = await response.json();
       if(result.success){
           currentUserData = result.data;
-          if (result.token) {
-              localStorage.setItem('ecoAuthToken', result.token);
-          }
+          const tokenReissued = storeReissuedToken(result.token);
           if (result.data.email) {
               localStorage.setItem('ecoUserEmail', result.data.email);
           }
           if (result.data.name) {
               localStorage.setItem('ecoUserName', result.data.name);
-              localStorage.setItem('ecoUserInitials', getInitials(result.data.name));
+              if (!tokenReissued) localStorage.setItem('ecoUserInitials', getInitials(result.data.name));
           }
           
           showToast('Profile updated successfully! ✅');
@@ -279,6 +320,8 @@ async function changePassword() {
       showToast(result.message || 'Could not update password.', 'error');
       return;
     }
+
+    storeReissuedToken(result.token);
 
     document.getElementById('currentPw').value = '';
     document.getElementById('newPw').value     = '';
@@ -575,12 +618,12 @@ async function autoSaveProfile() {
       const result = await response.json();
       if (result.success) {
         currentUserData = result.data;
-        if (result.token) localStorage.setItem('ecoAuthToken', result.token);
+        storeReissuedToken(result.token);
         if (result.data.email) localStorage.setItem('ecoUserEmail', result.data.email);
       }
       // Update the UI elements (initials, name display) instantly
       renderProfile(currentUserData);
-      console.log("Autosave successful...");
+      await refreshTripStats(currentUserData.email);
   } catch (error) {
       console.error("Autosave failed:", error);
   }

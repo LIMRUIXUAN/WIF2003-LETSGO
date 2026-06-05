@@ -92,7 +92,7 @@
 /* ── FLIP CARD 3D ── */
 .flip-card {
   height: 380px;
-  cursor: pointer;
+  cursor: default;
   perspective: 1000px;
   position: relative;
 }
@@ -105,7 +105,7 @@
   transform-style: preserve-3d;
 }
 
-.flip-card.is-flipped .flip-card-inner {
+.flip-card.flipped .flip-card-inner {
   transform: rotateY(180deg);
 }
 
@@ -291,6 +291,39 @@
   background: #e0e0e0;
 }
 
+.info-toggle-btn {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--eco-green);
+  box-shadow: 0 12px 24px rgba(35, 50, 42, 0.12);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.info-toggle-btn:hover,
+.info-toggle-btn:focus-visible {
+  background: var(--eco-green);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.info-toggle-btn-back {
+  top: 16px;
+  bottom: auto;
+}
+
 /* ── ADVANCED FILTER MODAL ── */
 .filter-modal {
   display: none;
@@ -368,6 +401,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.budget-slider-wrap {
+  background: #fbfaf5;
+  border: 1px solid rgba(230, 222, 206, 0.82);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.budget-slider-wrap .form-range {
+  accent-color: var(--eco-green);
 }
 
 .filter-input-small {

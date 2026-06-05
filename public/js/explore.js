@@ -6,6 +6,28 @@
 
 'use strict';
 
+function hasAuthToken() {
+  return Boolean(localStorage.getItem('ecoAuthToken'));
+}
+
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escAttr(str) {
+  return esc(str).replace(/`/g, '&#96;');
+}
+
+function getListingPrice(item) {
+  const match = String(item.price || item.priceLabel || '').match(/\d+/);
+  return match ? Number.parseInt(match[0], 10) : 0;
+}
+
 // ── TYPE-AHEAD SEARCH ──
 function handleSearchInput(el) {
   const query = el.value.toLowerCase();
@@ -24,10 +46,6 @@ function handleSearchInput(el) {
     if (item.cat.toLowerCase().includes(query)) options.add(item.cat);
   });
 
-  function escAttr(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-  
   const html = Array.from(options).slice(0, 5).map(opt => 
     `<div class="suggestion-item" onclick="selectSuggestion('${escAttr(opt)}')">${escAttr(opt)}</div>`
   ).join('');
@@ -45,7 +63,7 @@ function selectSuggestion(value) {
 // ── FILTER & SEARCH ──
 function filterListings() {
   const search = document.getElementById('exploreSearch').value.toLowerCase();
-  const budget = document.querySelector('[data-budget]')?.getAttribute('data-budget') || '';
+  const budgetMax = Number.parseInt(document.getElementById('budgetRange')?.value || '600', 10);
   const category = document.querySelector('.filter-chip.active')?.getAttribute('data-cat') || 'all';
   
   let results = LISTINGS.filter(item => {
@@ -58,6 +76,8 @@ function filterListings() {
       if (category === 'high' && item.eco < 9) return false;
       if (category !== 'high' && item.cat !== category) return false;
     }
+
+    if (Number.isFinite(budgetMax) && getListingPrice(item) > budgetMax) return false;
     
     return true;
   });
@@ -78,38 +98,45 @@ function renderListings(list = LISTINGS) {
   
   grid.innerHTML = list.map(item => `
     <div class="col-sm-6 col-lg-4">
-      <div class="flip-card" onclick="toggleFlip(this)">
+      <div class="flip-card">
         <div class="flip-card-inner">
           <!-- FRONT -->
           <div class="flip-card-front">
             <div class="listing-card">
-              <div class="card-img" style="background-image: url('${item.image || item.imageUrl}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
+              <div class="card-img" style="background-image: url('${escAttr(item.image || item.imageUrl)}'); background-size: cover; background-position: center; border-bottom: 1px solid rgba(230, 222, 206, 0.92);">
                 <button class="fav-btn ${favorites.has(item.id) ? 'saved' : ''}" 
-                        onclick="toggleFav(event, ${item.id}, '${item.name}')">
+                        onclick="toggleFav(event, ${Number(item.id)}, '${escAttr(item.name)}')"
+                        aria-label="Save ${escAttr(item.name)} to favorites">
                   <i class="bi bi-heart${favorites.has(item.id) ? '-fill' : ''}"></i>
                 </button>
               </div>
               <div class="card-body">
-                <h6 class="card-title">${item.name}</h6>
-                <p class="card-location"><i class="bi bi-geo-alt"></i> ${item.location}</p>
+                <h6 class="card-title">${esc(item.name)}</h6>
+                <p class="card-location"><i class="bi bi-geo-alt"></i> ${esc(item.location)}</p>
                 <div class="d-flex gap-2">
                   <span class="eco-badge" style="background:${item.eco >= 9 ? '#27ae60' : item.eco >= 8 ? '#f39c12' : '#e74c3c'}; color: #fff;">
-                    🌿 ${item.eco}/10
+                    🌿 ${esc(item.eco)}/10
                   </span>
-                  <span class="price-badge">${item.price}</span>
+                  <span class="price-badge">${esc(item.price)}</span>
                 </div>
                 <div style="margin-top:0.5rem; font-size:0.8rem; color:#666;">
-                  ${item.co2}
+                  ${esc(item.co2)}
                 </div>
+                <button class="info-toggle-btn" onclick="toggleCardFlip(event, this)" type="button" aria-label="Show details for ${escAttr(item.name)}">
+                  <i class="bi bi-info-circle-fill"></i> Details
+                </button>
               </div>
             </div>
           </div>
           
           <!-- BACK -->
           <div class="flip-card-back">
-            <h5>${item.name}</h5>
-            <p style="font-size:0.85rem; color:#555;">${item.desc}</p>
-            <p style="font-size:0.8rem; margin:0.5rem 0;">⭐ ${item.rating}/5 · ${item.co2}</p>
+            <button class="info-toggle-btn info-toggle-btn-back" onclick="toggleCardFlip(event, this)" type="button" aria-label="Return to card front">
+              <i class="bi bi-arrow-return-left"></i> Back
+            </button>
+            <h5>${esc(item.name)}</h5>
+            <p style="font-size:0.85rem; color:#555;">${esc(item.desc)}</p>
+            <p style="font-size:0.8rem; margin:0.5rem 0;">⭐ ${esc(item.rating)}/5 · ${esc(item.co2)}</p>
             <button class="btn-eco" onclick="event.stopPropagation(); addToTrip(${item.id})">
               <i class="bi bi-plus"></i> Add to Trip
             </button>
@@ -120,9 +147,27 @@ function renderListings(list = LISTINGS) {
   `).join('');
 }
 
-// ── FLIP CARD TOGGLE ──
-function toggleFlip(card) {
-  card.classList.toggle('is-flipped');
+function toggleCardFlip(event, triggerElement) {
+  event.stopPropagation();
+  triggerElement.closest('.flip-card')?.classList.toggle('flipped');
+}
+
+function openAuthGateModal() {
+  const modal = document.getElementById('authGateModal');
+  if (modal) {
+    modal.style.display = 'block';
+  } else if (typeof showToast === 'function') {
+    showToast('Please sign in to save favorites.', 'warn');
+  }
+}
+
+function closeAuthGateModal() {
+  const modal = document.getElementById('authGateModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function goToLoginFromAuthGate() {
+  window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 }
 
 // ── FAVORITES ──
@@ -132,7 +177,11 @@ async function toggleFav(e, id, name) {
     const btn = e.currentTarget;
     
     // 1. Get the logged-in user's email (from Zi Yu's login)
-    const userEmail = localStorage.getItem('ecoUserEmail') || 'demo@ecoplanner.com';
+    const userEmail = localStorage.getItem('ecoUserEmail');
+    if (!hasAuthToken() || !userEmail) {
+        openAuthGateModal();
+        return;
+    }
 
     // 2. Optimistic UI Update (Visuals)
     if (favorites.has(id)) {
@@ -149,8 +198,6 @@ async function toggleFav(e, id, name) {
 
     // 3. The Database Update
     try {
-        console.log(`Sending PUT request to add ID ${id} for ${userEmail}...`); 
-        
         const response = await fetch(`/api/users/${userEmail}/favorites`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -158,8 +205,6 @@ async function toggleFav(e, id, name) {
         });
 
         const result = await response.json();
-        
-        console.log("Server Response from clicking heart:", result); 
 
         if (!result.success) {
             console.error("Backend refused to save:", result.message);
@@ -232,9 +277,14 @@ function updateAdvancedFilters() {
   }
 }
 
+function updateBudgetLabel(val) {
+  const label = document.getElementById('budgetValLabel');
+  if (label) label.textContent = 'RM ' + val;
+  filterListings();
+}
+
 function applyFilters() {
-  const budgetMin = parseInt(document.getElementById('budgetMin')?.value) || 0;
-  const budgetMax = parseInt(document.getElementById('budgetMax')?.value) || Infinity;
+  const budgetMax = parseInt(document.getElementById('budgetRange')?.value) || 600;
   const ecoMin = parseInt(document.getElementById('ecoSlider')?.value) || 0;
   
   const selectedCategories = Array.from(
@@ -252,8 +302,8 @@ function applyFilters() {
   // Filter listings
   let filtered = LISTINGS.filter(item => {
     // Budget filter
-    const price = parseInt(item.price) || 0;
-    if (price < budgetMin || price > budgetMax) return false;
+    const price = getListingPrice(item);
+    if (price > budgetMax) return false;
     
     // Eco rating filter
     if (item.eco < ecoMin) return false;
@@ -270,8 +320,9 @@ function applyFilters() {
 }
 
 function clearAdvancedFilters() {
-  document.getElementById('budgetMin').value = '';
-  document.getElementById('budgetMax').value = '';
+  const budgetRange = document.getElementById('budgetRange');
+  if (budgetRange) budgetRange.value = '300';
+  updateBudgetLabel('300');
   document.getElementById('ecoSlider').value = '0';
   document.getElementById('ecoSliderValue').textContent = '0';
   
@@ -304,9 +355,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  const authGateModal = document.getElementById('authGateModal');
+  if (authGateModal) {
+    authGateModal.addEventListener('click', (e) => {
+      if (e.target === authGateModal) closeAuthGateModal();
+    });
+  }
+
+  document.querySelectorAll('a[href="favorites.html"]').forEach(link => {
+    link.addEventListener('click', (event) => {
+      if (hasAuthToken()) return;
+      event.preventDefault();
+      openAuthGateModal();
+    });
+  });
   
   // Load favorites from API
-  const userEmail = localStorage.getItem('ecoUserEmail') || 'test@ecoplanner.com';
+  const userEmail = localStorage.getItem('ecoUserEmail');
+  if (!hasAuthToken() || !userEmail) return;
 
   fetch(`/api/users/profile/${userEmail}`)
     .then(res => res.json())
@@ -317,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
   .catch(err => {
-    console.log('Failed to load favorites:', err);
+    console.error('Failed to load favorites:', err);
   });
 });
 

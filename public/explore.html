@@ -48,7 +48,7 @@
     <a class="sidebar-link" href="favorites.html"><i class="bi bi-heart-fill"></i>Favorites</a>
     <div class="section-label">Account</div>
     <a class="sidebar-link" href="profile.html"><i class="bi bi-person-fill"></i>Profile</a>
-    <a class="sidebar-link sidebar-link-logout" href="index.html"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    <a class="sidebar-link sidebar-link-logout" href="index.html" style="color:#c0392b;"><i class="bi bi-box-arrow-right"></i>Logout</a>
   </div>
 
   <!-- Main Content -->
@@ -104,6 +104,23 @@
   </div><!-- /dash-main -->
 </div><!-- /dash-layout -->
 
+<div class="filter-modal" id="authGateModal" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
+  <div class="filter-modal-content" style="max-width:420px;">
+    <div class="filter-modal-header">
+      <h5 id="authGateTitle">Sign in to save favorites</h5>
+      <button class="btn-close-modal" onclick="closeAuthGateModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="filter-modal-body">
+      <p class="mb-0" style="color:#6b7c6e;font-size:.95rem;">
+        Please sign in to keep your favorite eco destinations synced to your profile.
+      </p>
+    </div>
+    <div class="filter-modal-footer">
+      <button class="btn-eco w-100" onclick="goToLoginFromAuthGate()">Sign In</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/app.js"></script>
 <script src="js/explore.js"></script>
@@ -119,11 +136,13 @@
       <!-- Budget Filter -->
       <div class="filter-section">
         <label class="filter-label">Budget Range</label>
-        <div class="budget-inputs">
-          <input type="number" id="budgetMin" placeholder="Min" class="filter-input-small">
-          <span>–</span>
-          <input type="number" id="budgetMax" placeholder="Max" class="filter-input-small">
-          <span class="currency-label">RM</span>
+        <div class="budget-slider-wrap">
+          <input type="range" id="budgetRange" min="0" max="600" value="300" class="form-range" oninput="updateBudgetLabel(this.value)">
+          <div class="d-flex justify-content-between text-muted small mt-1">
+            <span>RM 0</span>
+            <span>Max Budget: <strong id="budgetValLabel">RM 300</strong></span>
+            <span>RM 600+</span>
+          </div>
         </div>
       </div>
 

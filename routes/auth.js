@@ -1,69 +1,60 @@
 const express = require('express');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const User = require('../models/User');
 const { sendMail } = require('../utils/mailer');
 const { signToken } = require('../middleware/auth');
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = User.PASSWORD_MAX_LENGTH || 72;
+
+const authEndpointLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many authentication attempts. Please try again later.'
+    }
+});
+
 function hashResetCode(code) {
-    return crypto.createHash('sha256').update(String(code)).digest('hex');
+    const secret = process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET;
+    if (!secret) {
+        throw new Error('FATAL: JWT_SECRET environment variable is not set.');
+    }
+    return crypto.createHmac('sha256', secret).update(String(code)).digest('hex');
 }
 
 function createResetCode() {
     return crypto.randomInt(100000, 1000000).toString();
 }
 
-// POST: /api/auth/register
-router.post('/register', async (req, res) => {
-    try {
-        const name = String(req.body.name || '').trim();
-        const email = String(req.body.email || '').trim().toLowerCase();
-        const password = String(req.body.password || '');
-
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
-        }
-
-        if (password.length < 8) {
-            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
-        }
-
-        // 1. Check if the email is already in the database
-        const existingUser = await User.findOne({ email: email });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: 'Email already registered.' });
-        }
-
-        // 2. Create the new user object
-        const newUser = new User({
-            name: name,
-            email: email,
-            password: password
-        });
-
-        // 3. Save to MongoDB
-        await newUser.save();
-
-        res.status(201).json({ success: true, message: 'Account created successfully!' });
-
-    } catch (error) {
-        console.error("Registration Error:", error);
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ success: false, message: error.message });
-        }
-        if (error.code === 11000) {
-            return res.status(400).json({ success: false, message: 'Email already registered.' });
-        }
-        return res.status(500).json({ success: false, message: 'Server error during registration.' });
+function validatePasswordLength(password) {
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
     }
-});
+
+    if (password.length > PASSWORD_MAX_LENGTH) {
+        return `Password must be ${PASSWORD_MAX_LENGTH} characters or fewer.`;
+    }
+
+    return '';
+}
+
 
 // POST: /api/auth/login
 // ini will act as security guard checking if user's credentials match what is in MongoDB
-router.post('/login', async (req, res) => {
+router.post('/login', authEndpointLimiter, async (req, res) => {
     try {
         const email = String(req.body.email || '').trim().toLowerCase();
         const password = String(req.body.password || '');
+
+        if (password.length > PASSWORD_MAX_LENGTH) {
+            return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+        }
 
         // 1. Find the user in the database
         const user = await User.findOne({ email: email }).select('+password');
@@ -96,7 +87,7 @@ router.post('/login', async (req, res) => {
 });
 
 // POST: /api/auth/password-reset/request
-router.post('/password-reset/request', async (req, res) => {
+router.post('/password-reset/request', authEndpointLimiter, async (req, res) => {
     try {
         const email = String(req.body.email || '').trim().toLowerCase();
 
@@ -147,7 +138,7 @@ router.post('/password-reset/request', async (req, res) => {
 });
 
 // POST: /api/auth/password-reset/confirm
-router.post('/password-reset/confirm', async (req, res) => {
+router.post('/password-reset/confirm', authEndpointLimiter, async (req, res) => {
     try {
         const email = String(req.body.email || '').trim().toLowerCase();
         const code = String(req.body.code || '').trim();
@@ -161,8 +152,9 @@ router.post('/password-reset/confirm', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Verification code must be 6 digits.' });
         }
 
-        if (password.length < 8) {
-            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+        const passwordError = validatePasswordLength(password);
+        if (passwordError) {
+            return res.status(400).json({ success: false, message: passwordError });
         }
 
         const user = await User.findOne({ email: email }).select('+password +resetCodeHash +resetCodeExpiresAt');
@@ -194,3 +186,6 @@ router.post('/password-reset/confirm', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.helpers = {
+    validatePasswordLength
+};

@@ -12,7 +12,14 @@ function base64UrlDecode(value) {
 }
 
 function getAuthSecret() {
-  return process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET || 'ecotravel-dev-token-secret';
+  const secret = process.env.JWT_SECRET || process.env.AUTH_TOKEN_SECRET || process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error(
+      'FATAL: JWT_SECRET environment variable is not set. ' +
+      'Add JWT_SECRET to your .env file before starting the server.'
+    );
+  }
+  return secret;
 }
 
 function signPayload(unsignedToken) {
@@ -29,6 +36,7 @@ function signToken(user) {
     sub: String(user._id || user.id || ''),
     email: String(user.email || '').trim().toLowerCase(),
     name: user.name || '',
+    role: user.role || 'user',
     iat: now,
     exp: now + TOKEN_TTL_SECONDS
   });
@@ -93,8 +101,28 @@ function requireSelfEmail(req, res, next) {
   return next();
 }
 
+function requireRole(allowedRoles) {
+  const normalizedRoles = (Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles])
+    .map((role) => String(role || '').trim().toLowerCase())
+    .filter(Boolean);
+
+  return function requireAllowedRole(req, res, next) {
+    const userRole = String(req.authUser?.role || '').trim().toLowerCase();
+
+    if (!userRole || !normalizedRoles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to perform this action.'
+      });
+    }
+
+    return next();
+  };
+}
+
 module.exports = {
   requireAuth,
+  requireRole,
   requireSelfEmail,
   signToken,
   verifyToken

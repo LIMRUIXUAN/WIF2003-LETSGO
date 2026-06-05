@@ -17,8 +17,24 @@ function clearAuthSession() {
   localStorage.removeItem('ecoUserEmail');
   localStorage.removeItem('ecoUserName');
   localStorage.removeItem('ecoUserInitials');
-  localStorage.removeItem('isLoggedIn');
   sessionStorage.clear();
+}
+
+function redirectToLogin() {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  window.location.href = `login.html?redirect=${encodeURIComponent(currentPath)}`;
+}
+
+function requirePageAuth() {
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+
+  if (!email || !token) {
+    redirectToLogin();
+    return false;
+  }
+
+  return true;
 }
 
 function isInternalApiRequest(resource) {
@@ -36,6 +52,7 @@ function isInternalApiRequest(resource) {
 }
 
 const nativeFetch = window.fetch.bind(window);
+let sessionExpiredRedirectPending = false;
 window.fetch = function fetchWithAuth(resource, options = {}) {
   const token = getAuthToken();
   const headers = new Headers(options.headers || (resource instanceof Request ? resource.headers : undefined));
@@ -44,13 +61,34 @@ window.fetch = function fetchWithAuth(resource, options = {}) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return nativeFetch(resource, { ...options, headers }).then(response => {
+  return nativeFetch(resource, { ...options, headers }).then(async response => {
     if (response.status === 401 && isInternalApiRequest(resource)) {
       clearAuthSession();
-      if (!window.location.pathname.endsWith('/login.html') && !window.location.pathname.endsWith('/register.html')) {
-        window.location.href = 'login.html';
+      const isAuthPage = window.location.pathname.endsWith('/login.html');
+
+      if (!isAuthPage && !sessionExpiredRedirectPending) {
+        sessionExpiredRedirectPending = true;
+        if (typeof showToast === 'function') {
+          showToast('Your session expired. Please sign in again.', 'warn', { duration: 1200 });
+        }
+        setTimeout(() => redirectToLogin(), 1200);
       }
     }
+
+    if (response.status === 403 && isInternalApiRequest(resource)) {
+      let message = 'You do not have permission to perform this action.';
+      try {
+        const payload = await response.clone().json();
+        message = payload.message || payload.error || message;
+      } catch (_error) {
+        // Keep the generic permission message if the response is not JSON.
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(message, 'error');
+      }
+    }
+
     return response;
   });
 };
@@ -64,11 +102,32 @@ let LISTINGS = [];
  * await this function before rendering listing-dependent UI.
  */
 async function loadListingsFromAPI() {
+  // Check sessionStorage cache first (5-minute TTL).
+  const CACHE_KEY = 'ecoListingsCache';
+  const CACHE_TTL = 5 * 60 * 1000;
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now() - ts < CACHE_TTL && Array.isArray(data) && data.length > 0) {
+        LISTINGS = data;
+        return LISTINGS;
+      }
+    }
+  } catch (_) {
+    // Ignore cache parse errors.
+  }
+
   try {
     const response = await fetch('/api/destinations');
     const data = await response.json();
     if (data.success && Array.isArray(data.data)) {
       LISTINGS = data.data;
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: LISTINGS }));
+      } catch (_) {
+        // Ignore storage quota errors.
+      }
     }
   } catch (error) {
     console.error('Failed to load destinations from API:', error);
@@ -190,8 +249,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (el) el.min = today;
     });
 
-    // ── 2. Fetch destinations from MongoDB so all pages have fresh data ──
-    await loadListingsFromAPI();
+    // ── 2. Fetch destinations from MongoDB - skip auth pages that do not need them ──
+    const authPages = ['login.html', 'reset-password.html', 'index.html'];
+    const isAuthPage = authPages.some(p => window.location.pathname.endsWith(p) || window.location.pathname === '/');
+    if (!isAuthPage) {
+      await loadListingsFromAPI();
+    }
 
     // ── 3. Global UI: Update Navigation Avatar ──
     const navBadge = document.getElementById('navInitial');

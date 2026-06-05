@@ -153,10 +153,13 @@ npm install
 ### Environment Setup
 Create a `.env` file in the root directory and add:
 ```env
-MONGO_URL=your_mongodb_uri
+MONGO_URI=mongodb+srv://ecotravel_app:<password>@<cluster-host>/<database>?retryWrites=true&w=majority
 PORT=3000
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+JWT_SECRET=your_long_random_secret
 ```
+
+For production, create a scoped MongoDB user with `readWrite` only. See `docs/production-mongodb-user.md`.
 
 Optional:
 ```env

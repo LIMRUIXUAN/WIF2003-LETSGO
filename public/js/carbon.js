@@ -5,6 +5,18 @@
 
 'use strict';
 
+// Auth guard - redirect to login if no session
+(function guardAuth() {
+  if (typeof requirePageAuth === 'function') {
+    requirePageAuth();
+    return;
+  }
+
+  const email = localStorage.getItem('ecoUserEmail');
+  const token = localStorage.getItem('ecoAuthToken');
+  if (!email || !token) window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
+})();
+
 /* ── DATA & STATE ── */
 // Emission factors based on DEFRA/EPA standard averages (g CO2/km)
 // 1. Your Research Data (Source: DEFRA / Industry Standards)
@@ -84,14 +96,30 @@ async function calculateCarbon() {
       return;
     }
 
-    // 📏 Step B: Haversine Math
-    const dist = calculateHaversine(d1.results[0], d2.results[0]);
-    
-    // 🧪 Step C: Carbon Math
-    const factor = EMISSION_FACTORS[mode];
-    const userEmissions = dist * factor;
-    const petrolBaseline = dist * BASELINE;
-    const savings = petrolBaseline - userEmissions;
+    // Step B: Ask the backend to calculate distance, footprint, baseline, and savings.
+    const calcRes = await fetch('/api/trips/calculate-carbon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transportMode: mode,
+        stops: [
+          { location: { lat: d1.results[0].latitude, lng: d1.results[0].longitude } },
+          { location: { lat: d2.results[0].latitude, lng: d2.results[0].longitude } }
+        ]
+      })
+    });
+    const calcData = await calcRes.json();
+
+    if (!calcRes.ok || !calcData.success) {
+      showToast(calcData.message || "Could not calculate that route.", "error");
+      return;
+    }
+
+    const dist = Number(calcData.distanceKm) || 0;
+    const userEmissions = Number(calcData.carbonFootprintKg) || 0;
+    const petrolBaseline = Number(calcData.baselineFootprintKg) || 0;
+    const savings = Number(calcData.carbonSavedKg) || 0;
+    const resolvedMode = calcData.transportMode || mode;
 
     // 🎨 Step D: Update UI
     resultDiv.style.display = 'block';
@@ -102,11 +130,11 @@ async function calculateCarbon() {
           <span class="badge bg-light text-dark">${Math.round(dist)} km</span>
         </div>
         <div class="text-center py-3">
-          <div class="small text-muted mb-1">By choosing <strong>${mode.replace('_',' ')}</strong>, you:</div>
+          <div class="small text-muted mb-1">By choosing <strong>${resolvedMode.replace('_',' ')}</strong>, you:</div>
           <h2 class="${savings >= 0 ? 'text-success' : 'text-danger'} fw-bold mb-0">
             ${savings >= 0 ? 'Saved ' : 'Added '} ${Math.abs(savings).toFixed(2)} kg CO₂
           </h2>
-          <p class="text-muted small mt-2">vs. driving a petrol car (${userEmissions.toFixed(2)}kg produced)</p>
+          <p class="text-muted small mt-2">${userEmissions.toFixed(2)}kg produced vs. ${petrolBaseline.toFixed(2)}kg petrol baseline</p>
         </div>
         <button class="btn btn-success w-100" onclick="logEcoProgress(${savings.toFixed(2)})">
           <i class="bi bi-plus-circle-fill"></i> Add to My Eco Progress
