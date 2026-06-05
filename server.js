@@ -197,10 +197,11 @@ async function startServer() {
 
 if (require.main === module) {
   startServer();
+} else {
+  // Serverless environments (like Vercel) import the file and manage server lifecycle.
+  // We must trigger database and cache connections immediately on function cold start.
+  connectToDatabase().catch(err => console.error('Database connection failed on cold start:', err.message));
+  getRedisClient().catch(err => console.error('Redis connection failed on cold start:', err.message));
 }
 
-module.exports = {
-  app,
-  connectToDatabase,
-  startServer
-};
+module.exports = app;
