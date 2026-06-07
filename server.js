@@ -17,6 +17,7 @@ const { getClient: getRedisClient } = require('./utils/redis');
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const isDev = !isProduction;
+let databaseConnectionPromise = null;
 
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -101,16 +102,65 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+async function connectToDatabase() {
+  const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL;
+
+  if (!mongoUri) {
+    console.warn('MongoDB not connected: set MONGO_URI in your environment.');
+    return null;
+  }
+
+  mongoose.set('strictQuery', true);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (databaseConnectionPromise) {
+    return databaseConnectionPromise;
+  }
+
+  databaseConnectionPromise = mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: 5000,
+    bufferCommands: false
+  }).catch((error) => {
+    databaseConnectionPromise = null;
+    throw error;
+  });
+
+  await databaseConnectionPromise;
+  console.log('MongoDB connected');
+  return mongoose.connection;
+}
+
+async function requireDatabaseConnection(_req, res, next) {
+  try {
+    const connection = await connectToDatabase();
+    if (!connection || mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database is not configured or not connected.'
+      });
+    }
+    return next();
+  } catch (error) {
+    console.error('Database unavailable for API request:', error.message);
+    return res.status(503).json({
+      success: false,
+      message: 'Database is temporarily unavailable.'
+    });
+  }
+}
+
 const { requireAuth } = require('./middleware/auth');
 
 app.get('/api/config/maps', requireAuth, (_req, res) => {
   res.json({ apiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userLimiter, userRoutes);
-app.use('/api/trips', tripLimiter, tripRoutes);
-app.use('/api/destinations', destinationRoutes);
+app.use('/api/auth', requireDatabaseConnection, authRoutes);
+app.use('/api/users', requireDatabaseConnection, userLimiter, userRoutes);
+app.use('/api/trips', requireDatabaseConnection, tripLimiter, tripRoutes);
+app.use('/api/destinations', requireDatabaseConnection, destinationRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -136,20 +186,6 @@ app.use((err, _req, res, next) => {
     message: isProduction ? 'Internal server error.' : err.message
   });
 });
-
-async function connectToDatabase() {
-  const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL;
-
-  if (!mongoUri) {
-    console.warn('MongoDB not connected: set MONGO_URI in your environment.');
-    return null;
-  }
-
-  mongoose.set('strictQuery', true);
-  await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-  console.log('MongoDB connected');
-  return mongoose.connection;
-}
 
 async function startServer() {
   const port = Number(process.env.PORT || process.env.port) || 3000;
