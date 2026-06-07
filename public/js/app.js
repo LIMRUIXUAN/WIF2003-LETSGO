@@ -97,6 +97,63 @@ window.fetch = function fetchWithAuth(resource, options = {}) {
 let LISTINGS = [];
 let listingsLoadPromise = null;
 
+function getListingCoordinate(value) {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : undefined;
+}
+
+function getListingLat(item) {
+  return getListingCoordinate(item?.lat ?? item?.location?.lat);
+}
+
+function getListingLng(item) {
+  return getListingCoordinate(item?.lng ?? item?.lon ?? item?.location?.lng ?? item?.location?.lon);
+}
+
+function getListingCarbonKg(item) {
+  const label = String(item?.co2 || item?.co2ImpactLabel || '');
+  return Number.parseInt(label.replace(/\D/g, ''), 10) || 5;
+}
+
+function normalizeTripStopLocation(stop) {
+  const lat = getListingCoordinate(stop?.location?.lat ?? stop?.lat);
+  const lng = getListingCoordinate(stop?.location?.lng ?? stop?.location?.lon ?? stop?.lng ?? stop?.lon);
+
+  if (lat === undefined || lng === undefined) return stop;
+
+  return {
+    ...stop,
+    location: {
+      lat,
+      lng,
+      address: stop?.location?.address || stop?.address || stop?.sub || ''
+    }
+  };
+}
+
+function buildTripStopFromListing(item) {
+  const stop = {
+    time: 'Flexible',
+    icon: item?.icon || '📍',
+    name: item?.name || 'Destination',
+    sub: item?.cat || item?.category || item?.location || '',
+    carbon: getListingCarbonKg(item),
+    source: 'destination'
+  };
+
+  const lat = getListingLat(item);
+  const lng = getListingLng(item);
+  if (lat !== undefined && lng !== undefined) {
+    stop.location = {
+      lat,
+      lng,
+      address: item?.location || ''
+    };
+  }
+
+  return stop;
+}
+
 /**
  * Fetches all destinations from the backend API and populates the
  * shared LISTINGS array. Every page that depends on LISTINGS should

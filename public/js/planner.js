@@ -1094,7 +1094,7 @@ function removeItin(id) {
 
       // 3. Move everything from the cart into the trip's Idea Bank
       pendingIdeas.forEach(idea => {
-        trip.ideaBank.push(idea);
+        trip.ideaBank.push(normalizeTripStopLocation(idea));
       });
 
       // 4. Empty the local cart so we don't import them again later!

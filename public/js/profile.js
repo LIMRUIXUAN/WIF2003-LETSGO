@@ -379,6 +379,8 @@ function toggleInterest(el, interest) {
 }
  
 async function saveInterests() {
+  const previousInterests = [...(currentUserData.interests || [])];
+
   // 1. Update the global object & close modal
   currentUserData.interests = [...tempInterests];
   renderInterestDisplay(currentUserData);
@@ -387,13 +389,27 @@ async function saveInterests() {
   // 2. Fire the save off to MongoDB!
   try {
       const userEmail = localStorage.getItem('ecoUserEmail');
-      await fetch(`/api/users/${userEmail}`, {
+      const response = await fetch(`/api/users/${userEmail}/interests`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentUserData)
+          body: JSON.stringify({ interests: currentUserData.interests })
       });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Could not save interests.');
+      }
+
+      currentUserData = result.data;
+      renderProfile(currentUserData);
+      renderInterestDisplay(currentUserData);
       showToast('Interests updated! 🌿');
-  } catch(e) { console.error("Save error:", e); }
+  } catch(e) {
+    console.error("Save error:", e);
+    currentUserData.interests = previousInterests;
+    renderInterestDisplay(currentUserData);
+    showToast(e.message || 'Could not save interests.', 'error');
+  }
 }
  
 async function removeInterest(interest) {
@@ -406,11 +422,19 @@ async function removeInterest(interest) {
   // 2. Fire the deletion off to MongoDB!
   try {
       const userEmail = localStorage.getItem('ecoUserEmail');
-      await fetch(`/api/users/${userEmail}`, {
+      const response = await fetch(`/api/users/${userEmail}/interests`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentUserData)
+          body: JSON.stringify({ interests: currentUserData.interests })
       });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Could not remove interest.');
+      }
+
+      currentUserData = result.data;
+      renderInterestDisplay(currentUserData);
       showToast('Interest removed', 'info', {
         duration: 6000,
         undoLabel: 'Undo',
@@ -419,11 +443,19 @@ async function removeInterest(interest) {
           renderInterestDisplay(currentUserData);
 
           try {
-            await fetch(`/api/users/${userEmail}`, {
+            const undoResponse = await fetch(`/api/users/${userEmail}/interests`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(currentUserData)
+              body: JSON.stringify({ interests: currentUserData.interests })
             });
+            const undoResult = await undoResponse.json();
+
+            if (!undoResponse.ok || !undoResult.success) {
+              throw new Error(undoResult.message || 'Could not restore interest.');
+            }
+
+            currentUserData = undoResult.data;
+            renderInterestDisplay(currentUserData);
             showToast('Interest restored', 'info');
           } catch (e) {
             console.error("Restore error:", e);

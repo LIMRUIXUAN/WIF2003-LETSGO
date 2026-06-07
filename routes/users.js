@@ -124,6 +124,43 @@ router.put('/:email/favorites', requireAuth, requireSelfEmail, async (req, res) 
     }
 });
 
+router.put('/:email/interests', profileUpdateLimiter, requireAuth, requireSelfEmail, async (req, res) => {
+    try {
+        const email = String(req.params.email || '').trim().toLowerCase();
+        const interests = req.body.interests;
+
+        if (!Array.isArray(interests)) {
+            return res.status(400).json({ success: false, message: 'Interests must be an array.' });
+        }
+
+        const normalizedInterests = [...new Set(
+            interests
+                .map(interest => String(interest || '').trim())
+                .filter(Boolean)
+        )];
+
+        const updatedUser = await User.findOneAndUpdate(
+            { email },
+            { $set: { interests: normalizedInterests } },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        await delCache(`cache:user:profile:${email}`);
+
+        res.json({
+            success: true,
+            data: updatedUser
+        });
+    } catch (err) {
+        console.error('Interest Save Error:', err);
+        res.status(500).json({ success: false, message: 'Server error while saving interests.' });
+    }
+});
+
 router.put('/:email/password', profileUpdateLimiter, requireAuth, requireSelfEmail, async (req, res) => {
     try {
         const email = String(req.params.email || '').trim().toLowerCase();

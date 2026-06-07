@@ -193,6 +193,52 @@ test('PUT /api/users/:email/favorites rejects invalid destination IDs', async ()
   });
 });
 
+test('PUT /api/users/:email/interests saves normalized travel interests', async () => {
+  const sampleUsers = [{ email: 'test@example.com', name: 'Test User', interests: ['🏞 Nature'] }];
+  await withStubbedUserModel(sampleUsers, async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/users/test@example.com/interests`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${validToken}`
+        },
+        body: JSON.stringify({ interests: ['🚲 Cycling', ' 🚲 Cycling ', '', '🌊 Beach'] })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      assert.deepEqual(payload.data.interests, ['🚲 Cycling', '🌊 Beach']);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+test('PUT /api/users/:email/interests rejects non-array interests', async () => {
+  const sampleUsers = [{ email: 'test@example.com', name: 'Test User', interests: [] }];
+  await withStubbedUserModel(sampleUsers, async () => {
+    const server = await createServer();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/users/test@example.com/interests`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${validToken}`
+        },
+        body: JSON.stringify({ interests: '🌊 Beach' })
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 400);
+      assert.equal(payload.success, false);
+      assert.equal(payload.message, 'Interests must be an array.');
+    } finally {
+      await server.close();
+    }
+  });
+});
+
 test('PUT /api/users/:email/password updates password and returns a fresh token', async () => {
   const sampleUsers = [{ email: 'test@example.com', name: 'Test User', password: 'old-password123' }];
   const token = signToken({ email: 'test@example.com', name: 'Test User', id: '123' });

@@ -270,14 +270,7 @@ function addToTrip(id) {
   let savedIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
 
   // 2. Add this new destination to the cart
-  savedIdeas.push({
-      time: 'Flexible',
-      icon: item.icon,
-      name: item.name,
-      sub: item.cat,
-      // Extract just the numbers from strings like "↓62 kg CO₂"
-      carbon: parseInt(item.co2.replace(/\D/g,'')) || 5 
-  });
+  savedIdeas.push(buildTripStopFromListing(item));
 
   // 3. Save the cart back to the browser's memory
   localStorage.setItem('ecoPendingIdeas', JSON.stringify(savedIdeas));

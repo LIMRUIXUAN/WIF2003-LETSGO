@@ -183,13 +183,7 @@ function addToTripFromFav(id) {
     let savedIdeas = JSON.parse(localStorage.getItem('ecoPendingIdeas') || '[]');
 
     // 3. Pack the item into the cart
-    savedIdeas.push({
-        time: 'Flexible',
-        icon: item.icon,
-        name: item.name,
-        sub: item.cat,
-        carbon: parseInt(item.co2.replace(/\D/g,'')) || 5 
-    });
+    savedIdeas.push(buildTripStopFromListing(item));
 
     // 4. Save the cart back to the browser's memory
     localStorage.setItem('ecoPendingIdeas', JSON.stringify(savedIdeas));
