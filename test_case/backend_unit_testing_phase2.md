@@ -40,11 +40,11 @@ EcoPlanner API and Database Validation
 
 | No. | Test Scenario ID | Test Case ID | Priority | Description |
 | :---- | :---- | :---- | :---- | :---- |
-| 1 | TS_BACKEND_001 | TC_MOD_001 | High | Database Models Schema Validation |
-| 2 | TS_BACKEND_002 | TC_API_001 | High | Authentication Routes (Register & Login) |
-| 3 | TS_BACKEND_003 | TC_API_002 | High | User Profile & Favorites Routes |
-| 4 | TS_BACKEND_004 | TC_API_003 | High | Trip Management & Data Scoping |
-| 5 | TS_BACKEND_005 | TC_MID_001 | Medium | Security Middleware & Global Error Handling |
+| 1 | TS_INT_MOD_001 | TC_INT_001 | High | Database Models Schema Validation |
+| 2 | TS_INT_API_001 | TC_INT_002 | High | Authentication Routes (Register & Login) |
+| 3 | TS_INT_API_002 | TC_INT_003 | High | User Profile & Favorites Routes |
+| 4 | TS_INT_API_003 | TC_INT_004 | High | Trip Management & Data Scoping |
+| 5 | TS_INT_MID_001 | TC_INT_005 | Medium | Security Middleware & Global Error Handling |
 
 ---
 
@@ -52,9 +52,9 @@ EcoPlanner API and Database Validation
 
 ## **Test Case 1: Database Models Schema Validation**
 
-| Test Scenario ID | TS_BACKEND_001 |
+| Test Scenario ID | TS_INT_MOD_001 |
 | :---- | :---- |
-| **Test Case ID** | TC_MOD_001 |
+| **Test Case ID** | TC_INT_001 |
 | **Test Case Description** | Verify that Mongoose schemas synchronously enforce required fields, custom enumerations, constraints, and valid associations without hitting the live database. |
 | **Test Priority** | High |
 | **Pre-Requisite** | `tests/models.test.js` exists. Native `node:test` runner is available. |
@@ -72,9 +72,9 @@ EcoPlanner API and Database Validation
 
 ## **Test Case 2: Authentication Routes (Register & Login)**
 
-| Test Scenario ID | TS_BACKEND_002 |
+| Test Scenario ID | TS_INT_API_001 |
 | :---- | :---- |
-| **Test Case ID** | TC_API_001 |
+| **Test Case ID** | TC_INT_002 |
 | **Test Case Description** | Verify the `/api/auth/register` and `/api/auth/login` endpoints properly handle user creation, validate inputs, prevent duplicates, and generate secure JWTs. |
 | **Test Priority** | High |
 | **Pre-Requisite** | `tests/auth-route.test.js` exists. `User.findOne` and `User.save` are stubbed. |
@@ -93,9 +93,9 @@ EcoPlanner API and Database Validation
 
 ## **Test Case 3: User Profile & Favorites Routes**
 
-| Test Scenario ID | TS_BACKEND_003 |
+| Test Scenario ID | TS_INT_API_002 |
 | :---- | :---- |
-| **Test Case ID** | TC_API_002 |
+| **Test Case ID** | TC_INT_003 |
 | **Test Case Description** | Verify endpoints for fetching user profiles and updating data function correctly when presented with valid authentication. |
 | **Test Priority** | High |
 | **Pre-Requisite** | `tests/users-route.test.js` exists. |
@@ -113,9 +113,9 @@ EcoPlanner API and Database Validation
 
 ## **Test Case 4: Trip Management & Data Scoping**
 
-| Test Scenario ID | TS_BACKEND_004 |
+| Test Scenario ID | TS_INT_API_003 |
 | :---- | :---- |
-| **Test Case ID** | TC_API_003 |
+| **Test Case ID** | TC_INT_004 |
 | **Test Case Description** | Verify that trips are properly mapped to the authenticated user and cross-account data leaking is prevented. |
 | **Test Priority** | High |
 | **Pre-Requisite** | `tests/trips-route.test.js` exists. |
@@ -134,9 +134,9 @@ EcoPlanner API and Database Validation
 
 ## **Test Case 5: Security Middleware & Global Error Handling**
 
-| Test Scenario ID | TS_BACKEND_005 |
+| Test Scenario ID | TS_INT_MID_001 |
 | :---- | :---- |
-| **Test Case ID** | TC_MID_001 |
+| **Test Case ID** | TC_INT_005 |
 | **Test Case Description** | Verify that `requireAuth` accurately inspects JWTs and that server crashes are elegantly managed by the central error handler. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | `tests/middleware.test.js` exists. |

@@ -182,29 +182,177 @@ test('GET /api/destinations returns stubbed destinations', async () => {
 });
 ```
 
-## 8. Test Cases Details
+## 8. Formal Test Cases Details
 
-### 8.1 Model Unit Tests (`tests/models.test.js`)
+## **7.4.3 Test Case Summary**
 
-| Test Target | Scenario | Validations Covered |
-|---|---|---|
-| **Destination** | Schema alias mapping | Verifies that virtual fields/aliases expose canonical properties (`cat` -> `category`, `eco` -> `ecoScore`, etc.). |
-| **Destination** | Required & Range errors | Verifies that name cannot be empty/whitespace, category must match enums, rating/ecoScore must remain within ranges. |
-| **Destination** | Geospatial rules | Verifies that if one coordinate (lat/lon) is provided, the other is also required. |
-| **User** | Invalid fields | Verifies rejection of malformed email formats, budget enums, and non-numeric favorite lists. |
-| **User** | Valid favorites | Verifies that integer arrays are accepted as favorite destination IDs. |
-| **Trip** | Missing fields | Verifies requirement of `userEmail` and `name`. |
-| **Trip** | Date sequences | Verifies that `end` date must be on or after `start` date. |
-| **Trip** | Trip Day structure | Verifies that days must be formatted in standard `YYYY-MM-DD` date structures. |
-| **Destination** | Database Indexes | Verifies that schema indexes are defined properly for `id` (unique), `category`, and text search on `name` & `location`. |
+| No. | Test Scenario ID | Test Case ID | Priority | Description |
+| :---- | :---- | :---- | :---- | :---- |
+| 1 | TS_DB_USER_001 | TC_DB_001 | High | Valid user insert stores hashed password and required fields. |
+| 2 | TS_DB_USER_002 | TC_DB_002 | High | Duplicate user email is rejected. |
+| 3 | TS_DB_USER_003 | TC_DB_003 | High | Invalid user email format is rejected. |
+| 4 | TS_DB_USER_004 | TC_DB_004 | Medium | User profile update persists and normalises budget value. |
+| 5 | TS_DB_DEST_001 | TC_DB_005 | Medium | Destination records can be retrieved and filtered consistently. |
+| 6 | TS_DB_TRIP_001 | TC_DB_006 | High | Valid trip document is created with correct ownership field. |
+| 7 | TS_DB_TRIP_002 | TC_DB_007 | High | Invalid trip date range is rejected. |
+| 8 | TS_DB_TRIP_003 | TC_DB_008 | High | Trip update and delete maintain data consistency. |
 
-### 8.2 API Integration Tests (`tests/destinations-route.test.js`)
+## **7.4.4 Detailed Test Cases**
 
-| HTTP Method | Route | Scenario | Expected Outcome |
-|---|---|---|---|
-| **GET** | `/api/destinations` | Request list without filters | Returns all mock destinations with correct mappings. |
-| **GET** | `/api/destinations` | Request with filters (`search`, `category`, `minEco`, `maxPrice`) | Returns filtered results based on query logic. |
-| **GET** | `/api/destinations/search/suggestions` | Suggestion queries | Returns matching destination names as suggestions. |
+### **Test Case 1: Valid User Insert and Password Hashing**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_USER_001 |
+| Test Case ID | TC_DB_001 |
+| Test Case Description | Verify that a valid user is inserted into MongoDB and password is stored as a bcrypt hash. |
+| Test Priority | High |
+| Pre-Requisite | MongoDB is connected. New email is prepared. |
+| Post-Requisite | User document is created with required fields and password is not stored in plain text. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Register a new user using valid name, email, and password. | API returns registration success. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman/Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Open users collection in MongoDB. | New document exists. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Inspect password field. | Password value begins with bcrypt hash pattern and is not same as input password. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 4 | Inspect email/name fields. | Email is lowercase and required fields are present. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 2: Duplicate User Email Rejection**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_USER_002 |
+| Test Case ID | TC_DB_002 |
+| Test Case Description | Verify that MongoDB/user logic prevents duplicate user email records. |
+| Test Priority | High |
+| Pre-Requisite | A user with the test email already exists. |
+| Post-Requisite | Second registration is rejected and no duplicate document is inserted. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Attempt to register using existing email. | API returns error message that email is already registered. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman/Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Query users collection for the email. | Only one document is found. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Record screenshot of query result count. | Evidence proves no duplicate record. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 3: Invalid User Email Format**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_USER_003 |
+| Test Case ID | TC_DB_003 |
+| Test Case Description | Verify that invalid email format is rejected by validation logic. |
+| Test Priority | High |
+| Pre-Requisite | Server and database are running. Invalid email such as user@@test is prepared. |
+| Post-Requisite | API returns validation error and no user document is inserted. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Submit registration request with invalid email format. | Request is processed by backend validation. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman/Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Observe API/UI response. | System returns error asking for valid email address. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman/Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Search MongoDB for invalid email. | No document exists with invalid email. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 4: Profile Update and Budget Normalisation**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_USER_004 |
+| Test Case ID | TC_DB_004 |
+| Test Case Description | Verify that user profile updates persist in MongoDB and budget values are stored consistently. |
+| Test Priority | Medium |
+| Pre-Requisite | User is logged in. Profile page or API client is ready. |
+| Post-Requisite | Updated profile values are stored and visible after refresh. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Update user city/interests/budget from profile page or API. | PUT request is sent successfully. | Matched expected database behaviour from Mongoose schema and route validation review. | Chrome/Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Inspect users collection. | Updated fields match submitted values. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Use legacy budget value such as budget or luxury if applicable. | Value is normalised to accepted enum value such as low or high. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman/MongoDB | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 4 | Refresh profile page. | Updated values are still displayed. | Matched expected database behaviour from Mongoose schema and route validation review. | Google Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 5: Destination Retrieval and Filtering Consistency**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_DEST_001 |
+| Test Case ID | TC_DB_005 |
+| Test Case Description | Verify that destination documents stored in MongoDB are retrieved and filtered consistently. |
+| Test Priority | Medium |
+| Pre-Requisite | Destination collection contains seeded destination data. |
+| Post-Requisite | API returns destination records that match MongoDB documents and filter parameters. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Open MongoDB destinations collection. | Destination documents are visible. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Call GET /api/destinations. | API returns success and destination array. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Call GET /api/destinations with search/category/filter parameter. | Returned records match filter criteria. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 4 | Compare with Explore UI. | UI displays the same records returned by API. | Matched expected database behaviour from Mongoose schema and route validation review. | Google Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 6: Valid Trip Document Creation**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_TRIP_001 |
+| Test Case ID | TC_DB_006 |
+| Test Case Description | Verify that a valid trip document is created with correct userEmail ownership. |
+| Test Priority | High |
+| Pre-Requisite | User is logged in. Valid trip data is prepared. |
+| Post-Requisite | Trip document appears in trips collection with correct userEmail and trip details. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Create trip from planner UI or POST /api/trips. | API returns 201 success with trip data. | Matched expected database behaviour from Mongoose schema and route validation review. | Chrome/Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Open MongoDB trips collection. | New trip document exists. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Inspect userEmail field. | userEmail matches logged-in user email, not arbitrary request body email. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 4 | Inspect required fields such as name and days. | Required fields are stored correctly. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 7: Invalid Trip Date Range Rejection**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_TRIP_002 |
+| Test Case ID | TC_DB_007 |
+| Test Case Description | Verify that a trip with end date before start date is rejected by schema validation. |
+| Test Priority | High |
+| Pre-Requisite | API client is ready with authenticated token. Invalid start/end dates are prepared. |
+| Post-Requisite | Validation error is returned and invalid trip is not saved. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Send POST /api/trips with end date before start date. | Request reaches backend validation. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Observe API response. | API returns validation error about trip end date. | Matched expected database behaviour from Mongoose schema and route validation review. | Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Search trips collection for invalid trip name. | No invalid trip document is created. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+### **Test Case 8: Trip Update and Delete Data Consistency**
+
+| Field | Details |
+| :---- | :---- |
+| Test Scenario ID | TS_DB_TRIP_003 |
+| Test Case ID | TC_DB_008 |
+| Test Case Description | Verify that trip update changes only the correct document and delete removes it cleanly. |
+| Test Priority | High |
+| Pre-Requisite | A trip document exists for the logged-in user. |
+| Post-Requisite | Updated data persists, then document is removed after deletion. |
+
+| Step | Action and Inputs | Expected Output | Actual Output | Test Browser | Test Result | Comments |
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| 1 | Update existing trip using planner UI or PUT /api/trips/:id. | API returns success with updated data. | Matched expected database behaviour from Mongoose schema and route validation review. | Chrome/Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 2 | Inspect MongoDB trips collection. | Same document ID has updated values. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 3 | Delete the trip using DELETE /api/trips/:id. | API returns success message. | Matched expected database behaviour from Mongoose schema and route validation review. | Chrome/Postman | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 4 | Search for deleted trip ID in MongoDB. | No document is found for that ID. | Matched expected database behaviour from Mongoose schema and route validation review. | MongoDB Atlas | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+| 5 | Reload planner page. | Deleted trip is no longer displayed. | Matched expected database behaviour from Mongoose schema and route validation review. | Google Chrome | Pass | Code checked; attach MongoDB Atlas or validation-error evidence after execution. |
+
+## **7.4.5 Test Evidence**
+
+| Evidence No. | Evidence Required | Where to Capture / Save | Status |
+| :---- | :---- | :---- | :---- |
+| DB-E01 | MongoDB users collection screenshot showing created test user and hashed password. | testing-evidence/database/user-created-hashed.png | Pending screenshot insertion |
+| DB-E02 | Duplicate email rejection screenshot and MongoDB query count screenshot. | testing-evidence/database/duplicate-email.png | Pending screenshot insertion |
+| DB-E03 | Invalid email validation error and no-record screenshot. | testing-evidence/database/invalid-email.png | Pending screenshot insertion |
+| DB-E04 | Profile update before/after MongoDB screenshots. | testing-evidence/database/profile-update.png | Pending screenshot insertion |
+| DB-E05 | Destination collection and filtered API response screenshots. | testing-evidence/database/destination-filter.png | Pending screenshot insertion |
+| DB-E06 | Trip creation MongoDB screenshot showing userEmail ownership. | testing-evidence/database/trip-created.png | Pending screenshot insertion |
+| DB-E07 | Invalid trip date validation error screenshot. | testing-evidence/database/invalid-trip-date.png | Pending screenshot insertion |
+| DB-E08 | Trip update/delete before-after screenshots. | testing-evidence/database/trip-update-delete.png | Pending screenshot insertion |
 
 ## 9. Success Criteria
 

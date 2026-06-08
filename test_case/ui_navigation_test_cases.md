@@ -4,8 +4,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_001 |
-| **Test Case ID** | TC_NAV_001 |
+| **Test Scenario ID** | TS_FUNC_NAV_001 |
+| **Test Case ID** | TC_FUNC_001 |
 | **Test Case Description** | Verify that clicking the "Explore" sidebar link navigates from Dashboard to the Explore page. The sidebar active state must update, page content must fully load, and the browser tab title must change accordingly. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. Server is running at `http://localhost:3000`. 2. User is logged in (email: `demo@ecoplanner.com`, password: `password123`). 3. User is on `dashboard.html`. 4. Browser window width ≥ 992px so the sidebar (`d-none d-lg-block`) is visible. 5. `localStorage` contains key `ecoUserEmail` with value `demo@ecoplanner.com`. |
@@ -27,8 +27,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_002 |
-| **Test Case ID** | TC_NAV_002 |
+| **Test Scenario ID** | TS_FUNC_NAV_002 |
+| **Test Case ID** | TC_FUNC_002 |
 | **Test Case Description** | Verify that clicking each link in the top navigation bar (Dashboard, Explore, Itinerary, Weather, Carbon, Favorites) navigates to the correct page, the clicked link receives the `active` CSS class with visual highlighting, and previous active link loses its highlight. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. User is logged in and on `dashboard.html`. 2. Browser window width ≥ 768px so top nav links are visible (`d-none d-md-flex`). 3. Top navigation bar is sticky at top with green background (`#2d6a4f`). |
@@ -52,8 +52,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_003 |
-| **Test Case ID** | TC_NAV_003 |
+| **Test Scenario ID** | TS_FUNC_NAV_003 |
+| **Test Case ID** | TC_FUNC_003 |
 | **Test Case Description** | Verify that the circular user initial badge (`#navInitial`) in the top-right corner of the navigation bar displays the correct user initials, shows a pointer cursor on hover, and navigates to `profile.html` when clicked. Also verify browser back button returns to previous page. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | 1. User is logged in as "Demo User" (or any user with a known name). 2. User is on `dashboard.html`. 3. `localStorage` contains `ecoUserEmail`. 4. The `app.js` DOMContentLoaded handler has run and populated `#navInitial` with user initials from either `localStorage('ecoUserInitials')` or the `/api/users/profile/` API call. |
@@ -75,8 +75,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_UI_001 |
-| **Test Case ID** | TC_UI_001 |
+| **Test Scenario ID** | TS_FUNC_UI_001 |
+| **Test Case ID** | TC_FUNC_004 |
 | **Test Case Description** | Verify that the Dashboard displays all statistics cards with correct data, and that "View all →" links in "Recent Trips" and "Saved Favourites" sections navigate to the Planner and Favorites pages respectively. Also verify the "Full forecast →" link navigates to Weather and "Edit →" link navigates to Profile. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. User is logged in. 2. User has at least 1 trip created (via Planner page) and at least 1 favourite saved (via Explore page). 3. User is on `dashboard.html`. 4. API endpoints `/api/users/profile/{email}` and `/api/trips/{email}` return valid data. 5. The `LISTINGS` array in `app.js` contains 8 eco listings with IDs 1–8. |
@@ -99,8 +99,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_UI_002 |
-| **Test Case ID** | TC_UI_002 |
+| **Test Scenario ID** | TS_FUNC_UI_002 |
+| **Test Case ID** | TC_FUNC_005 |
 | **Test Case Description** | Verify the full interaction flow of the CO₂ Goal modal: opening via the "My CO₂ Goal" card click, selecting preset values, entering custom values, input validation (min 10, max 9999), saving to `localStorage`, updating the dashboard chart/labels, and cancelling without changes. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | 1. User is logged in and on `dashboard.html`. 2. The Activity Overview section with CO₂ chart is visible on screen. 3. Current goal is default 500 kg (or whatever is stored in `localStorage.getItem('ecoGoalCO2')`). 4. The `#goalModal` element exists in the DOM with `display: none`. |
@@ -137,8 +137,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_004 |
-| **Test Case ID** | TC_NAV_004 |
+| **Test Scenario ID** | TS_FUNC_NAV_004 |
+| **Test Case ID** | TC_FUNC_006 |
 | **Test Case Description** | Verify that every sidebar link navigates to the correct protected page and that each destination page highlights the correct sidebar active state. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. Server is running at `http://localhost:3000`. 2. User is logged in. 3. Browser width is ≥ 992px so the sidebar is visible. 4. User starts on `dashboard.html`. |
@@ -162,8 +162,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_005 |
-| **Test Case ID** | TC_NAV_005 |
+| **Test Scenario ID** | TS_FUNC_NAV_005 |
+| **Test Case ID** | TC_FUNC_007 |
 | **Test Case Description** | Verify that clicking Logout clears the user's local session data and navigates away from protected pages. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. User is logged in. 2. `localStorage.ecoUserEmail`, `localStorage.ecoUserName`, and `localStorage.isLoggedIn` exist. 3. Browser DevTools Application tab is available to inspect storage. |
@@ -184,8 +184,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_006 |
-| **Test Case ID** | TC_NAV_006 |
+| **Test Scenario ID** | TS_FUNC_NAV_006 |
+| **Test Case ID** | TC_FUNC_008 |
 | **Test Case Description** | Verify that the top navigation remains usable on small screens and the desktop sidebar is hidden. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. User is logged in. 2. Browser DevTools device toolbar is available. 3. Test with viewport widths `375px`, `390px`, and `768px`. |
@@ -207,8 +207,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_AUTH_001 |
-| **Test Case ID** | TC_AUTH_001 |
+| **Test Scenario ID** | TS_FUNC_AUTH_001 |
+| **Test Case ID** | TC_FUNC_009 |
 | **Test Case Description** | Verify navigation between public authentication pages: landing page, login, registration, and password reset. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. Server is running. 2. Browser storage is cleared before starting. 3. User starts at `index.html`. |
@@ -232,8 +232,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_AUTH_002 |
-| **Test Case ID** | TC_AUTH_002 |
+| **Test Scenario ID** | TS_FUNC_AUTH_002 |
+| **Test Case ID** | TC_FUNC_010 |
 | **Test Case Description** | Verify that protected pages cannot be accessed directly when the user is not logged in. |
 | **Test Priority** | High |
 | **Pre-Requisite** | 1. Clear `localStorage` and `sessionStorage`. 2. Server is running. 3. User is not logged in. |
@@ -254,8 +254,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_NAV_007 |
-| **Test Case ID** | TC_NAV_007 |
+| **Test Scenario ID** | TS_FUNC_NAV_007 |
+| **Test Case ID** | TC_FUNC_011 |
 | **Test Case Description** | Verify that Profile page navigation state is not incorrectly assigned to another top navigation item. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | 1. User is logged in. 2. User navigates to `profile.html` from the user badge or sidebar Profile link. |
@@ -275,8 +275,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_FLOW_001 |
-| **Test Case ID** | TC_FLOW_001 |
+| **Test Scenario ID** | TS_FUNC_FLOW_001 |
+| **Test Case ID** | TC_FUNC_012 |
 | **Test Case Description** | Verify that feature shortcut actions navigate correctly between Explore, Favorites, and Planner. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | 1. User is logged in. 2. Explore listings are loaded. 3. Browser storage is available. |
@@ -298,8 +298,8 @@
 
 | Field | Details |
 |---|---|
-| **Test Scenario ID** | TS_FLOW_002 |
-| **Test Case ID** | TC_FLOW_002 |
+| **Test Scenario ID** | TS_FUNC_FLOW_002 |
+| **Test Case ID** | TC_FUNC_013 |
 | **Test Case Description** | Verify navigation and shortcut behavior for Weather and Carbon tools, including API-backed search and saved eco-progress flow. |
 | **Test Priority** | Medium |
 | **Pre-Requisite** | 1. User is logged in. 2. Internet access is available for Open-Meteo geocoding/weather calls. 3. User has at least one planner trip if testing planner activity import from Carbon. |
