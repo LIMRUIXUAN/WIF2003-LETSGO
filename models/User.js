@@ -56,6 +56,7 @@ const userSchema = new mongoose.Schema({
     city: { type: String, trim: true, default: '' },
     budget: {
         type: String,
+        set: normalizeBudget,
         enum: ['low', 'mid', 'high'],
         default: 'mid'
     },
