@@ -178,12 +178,22 @@ test('TC_INT_004: destinations API loads seeded destination list', async () => {
 // ── TC_INT_005: Itinerary Trip CRUD API Flow ──
 test('TC_INT_005: trips API handles itinerary CRUD operations correctly', async () => {
   const originalCreate = Trip.create;
+  const originalFindById = Trip.findById;
+  
   Trip.create = async (data) => {
     return { _id: 'mock-trip-id', ...data };
+  };
+  
+  Trip.findById = async (id) => {
+    if (id === 'other-user-trip') {
+      return { _id: 'other-user-trip', userEmail: 'someoneelse@ecoplanner.com' };
+    }
+    return null;
   };
 
   const server = await createServer();
   try {
+    // 1. Create Trip (Verify ownership injection)
     const response = await fetch(`${server.baseUrl}/api/trips`, {
       method: 'POST',
       headers: {
@@ -203,8 +213,18 @@ test('TC_INT_005: trips API handles itinerary CRUD operations correctly', async 
     assert.equal(response.status, 201);
     assert.equal(payload.success, true);
     assert.equal(payload.data.name, 'API Integration Trip');
+    assert.equal(payload.data.userEmail, 'testuser@ecoplanner.com'); // From tokenEmail
+
+    // 2. Delete another user's trip (Verify cross-account blocking)
+    const deleteOtherUserTripResponse = await fetch(`${server.baseUrl}/api/trips/other-user-trip`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${validToken}` }
+    });
+    
+    assert.equal(deleteOtherUserTripResponse.status, 403);
   } finally {
     Trip.create = originalCreate;
+    Trip.findById = originalFindById;
     await server.close();
   }
 });

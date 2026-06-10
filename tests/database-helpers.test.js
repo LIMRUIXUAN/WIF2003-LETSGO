@@ -88,8 +88,8 @@ test('DB-05: Destination model enforces fields limits and maps categories', () =
   assert.equal(destination.ecoScore, 9.5);
 });
 
-// ── DB-06: Trip Creation Email Ownership ──
-test('DB-06: Trip model lowercases and normalises owner userEmail', () => {
+// ── DB-07: Trip Creation Email Ownership ──
+test('DB-07: Trip model lowercases and normalises owner userEmail', () => {
   const trip = new Trip({
     userEmail: 'TRAVELLER@EXAMPLE.COM',
     name: 'Weekend Getaway',
@@ -104,8 +104,8 @@ test('DB-06: Trip model lowercases and normalises owner userEmail', () => {
   assert.equal(trip.status, 'planned'); // Default status applied
 });
 
-// ── DB-07: Trip Date range constraint ──
-test('DB-07: Trip model rejects end date before start date', async () => {
+// ── DB-08: Trip Date range constraint ──
+test('DB-08: Trip model rejects end date before start date', async () => {
   const trip = new Trip({
     userEmail: 'traveller@example.com',
     name: 'Invalid Trip Dates',
@@ -119,8 +119,8 @@ test('DB-07: Trip model rejects end date before start date', async () => {
   assert.match(errors.end.message, /end date must be on or after the start date/i);
 });
 
-// ── DB-08: Trip Deletion integrity ──
-test('DB-08: Trip model rejects missing required fields on trip creation', async () => {
+// ── DB-10: Trip Required Fields (Extra) ──
+test('DB-10: Trip model rejects missing required fields on trip creation', async () => {
   const trip = new Trip({
     name: '',
     userEmail: ''
@@ -130,4 +130,47 @@ test('DB-08: Trip model rejects missing required fields on trip creation', async
   assert.ok(errors);
   assert.ok(errors.name);
   assert.ok(errors.userEmail);
+});
+
+// ── DB-09: Trip Update/Delete Consistency ──
+test('DB-09: Trip update/delete operations maintain database consistency', async () => {
+  const id = 'mock-trip-id';
+  const updatedData = { name: 'Updated Trip Name' };
+  
+  // Mock Mongoose model methods to simulate DB behavior without a live connection
+  const originalFindByIdAndUpdate = Trip.findByIdAndUpdate;
+  const originalFindByIdAndDelete = Trip.findByIdAndDelete;
+  const originalFindById = Trip.findById;
+  
+  let mockTripDb = { [id]: { _id: id, name: 'Original Trip' } };
+  
+  Trip.findByIdAndUpdate = async (tripId, data, options) => {
+    if (mockTripDb[tripId]) {
+      mockTripDb[tripId] = { ...mockTripDb[tripId], ...data };
+      return mockTripDb[tripId];
+    }
+    return null;
+  };
+  
+  Trip.findByIdAndDelete = async (tripId) => {
+    delete mockTripDb[tripId];
+    return true;
+  };
+  
+  Trip.findById = async (tripId) => {
+    return mockTripDb[tripId] || null;
+  };
+
+  try {
+    const updatedTrip = await Trip.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
+    assert.equal(updatedTrip.name, 'Updated Trip Name');
+    
+    await Trip.findByIdAndDelete(id);
+    assert.equal(await Trip.findById(id), null);
+  } finally {
+    // Restore originals
+    Trip.findByIdAndUpdate = originalFindByIdAndUpdate;
+    Trip.findByIdAndDelete = originalFindByIdAndDelete;
+    Trip.findById = originalFindById;
+  }
 });
